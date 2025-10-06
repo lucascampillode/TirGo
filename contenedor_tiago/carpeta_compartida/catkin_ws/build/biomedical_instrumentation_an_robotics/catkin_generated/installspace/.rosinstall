@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/ud/carpeta_compartida/catkin_ws/install/setup.sh

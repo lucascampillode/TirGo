@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package format="2">
+
+  <name>pal_filters</name>
+  <description>
+    Assorted filters designed to operate on 2D planar laser scanners,
+    which use the sensor_msgs/LaserScan type.
+  </description>
+  <version>0.1.1</version>
+  <maintainer email="procopio.stein@pal-robotics.com">Procópio Stein</maintainer>
+  <author>Procópio Stein</author>
+  <license>Proprietary</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>sensor_msgs</depend>
+  <depend>roscpp</depend>
+  <depend>tf</depend>
+  <depend>filters</depend>
+  <depend>message_filters</depend>
+  <depend>laser_geometry</depend>
+  <depend>pluginlib</depend>
+  <depend>rostest</depend>
+  <depend>angles</depend>
+  
+  <test_depend>rosunit</test_depend>
+  <test_depend>rosbag</test_depend>
+  <test_depend>pal_test_utils</test_depend>
+
+  <export>
+    <filters plugin="${prefix}/pal_filters_plugins.xml"/>
+  </export>
+</package>

@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_waypoint
+Description: Description of pal_waypoint
+Version: 0.4.4
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib -lpoi_interface
+Requires: roscpp interactive_markers actionlib actionlib_msgs visualization_msgs geometry_msgs pal_navigation_msgs pal_composite_navigation_msgs tf

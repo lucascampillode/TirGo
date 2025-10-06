@@ -1,0 +1,9 @@
+<library path="lib/libgravity_compensation_controller">
+
+  <class name="force_control/GravityCompensation" type="force_control::GravityCompensation" base_class_type="controller_interface::ControllerBase">
+    <description>
+      Gravity compensation controller.
+    </description>
+  </class>
+
+</library>

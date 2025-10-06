@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: pal_navigation_sm
+Version: 5.0.6
+Summary: Navigation State Machine, which allows changing form localization to mapping (and viceversa), use the pose saver to store the current position in the map.
+Home-page: UNKNOWN
+Author: Antonio Brandi
+Author-email: antonio.brandi@pal-robotics.com
+License: Proprietary
+Description: UNKNOWN
+Platform: UNKNOWN

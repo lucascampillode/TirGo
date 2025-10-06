@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+
+<arg name="cloud"     default="/softkinetic_camera/depth_registered/points"  />
+<arg name="max_depth" default="1.0"  />
+<arg name="downsampling_size" default="0.01" />
+
+<node name="remove_main_plane_softkinetic" pkg="pal_pcl" type="remove_main_plane" output="screen">
+  <remap from="cloud"             to="$(arg cloud)"     />
+  <param name="max_depth"         type="double" value="$(arg max_depth)" />
+  <param name="downsampling_size" type="double" value="$(arg downsampling_size)" />
+</node>
+
+</launch>

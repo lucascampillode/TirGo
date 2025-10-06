@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_ariles
+Description: Description of pal_ariles
+Version: 1.0.1
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

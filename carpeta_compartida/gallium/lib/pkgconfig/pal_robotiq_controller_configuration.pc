@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_robotiq_controller_configuration
+Description: Description of pal_robotiq_controller_configuration
+Version: 0.0.19
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

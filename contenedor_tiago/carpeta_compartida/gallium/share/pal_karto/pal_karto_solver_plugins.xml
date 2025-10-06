@@ -1,0 +1,5 @@
+<library path="libpal_karto">
+  <class name="pal_karto/SpaSolver" type="pal_karto::SpaSolver" base_class_type="karto::ScanSolver">
+    <description> Solver plugin for pal_karto that uses sba. </description>
+  </class>
+</library>

@@ -1,0 +1,24 @@
+# Fallback parameter in case the polygon footprint
+# is not available on the param server
+# Default : 0.3
+footprint_radius: 0.3
+
+# Whether the node starts in an active mode or not
+# Default : True
+start_enabled: True
+
+# The rotational velocity below which
+# the command is considered zero
+# Default : 0.01
+linear_eps: 0.01
+
+# The translational velocity below which
+# command is considered zero
+# Default : 0.01
+angular_eps: 0.01
+
+# The targeted period at which the processing loop
+# should run. If the processing loop takes more time
+# than this target, wanr messages are issued.
+# Default : 0.01 # 100Hz
+target_loop_period: 0.01

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pal_motion_loader</name>
+  <version>1.0.1</version>
+  <description>The pal_motion_loader pkg</description>
+  <maintainer email="josef.svec@pal-robotics.com">JSV</maintainer>
+  <license>Proprietary</license>
+  <buildtool_depend>catkin</buildtool_depend>
+</package>

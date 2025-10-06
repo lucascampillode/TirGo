@@ -1,0 +1,8 @@
+<launch>
+  <arg name="lift_cost" default="60"/>
+
+  <node name="highways_server" pkg="highways_server" type="highways_server_node" output="screen">
+    <param name="lift_cost" type="int" value="$(arg lift_cost)" />
+  </node>
+
+</launch>

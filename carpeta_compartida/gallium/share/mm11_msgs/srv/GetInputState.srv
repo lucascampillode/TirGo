@@ -1,0 +1,7 @@
+# Get an Input state
+
+uint8 input
+
+---
+
+uint8 state

@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_zoi_detector
+Description: Description of pal_zoi_detector
+Version: 0.2.2
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib 
+Requires: geometry_msgs nav_msgs pal_navigation_msgs cv_bridge diagnostic_updater message_runtime

@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="robot_type" default="stockbot"/>
+
+    <node pkg="pal_map_utils" type="pal_laser_to_img_node" name="pal_laser_to_img_node" output="screen">
+        <rosparam if="$(eval robot_type == 'stockbot')">
+            cameras:
+                - topic: '/base_rgbd_camera_filter/filtered_cloud'
+                  color:
+                    r: 204
+                    g: 0
+                    b: 0
+                - topic: '/roof_rgbd_camera_filter/filtered_cloud'
+                  color:
+                    r: 204
+                    g: 102
+                    b: 0
+        </rosparam>
+    </node>
+</launch>

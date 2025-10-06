@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+import rospy
+import em
+import sys
+import rospkg
+import os
+import yaml
+
+rospy.init_node("camera_extrinsics_calibration_regenerate")
+extrinsic_calibrations = rospy.get_param("/master_calibration/pal_camera_calibration_extrinsics")
+
+calib_dir="/etc/calibration_data/pal_camera_calibration_extrinsics"
+if not os.path.isdir(calib_dir):
+    os.mkdir(calib_dir)
+
+rospack = rospkg.RosPack()
+pkg_name = "pal_camera_calibration_extrinsics"
+pkg_path = rospack.get_path(pkg_name)
+
+for cam in extrinsic_calibrations:
+    # The parameter could contain multiple extrinsics, but right now we only support one
+    with open("{}/config/extrinsic_camera_calibration_constants.urdf.xacro".format(pkg_path), "r") as f:
+        expanded_file = em.expand(f.read(), extrinsic_calibrations[cam])
+        print(expanded_file)
+calib_dir="/etc/calibration_data/{}".format(pkg_name)
+if not os.path.isdir(calib_dir):
+    os.mkdir(calib_dir)
+with open("/etc/calibration_data/{}/extrinsic_camera_calibration_constants.urdf.xacro".format(pkg_name), "w") as f:
+    f.write(expanded_file)
+

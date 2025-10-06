@@ -1,0 +1,12 @@
+string camera_topic
+string optical_frame
+string camera_frame
+float64 max_dist
+---
+float64 height
+float64 height_error
+float64 roll
+float64 roll_error
+float64 pitch
+float64 pitch_error
+bool error

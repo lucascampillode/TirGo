@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>system_pal_ca_certificate</name>
+  <version>1.0.1</version>
+  <description>PAL CA certificate</description>
+
+  <maintainer email="jordan.palacios@pal-robotics.com">Jordan Palacios</maintainer>
+
+  <license>Proprietary</license>
+
+  <author email="jordan.palacios@pal-robotics.com">Jordan Palacios</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>ca-certificates</exec_depend>
+
+  <export>
+    <pal_debian_scripts>
+      install_scripts
+    </pal_debian_scripts>
+  </export>
+
+</package>

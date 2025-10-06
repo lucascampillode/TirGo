@@ -1,0 +1,10 @@
+(cl:defpackage pal_karto-srv
+  (:use )
+  (:export
+   "USESCANMATCHING"
+   "<USESCANMATCHING-REQUEST>"
+   "USESCANMATCHING-REQUEST"
+   "<USESCANMATCHING-RESPONSE>"
+   "USESCANMATCHING-RESPONSE"
+  ))
+

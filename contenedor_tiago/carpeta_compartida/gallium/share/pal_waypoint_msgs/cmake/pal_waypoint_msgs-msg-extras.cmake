@@ -1,0 +1,2 @@
+set(pal_waypoint_msgs_MESSAGE_FILES "msg/DoWaypointNavigationAction.msg;msg/DoWaypointNavigationActionGoal.msg;msg/DoWaypointNavigationActionResult.msg;msg/DoWaypointNavigationActionFeedback.msg;msg/DoWaypointNavigationGoal.msg;msg/DoWaypointNavigationResult.msg;msg/DoWaypointNavigationFeedback.msg")
+set(pal_waypoint_msgs_SERVICE_FILES "")

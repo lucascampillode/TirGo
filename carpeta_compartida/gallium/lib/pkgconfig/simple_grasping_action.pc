@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: simple_grasping_action
+Description: Description of simple_grasping_action
+Version: 1.0.1
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

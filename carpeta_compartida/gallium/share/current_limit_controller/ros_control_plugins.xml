@@ -1,0 +1,11 @@
+<library path="lib/libcurrent_limit_controller">
+
+  <class name="pal_ros_controllers/CurrentLimitController"
+         type="pal_ros_controllers::CurrentLimitController"
+         base_class_type="controller_interface::ControllerBase">
+    <description>
+        Controller that allows to set the current limit for a group of actuators.
+    </description>
+  </class>
+
+</library>

@@ -1,0 +1,6 @@
+# the header's frame applies to ALL points in the trajectory
+std_msgs/Header header
+geometry_msgs/Point[] targets
+duration[] times_from_start
+---
+---

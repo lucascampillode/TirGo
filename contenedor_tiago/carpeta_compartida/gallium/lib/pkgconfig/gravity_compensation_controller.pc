@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: gravity_compensation_controller
+Description: Description of gravity_compensation_controller
+Version: 0.0.6
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: control_toolbox controller_interface dynamic_reconfigure hardware_interface interactive_markers rbdl roscpp pal_ros_utils std_msgs message_generation cmake_modules eigen_checks pal_hardware_interfaces pal_base_ros_controller pluginlib

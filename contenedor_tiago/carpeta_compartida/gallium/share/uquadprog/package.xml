@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package>
+  <name>uquadprog</name>
+  <version>1.1.14</version>
+  <description>The uquadprog package</description>
+
+  <maintainer email="hilario.tome@pal-robotics.com">Hilario Tomé</maintainer>
+
+  <license>Proprietary</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>eigen_checks</build_depend>
+  <build_depend>eigen</build_depend>  
+  <build_depend>cmake_modules</build_depend>
+  <build_depend>backward_ros</build_depend>
+  <build_depend>pal_utils</build_depend>
+
+  <run_depend>cmake_modules</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>backward_ros</run_depend>
+
+  <test_depend>gtest</test_depend>
+
+  <export>
+  </export>
+
+</package>

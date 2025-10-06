@@ -1,0 +1,9 @@
+#goal definition
+std_msgs/String target_poi
+------------------
+#result definition
+std_msgs/Bool reached
+std_msgs/String message
+-----------------
+#feedback definition
+std_msgs/String state

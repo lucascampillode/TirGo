@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: camera_calibration_files
+Description: Description of camera_calibration_files
+Version: 0.0.5
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: joy_teleop
+Description: Description of joy_teleop
+Version: 1000.4.2
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib 
+Requires: actionlib teleop_tools_msgs

@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_catkin_environment
+Description: Description of pal_catkin_environment
+Version: 5.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

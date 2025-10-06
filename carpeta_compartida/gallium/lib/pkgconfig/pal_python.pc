@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_python
+Description: Description of pal_python
+Version: 1.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: rospy roslib rosgraph actionlib actionlib_msgs

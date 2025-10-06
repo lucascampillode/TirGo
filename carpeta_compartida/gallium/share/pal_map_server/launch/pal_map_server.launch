@@ -1,0 +1,13 @@
+<launch>
+	<arg name="map_file"       default=""/>
+	<arg name="frame_id"       default="map"/>
+    <arg name="map_topic"      default="map"/>
+
+
+	<!-- Run the map server -->
+	<node name="$(anon pal_map_server)" pkg="pal_map_server" type="pal_map_server_node" args="$(arg map_file)" output="screen">
+		<param name="map_topic"      value="$(arg map_topic)" />
+		<param name="frame_id"       value="$(arg frame_id)" />
+	</node>
+
+</launch>

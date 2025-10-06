@@ -1,0 +1,3 @@
+# Turns off the robot during indicated minutes.
+
+uint16 time_min_down

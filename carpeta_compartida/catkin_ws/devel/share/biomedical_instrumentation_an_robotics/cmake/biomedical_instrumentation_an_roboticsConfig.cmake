@@ -1,0 +1,1 @@
+/home/ud/carpeta_compartida/catkin_ws/devel/.private/biomedical_instrumentation_an_robotics/share/biomedical_instrumentation_an_robotics/cmake/biomedical_instrumentation_an_roboticsConfig.cmake

@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_local_planner
+Description: Description of pal_local_planner
+Version: 5.0.6
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib -lpal_local_planner
+Requires: message_runtime base_local_planner std_msgs sensor_msgs nav_msgs pal_navigation_msgs pal_device_msgs dynamic_reconfigure pluginlib roscpp visualization_msgs tf2 tf2_geometry_msgs tf2_ros

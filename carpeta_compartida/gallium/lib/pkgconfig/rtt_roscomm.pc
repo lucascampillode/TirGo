@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: rtt_roscomm
+Description: Description of rtt_roscomm
+Version: 2.10.8
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: rtt_ros roscpp

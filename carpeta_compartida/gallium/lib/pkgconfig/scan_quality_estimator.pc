@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: scan_quality_estimator
+Description: Description of scan_quality_estimator
+Version: 0.0.2
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib -lscan_quality_estimator
+Requires: navigation_core_library

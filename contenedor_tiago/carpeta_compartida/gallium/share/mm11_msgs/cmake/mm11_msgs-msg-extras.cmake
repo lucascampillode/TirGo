@@ -1,0 +1,2 @@
+set(mm11_msgs_MESSAGE_FILES "msg/DisplayEntry.msg;msg/Gpio.msg;msg/Power.msg;msg/DisplayAction.msg;msg/DisplayActionGoal.msg;msg/DisplayActionResult.msg;msg/DisplayActionFeedback.msg;msg/DisplayGoal.msg;msg/DisplayResult.msg;msg/DisplayFeedback.msg")
+set(mm11_msgs_SERVICE_FILES "srv/GetInputState.srv;srv/GetOutputState.srv;srv/SetLedsBrightness.srv;srv/SetLedState.srv;srv/SetOutputState.srv;srv/SetStripAnimation.srv;srv/SetStripColor.srv;srv/SetStripFlash.srv;srv/SetStripPixelColor.srv;srv/SetRestart.srv;srv/SetWakeup.srv")

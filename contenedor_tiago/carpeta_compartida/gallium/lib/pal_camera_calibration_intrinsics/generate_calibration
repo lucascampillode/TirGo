@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+import rospy
+import em
+import sys
+import rospkg
+import os
+import yaml
+
+rospy.init_node("camera_intrinsics_calibration_regenerate")
+intrinsic_calibrations = rospy.get_param("/master_calibration/pal_camera_calibration_intrinsics")
+
+calib_dir="/etc/calibration_data/pal_camera_calibration_intrinsics"
+if not os.path.isdir(calib_dir):
+    os.mkdir(calib_dir)
+
+for cam in intrinsic_calibrations.keys():
+    with open("{}/{}.yaml".format(calib_dir, cam), "w") as f:
+        yaml.dump(intrinsic_calibrations[cam], f)
+

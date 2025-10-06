@@ -1,0 +1,5 @@
+<launch>
+  <node pkg ="rosbag" type="record" name="record"
+        args="record /tf /joint_states /scan_filtered /mobile_base_controller/odom /mobile_base_controller/cmd_vel /amcl_pose /particlecloud">
+  </node>
+</launch>

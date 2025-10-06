@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>repositories_core</name>
+  <version>4.0.2</version>
+  <description>Core repositories</description>
+
+  <maintainer email="jordan.palacios@pal-robotics.com">Jordan Palacios</maintainer>
+
+  <license>Proprietary</license>
+
+  <author email="jordan.palacios@pal-robotics.com">Jordan Palacios</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>system_ros_key</exec_depend>
+
+  <export>
+    <pal_debian_scripts>
+      install_scripts
+    </pal_debian_scripts>
+  </export>
+
+</package>

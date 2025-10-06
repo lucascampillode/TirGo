@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>pal_local_planner</name>
+    <version>5.0.6</version>
+    <description>
+        Given a global plan to follow and a costmap, the local planner produces velocity
+        commands to send to a mobile base. This package supports any robot who's footprint
+        can be represented as a convex poly_gridon or cicrle, and exposes its configuration
+        as ROS parameters that can be set in a launch file. The parameters for this planner
+        are also dynamically reconfigurable. This package's ROS wrapper adheres to the
+        BaseLocalPlanner interface specified in:
+        <a href="http://wiki.ros.org/nav_core">nav_core</a> package.
+    </description>
+    <maintainer email="luca.marchionni@pal-robotics.com">Luca Marchionni</maintainer>
+    <maintainer email="procopio.stein@pal-robotics.com">Procópio Stein</maintainer>
+
+    <license>Proprietary</license>
+
+    <author email="luca.marchionni@pal-robotics.com">Luca Marchionni</author>
+
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <!-- Messages -->
+    <build_depend>message_generation</build_depend>
+    <build_export_depend>message_runtime</build_export_depend>
+    <exec_depend>message_runtime</exec_depend>
+
+    <depend>base_local_planner</depend>
+    <depend>costmap_2d</depend>
+    <depend>dynamic_reconfigure</depend>
+    <depend>nav_core</depend>
+    <depend>nav_msgs</depend>
+    <depend>pluginlib</depend>
+    <depend>roscpp</depend>
+    <depend>tf</depend>
+    <depend>voxel_grid</depend>
+    <depend>pal_navigation_msgs</depend>
+    <depend>pal_device_msgs</depend>
+    <depend>std_msgs</depend>
+    <depend>sensor_msgs</depend>
+    <depend>angles</depend>
+    <depend>visualization_msgs</depend>
+    <depend>tf2</depend>
+    <depend>tf2_geometry_msgs</depend>
+    <depend>tf2_ros</depend>
+
+    <!-- Tests -->
+    <test_depend>rostest</test_depend>
+
+    <export>
+        <nav_core plugin="${prefix}/plp_plugin.xml" />
+    </export>
+
+</package>
+
+

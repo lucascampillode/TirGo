@@ -1,0 +1,7 @@
+<library path="lib/libpal_local_planner">
+  <class name="pal_local_planner/PalLocalPlanner" type="pal_local_planner::PalLocalPlanner" base_class_type="nav_core::BaseLocalPlanner">
+    <description>
+      A implementation of a local planner using WheelSimpleMotionControllingConnector and SHndlerObstacleAvoidingConnector
+    </description>
+  </class>
+</library>

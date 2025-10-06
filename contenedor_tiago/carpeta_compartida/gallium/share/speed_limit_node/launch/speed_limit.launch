@@ -1,0 +1,34 @@
+<launch>
+
+  <!-- Launch node through valgrind/gdb. -->
+  <arg name="debug" default="false"/>
+
+<!--  <arg name="launch_prefix" value="gdb -ex run - -args"     if="$(arg debug)"/>-->
+  <arg name="launch_prefix" value="valgrind"           if="$(arg debug)"/>
+  <arg name="launch_prefix" value=""                   unless="$(arg debug)"/>
+
+  <!-- The speed_limit plugin type. -->
+  <arg name="limiters" default="$(find speed_limit_node)/cfg/limiters.yaml"/>
+
+  <!-- The node params. -->
+  <arg name="cfg_file" default="$(find speed_limit_node)/cfg/node_config.yaml"/>
+
+  <!-- The input topic. -->
+  <arg name="cmd_vel_in" default="/twist_mux/cmd_vel"/>
+  <arg name="dynamic_footprint" default="/dynamic_footprint_publisher/footprint"/>
+
+  <!-- The output topic. -->
+  <arg name="cmd_vel_out" default="/mobile_base_controller/cmd_vel"/>
+
+  <node pkg="speed_limit_node" type="speed_limit_node" name="speed_limit_node"
+        output="screen" launch-prefix="$(arg launch_prefix)">
+    <rosparam file="$(arg cfg_file)" command="load"                 />
+    <rosparam file="$(arg limiters)" command="load"                 />
+    <remap from="~cmd_vel_in"  to="$(arg cmd_vel_in)"               />
+    <remap from="~dynamic_footprint" to="$(arg dynamic_footprint)"  />
+    <remap from="~cmd_vel_out" to="$(arg cmd_vel_out)"              />
+    <remap from="~laser_in"    to="scan"                            />
+    <remap from="~cloud_in"    to="sonar_cloud"                     />
+  </node>
+
+</launch>

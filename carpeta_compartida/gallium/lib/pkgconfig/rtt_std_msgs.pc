@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: rtt_std_msgs
+Description: Description of rtt_std_msgs
+Version: 2.10.8
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

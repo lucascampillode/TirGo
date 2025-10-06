@@ -1,0 +1,17 @@
+# Group of the waypoints
+string group
+
+# Start navigation from first_wp
+uint32 first_wp
+
+# Number of waypoints to visit, 0 means all 
+int32 num_wp
+
+#If a point in the waypoint group fails, ignore and continue to next one
+bool continue_on_error
+---
+# Waypoints reached successfully, by index inside the group parameter
+int32[] waypoints
+---
+# Waypoints reached successfully, by index inside the group parameter
+int32[] waypoints

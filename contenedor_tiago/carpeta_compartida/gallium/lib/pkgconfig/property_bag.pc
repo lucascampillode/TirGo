@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: property_bag
+Description: Description of property_bag
+Version: 0.0.9
+Cflags: -I${prefix}/include -I/usr/include -I/usr/include/eigen3
+Libs: -L${prefix}/lib -lproperty_bag /usr/lib/x86_64-linux-gnu/libboost_serialization.so.1.71.0
+Requires: roscpp std_msgs geometry_msgs

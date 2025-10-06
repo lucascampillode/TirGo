@@ -1,0 +1,12 @@
+Metadata-Version: 1.1
+Name: pal_app
+Version: 0.3.0
+Summary: A tool to create application controller skeletons for interactive robots
+Home-page: UNKNOWN
+Author: Séverin Lemaignan
+Author-email: severin.lemaignan@pal-robotics.com
+License: Proprietary
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Requires: jinja2

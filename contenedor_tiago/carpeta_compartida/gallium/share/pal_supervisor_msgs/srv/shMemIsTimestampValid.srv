@@ -1,0 +1,5 @@
+string appName #Name of the application sending the command
+int32 key #Shared memory Key
+uint32 offset #Offset inside the ShMem of the timeout
+---
+bool isValid #Returns if the timeout check is valid

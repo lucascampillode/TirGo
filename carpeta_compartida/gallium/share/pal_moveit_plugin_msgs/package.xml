@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pal_moveit_plugin_msgs</name>
+  <version>0.1.0</version>
+  <description>The pal_moveit_plugin_msgs package</description>
+
+  <maintainer email="david.terkuile@pal-robotics.com">David ter Kuile</maintainer>
+
+  <license>Proprietary</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>message_generation</build_depend>
+  
+  <depend>std_msgs</depend>
+
+  <exec_depend>message_runtime</exec_depend>
+
+  <export>
+
+  </export>
+</package>

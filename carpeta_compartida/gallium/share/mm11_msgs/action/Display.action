@@ -1,0 +1,16 @@
+#goal definition
+uint8 PIN_SCREEN=0
+uint8 SCREEN_SAVER=1
+uint8 MENU_SCREEN=2
+uint8 CALIBRATION_SCREEN=3
+uint8 TEST_SCREEN=4
+
+uint8 screen_type
+DisplayEntry[] entries
+---
+
+#result definition
+string result
+---
+
+#feedback

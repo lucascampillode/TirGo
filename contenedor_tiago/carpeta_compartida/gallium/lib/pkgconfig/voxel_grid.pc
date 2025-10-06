@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: voxel_grid
+Description: Description of voxel_grid
+Version: 2.0.7
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib -lvoxel_grid
+Requires: roscpp

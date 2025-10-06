@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: direct_laser_odometry
+Description: Description of direct_laser_odometry
+Version: 1.0.2
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib -ldirect_laser_odometry
+Requires: dll2d geometry_msgs message_filters nav_msgs navigation_core_library roscpp scan_quality_estimator sensor_msgs tf2_ros

@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pal_optimization_nl_core</name>
+  <version>0.2.1</version>
+  <description>The pal_optimization_nl_core package</description>
+
+  <maintainer email="hilario.tome@pal-robotics.com">Hilario Tome</maintainer>
+
+  <license>Proprietary</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>cppad</depend>
+  <depend>roscpp</depend>
+  <depend>pal_utils</depend>
+  <depend>roslib</depend>
+  <depend>pluginlib</depend>
+  <depend>cmake_modules</depend>
+  <depend>uquadprog</depend>
+  <depend>property_bag</depend>
+  <depend>libceres-dev</depend>
+  <depend>libgoogle-glog-dev</depend>
+  <depend>libatlas-base-dev</depend>
+  <depend>suitesparse</depend>
+  <depend>tbb</depend>
+  <depend>backward_ros</depend>
+  <depend>doxygen_catkin</depend>
+  <depend>math_utils</depend>
+  <depend>pal_ros_utils</depend>
+
+  <test_depend>rostest</test_depend>
+  <test_depend>pal_test_utils</test_depend>
+  <test_depend>eigen_checks</test_depend>
+
+
+  <export>
+    <pal_optimization_nl_core plugin="${prefix}/trajectory_optimization_plugins.xml" />
+  </export>
+
+</package>

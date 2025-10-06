@@ -1,0 +1,14 @@
+# Flashing for a whole strip
+
+uint8 port
+
+uint16 time
+uint16 period
+
+uint8 r_1
+uint8 g_1
+uint8 b_1
+
+uint8 r_2
+uint8 g_2
+uint8 b_2

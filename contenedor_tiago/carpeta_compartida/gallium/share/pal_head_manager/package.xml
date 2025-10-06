@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pal_head_manager</name>
+  <version>1.0.18</version>
+  <description>This package provides a node that subscribes to several detectors and
+               and controls the head of the robot to look at a given direction. The decision
+               is taken upon all the detections and the respective priorities</description>
+
+  <author email="jordi.adell@pal-robotics.com">Jordi Adell</author>
+  <maintainer email="victor.lopez@pal-robotics.com">Victor Lopez</maintainer>
+  <maintainer email="jordi.pages@pal-robotics.com">Jordi Pages</maintainer>
+  <maintainer email="sam.pfeiffer@pal-robotics.com">Sam Pfeiffer</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>actionlib</depend>
+  <depend>pal_detection_msgs</depend>
+  <depend>pal_interaction_msgs</depend>
+  <depend>pal_common_msgs</depend>
+  <depend>control_msgs</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>roscpp</depend>
+  <depend>tf_lookup</depend>
+  <depend>pal_rosparam_utils</depend>
+  <depend>diagnostic_updater</depend>
+
+</package>

@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>pal_metapkg_development</name>
+  <version>1.0.4</version>
+  <description>The pal_metapkg_development package</description>
+
+  <maintainer email="jordan.palacios@pal-robotics.com">Jordan Palacios</maintainer>
+
+  <license>Proprietary</license>
+
+  <author email="jordan.palacios@pal-robotics.com">Jordan Palacios</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>pal_metapkg_core</exec_depend>
+
+  <exec_depend>git</exec_depend>
+
+  <exec_depend>mesa-utils</exec_depend>
+  <exec_depend>terminator</exec_depend>
+
+  <exec_depend>desktop_full</exec_depend>
+  <!-- Installs C++ Compiler g++-->
+  <exec_depend>g++-static</exec_depend>
+
+  <exec_depend>repositories_core</exec_depend>
+
+  <exec_depend>pal_deploy</exec_depend>
+  <!-- an utility to create skeletons of application controllers for our robots -->
+  <exec_depend condition="$ROS_DISTRO == noetic">pal_app</exec_depend>
+
+  <exec_depend>plotjuggler</exec_depend>
+
+  <exec_depend>rqt_reconfigure</exec_depend>
+
+  <exec_depend condition="$ROS_DISTRO == noetic">actionlib_tools</exec_depend>
+
+  <!-- For having headers -->
+  <build_export_depend>pal_metapkg_core</build_export_depend>
+
+  <build_export_depend>controller_manager_msgs</build_export_depend>
+  <build_export_depend>corridor_exploration_msgs</build_export_depend>
+  <build_export_depend>gazebo_msgs</build_export_depend>
+  <build_export_depend>move_base_msgs</build_export_depend>
+  <build_export_depend>pal_common_msgs</build_export_depend>
+  <build_export_depend>pal_composite_navigation_msgs</build_export_depend>
+  <build_export_depend>pal_msgs</build_export_depend>
+  <build_export_depend>pal_ros_controllers</build_export_depend>
+  <build_export_depend>pal_startup_msgs</build_export_depend>
+  <build_export_depend>pal_statistics_msgs</build_export_depend>
+  <build_export_depend>pal_supervisor_msgs</build_export_depend>
+  <build_export_depend>pal_visual_localization_msgs</build_export_depend>
+  <build_export_depend>pal_waypoint_msgs</build_export_depend>
+  <build_export_depend>play_motion_msgs</build_export_depend>
+  <build_export_depend>rtt_std_msgs</build_export_depend>
+
+  <export>
+    <metapackage/>
+  </export>
+
+</package>

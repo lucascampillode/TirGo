@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: rtt_rospack
+Description: Description of rtt_rospack
+Version: 2.10.8
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_base_ros_controller
+Description: Description of pal_base_ros_controller
+Version: 0.10.0
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib -lpal_base_ros_controller
+Requires: pal_local_joint_control controller_interface backward_ros legged_state_estimator pluginlib pal_physics_utils property_bag pal_controller_interface pal_ros_utils pal_utils contact_estimator

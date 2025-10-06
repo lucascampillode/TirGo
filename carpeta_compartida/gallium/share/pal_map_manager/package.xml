@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="2">
+    <name>pal_map_manager</name>
+    <version>1.1.6</version>
+    <description>
+
+        Map Manager
+
+    </description>
+    <maintainer email="antonio.brandi@pal-robotics.com">Antonio Brandi</maintainer>
+    <license>Proprietary</license>
+    <author email="antonio.brandi@pal-robotics.com">Antonio Brandi</author>
+    
+    <buildtool_depend>catkin</buildtool_depend>
+    <build_depend>roscpp</build_depend>
+    <build_depend>pal_map_server</build_depend>
+    <build_depend>std_msgs</build_depend>
+    <build_depend>nav_msgs</build_depend>
+    <build_depend>pal_map_utils</build_depend>
+    <build_depend>pal_navigation_msgs</build_depend>
+    <build_depend>pal_common_msgs</build_depend>
+    <build_depend>geometry_msgs</build_depend>
+    <build_depend>std_srvs</build_depend>
+    <build_depend>tf2</build_depend>
+
+    <build_export_depend>roscpp</build_export_depend>
+    <build_export_depend>pal_map_server</build_export_depend>
+    <build_export_depend>pal_navigation_msgs</build_export_depend>
+    <build_export_depend>std_srvs</build_export_depend>
+    <build_export_depend>pal_common_msgs</build_export_depend>
+    <build_export_depend>nav_msgs</build_export_depend>
+    <build_export_depend>geometry_msgs</build_export_depend>
+
+    <exec_depend>roscpp</exec_depend>
+    <exec_depend>pal_map_server</exec_depend>
+    <exec_depend>std_msgs</exec_depend>
+    <exec_depend>pal_map_utils</exec_depend>
+    <exec_depend>pal_navigation_msgs</exec_depend>
+    <exec_depend>pal_common_msgs</exec_depend>
+    <exec_depend>geometry_msgs</exec_depend>
+    <exec_depend>std_srvs</exec_depend>
+    <exec_depend>nav_msgs</exec_depend>
+    <exec_depend>tf2</exec_depend>
+    <exec_depend>pal_navigation_sm</exec_depend>
+
+    <test_depend>pal_map_utils</test_depend>
+    <test_depend>pal_test_utils</test_depend>
+
+</package>

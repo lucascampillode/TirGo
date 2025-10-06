@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: rtt_rosnode
+Description: Description of rtt_rosnode
+Version: 2.10.8
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
