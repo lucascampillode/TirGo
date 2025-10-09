@@ -1,22 +1,23 @@
-# === ROS / catkin (artefactos) ===
+# ROS / catkin (artefactos y ws antiguo)
 carpeta_compartida/ros_ws/build/
 carpeta_compartida/ros_ws/devel/
 carpeta_compartida/ros_ws/logs/
+carpeta_compartida/catkin_ws/            # ignora workspace viejo completo
 **/.ros/
 
-# === Vendor/SDK externos (no versionar) ===
+# Vendor / backups
 carpeta_compartida/gallium/
 carpeta_compartida/catkin_ws_src_backup_*/
 
-# === Python ===
+# Python
 __pycache__/
 *.pyc
 
-# === Varios ===
+# Varios
 *.log
 *.bag
 *.swp
 *~
 
-# === VS Code (opcional) ===
+# VS Code
 .vscode/
