@@ -1,0 +1,5 @@
+- sudo apt update
+- rosdep update
+- rosdep install --from-paths src --ignore-src -r -y
+- catkin build
+- Instalar extension de Python en vscode dentro del contenedor
