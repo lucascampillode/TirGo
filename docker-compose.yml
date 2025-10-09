@@ -6,11 +6,11 @@ services:
     privileged: true
     ipc: host
     network_mode: host
-    # environment:
-    #   - DISPLAY=$DISPLAY
+    environment:
+      - DISPLAY=$DISPLAY
     volumes:
-      # - ${XAUTHORITY:-0}:/root/.Xauthority
-      # - /tmp/.X11-unix:/tmp/.X11-unix
+      - ${XAUTHORITY:-0}:/root/.Xauthority
+      - /tmp/.X11-unix:/tmp/.X11-unix
       - ./carpeta_compartida:/home/TirGo/carpeta_compartida
       - /dev:/dev
     devices:
