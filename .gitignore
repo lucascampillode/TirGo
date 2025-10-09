@@ -4,8 +4,10 @@ carpeta_compartida/ros_ws/devel/
 carpeta_compartida/ros_ws/logs/
 **/.ros/
 
-# === Vendor externo (no versionar) ===
+# === Vendor/SDK externos (no versionar) ===
 carpeta_compartida/gallium/
+carpeta_compartida/catkin_ws_src_backup_*/
+
 # === Python ===
 __pycache__/
 *.pyc
