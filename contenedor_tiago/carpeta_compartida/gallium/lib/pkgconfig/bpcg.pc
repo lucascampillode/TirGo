@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: bpcg
-Description: Description of bpcg
-Version: 0.2.1
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -lbpcg
-Requires: 

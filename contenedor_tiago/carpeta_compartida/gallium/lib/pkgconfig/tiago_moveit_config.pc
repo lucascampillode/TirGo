@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: tiago_moveit_config
-Description: Description of tiago_moveit_config
-Version: 1.2.12
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

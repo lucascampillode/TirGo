@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: speed_limit_plugins
-Description: Description of speed_limit_plugins
-Version: 2.0.5
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -lspeed_limit_plugins
-Requires: geometry_msgs sensor_msgs speed_limit_core tf2_sensor_msgs

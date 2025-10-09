@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: dynamic_reconfigure
-Description: Description of dynamic_reconfigure
-Version: 1001.7.4
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -ldynamic_reconfigure_config_init_mutex
-Requires: message_runtime std_msgs

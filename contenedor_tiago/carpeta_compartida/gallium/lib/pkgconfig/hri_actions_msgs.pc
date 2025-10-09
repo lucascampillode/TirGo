@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: hri_actions_msgs
-Description: Description of hri_actions_msgs
-Version: 0.4.3
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: geometry_msgs actionlib_msgs

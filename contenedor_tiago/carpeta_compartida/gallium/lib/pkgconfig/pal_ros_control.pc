@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_ros_control
-Description: Description of pal_ros_control
-Version: 2.4.3
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -lpal_ros_control
-Requires: controller_manager hardware_interface joint_limits_interface pal_hardware_interfaces realtime_tools sensor_msgs std_srvs transmission_interface urdf pal_utils math_utils pal_controller_interface

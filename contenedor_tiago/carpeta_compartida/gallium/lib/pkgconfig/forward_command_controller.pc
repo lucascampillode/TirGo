@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: forward_command_controller
-Description: Description of forward_command_controller
-Version: 0.4.9
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: controller_interface hardware_interface std_msgs realtime_tools

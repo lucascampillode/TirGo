@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: tiago_222_gazebo
-Description: Description of tiago_222_gazebo
-Version: 1.0.2
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

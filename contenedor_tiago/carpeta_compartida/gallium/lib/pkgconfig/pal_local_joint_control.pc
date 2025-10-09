@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_local_joint_control
-Description: Description of pal_local_joint_control
-Version: 0.3.0
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -lpal_local_joint_control
-Requires: math_utils pal_ros_utils ddynamic_reconfigure dynamic_introspection hardware_interface pluginlib backward_ros control_toolbox pal_state_estimation_core controller_manager transmission_interface pal_hardware_interfaces

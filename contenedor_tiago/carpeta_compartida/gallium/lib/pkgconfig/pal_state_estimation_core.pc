@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_state_estimation_core
-Description: Description of pal_state_estimation_core
-Version: 0.4.0
-Cflags: -I${prefix}/include -I/opt/pal/gallium/lib/cmake/Sophus/../../../include -I/usr/include -I/usr/include/eigen3
-Libs: -L${prefix}/lib -lpal_state_estimation_core /usr/lib/libceres.so.1.14.0 /usr/lib/x86_64-linux-gnu/libglog.so
-Requires: roscpp pal_ros_utils rbdl dynamic_introspection ddynamic_reconfigure rbdl pluginlib nav_msgs pal_optimization_nl_core backward_ros pal_physics_utils
