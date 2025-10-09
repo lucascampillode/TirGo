@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_core
-Description: Description of pal_core
-Version: 2.0.18
-Cflags: -I${prefix}/include -I/usr/include
-Libs: -L${prefix}/lib -lpal_core /usr/lib/libACE.so -lpthread /usr/lib/x86_64-linux-gnu/libboost_filesystem.so.1.71.0 /usr/lib/x86_64-linux-gnu/libboost_system.so.1.71.0 /usr/lib/x86_64-linux-gnu/libboost_thread.so.1.71.0 /usr/lib/x86_64-linux-gnu/libcppunit.so /usr/lib/x86_64-linux-gnu/liblog4cxx.so /usr/lib/x86_64-linux-gnu/libxerces-c.so
-Requires: roscpp std_msgs std_srvs diagnostic_msgs diagnostic_updater

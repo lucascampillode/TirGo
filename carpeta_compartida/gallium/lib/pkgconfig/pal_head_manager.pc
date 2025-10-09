@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_head_manager
-Description: Description of pal_head_manager
-Version: 1.0.18
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

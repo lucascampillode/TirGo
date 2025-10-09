@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: tiago_maps
-Description: Description of tiago_maps
-Version: 2.2.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

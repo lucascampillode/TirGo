@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: tiago_2dnav_gazebo
-Description: Description of tiago_2dnav_gazebo
-Version: 2.3.14
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

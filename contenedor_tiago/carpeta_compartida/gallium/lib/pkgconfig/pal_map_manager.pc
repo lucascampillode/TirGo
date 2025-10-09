@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_map_manager
-Description: Description of pal_map_manager
-Version: 1.1.6
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -lpal_map_manager -lpal_map_server -lstd_msgs -lnav_msgs -lpal_map_utils -lpal_common_msgs -lpal_navigation_msgs -lgeometry_msgs -lstd_srvs
-Requires: 

@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_app
-Description: Description of pal_app
-Version: 0.3.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

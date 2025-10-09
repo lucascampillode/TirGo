@@ -1,9 +1,0 @@
-<launch>
-  <rosparam file="$(find pal_map_utils)/config/mmap/mmap.yaml" command="load" ns="mmap" />
-  <rosparam file="$(find pal_map_utils)/config/mmap/maps.yaml" command="load" ns="mmap" />
-  <rosparam file="$(find pal_map_utils)/config/mmap/tfSubMap.yaml" command="load" ns="tfSubMap" />
-
-  <include file="$(find pal_map_utils)/launch/maps2.launch">
-    <arg name="path" value="$(find pal_map_utils)/config/mmap/subMaps"/>
-  </include>
-</launch>

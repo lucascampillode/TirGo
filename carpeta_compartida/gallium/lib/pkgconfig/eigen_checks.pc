@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: eigen_checks
-Description: Description of eigen_checks
-Version: 0.0.9
-Cflags: -I${prefix}/include -I/usr/include/eigen3
-Libs: -L${prefix}/lib 
-Requires: 

@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_walking_msgs
-Description: Description of pal_walking_msgs
-Version: 0.15.0
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: geometry_msgs humanoid_nav_msgs message_runtime

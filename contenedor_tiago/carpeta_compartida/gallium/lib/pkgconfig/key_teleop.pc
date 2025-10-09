@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: key_teleop
-Description: Description of key_teleop
-Version: 1000.4.2
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

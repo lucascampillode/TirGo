@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_hardware_interfaces
-Description: Description of pal_hardware_interfaces
-Version: 0.0.4
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: hardware_interface

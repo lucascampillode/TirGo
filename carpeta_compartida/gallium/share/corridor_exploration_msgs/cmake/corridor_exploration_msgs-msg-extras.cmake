@@ -1,2 +1,0 @@
-set(corridor_exploration_msgs_MESSAGE_FILES "msg/CorridorExplorationAction.msg;msg/CorridorExplorationActionGoal.msg;msg/CorridorExplorationActionResult.msg;msg/CorridorExplorationActionFeedback.msg;msg/CorridorExplorationGoal.msg;msg/CorridorExplorationResult.msg;msg/CorridorExplorationFeedback.msg")
-set(corridor_exploration_msgs_SERVICE_FILES "srv/GetPose.srv")

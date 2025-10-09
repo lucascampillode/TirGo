@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: contact_estimator
-Description: Description of contact_estimator
-Version: 0.0.2
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -lcontact_estimator
-Requires: math_utils

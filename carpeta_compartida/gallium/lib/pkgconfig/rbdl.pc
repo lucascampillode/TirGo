@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: rbdl
-Description: Description of rbdl
-Version: 0.4.0
-Cflags: -I${prefix}/include -I/usr/include/eigen3
-Libs: -L${prefix}/lib -lrbdl -lRBDL_URDFParser
-Requires: urdf

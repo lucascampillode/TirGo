@@ -1,3 +1,0 @@
-#Final status reported by startup launch script. This should be repeated by the supervisor forever
-pal_supervisor_msgs/StartupStatus status
----

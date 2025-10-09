@@ -1,9 +1,0 @@
-<launch>
-  
-  <arg name="path" />
-  <include file="$(find pal_map_utils)/launch/map.launch">
-    <arg name="map_name" value="submap_0" />
-    <arg name="map_path" value="$(arg path)" />
-  </include>
-</launch>
-

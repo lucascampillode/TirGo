@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: current_limit_controller
-Description: Description of current_limit_controller
-Version: 1.0.4
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -lcurrent_limit_controller
-Requires: controller_interface pal_control_msgs pluginlib realtime_tools roscpp pal_hardware_interfaces

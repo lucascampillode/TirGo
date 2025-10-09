@@ -1,2 +1,0 @@
-set(pal_supervisor_msgs_MESSAGE_FILES "msg/DependencyStatus.msg;msg/Parameter.msg;msg/StartupAction.msg;msg/StartupStatus.msg;msg/SupervisorCommand.msg")
-set(pal_supervisor_msgs_SERVICE_FILES "srv/canAppStart.srv;srv/getAppDependencies.srv;srv/lookupTransform.srv;srv/shMemGetUserId.srv;srv/shMemIsClosed.srv;srv/supervisorIsAvailable.srv;srv/finalStartupStatus.srv;srv/isAppRunning.srv;srv/numberOfAnomalies.srv;srv/shMemIsAvailable.srv;srv/shMemIsTimestampValid.srv;srv/tcpIpIsAvailable.srv")

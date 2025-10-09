@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: math_utils
-Description: Description of math_utils
-Version: 0.1.48
-Cflags: -I${prefix}/include -I/opt/pal/gallium/lib/cmake/Sophus/../../../include -I/usr/include/eigen3
-Libs: -L${prefix}/lib -lmath_utils
-Requires: roscpp pal_utils dynamic_introspection pal_geometry_tools sensor_msgs backward_ros ddynamic_reconfigure pal_statistics kindr_ros pal_ariles

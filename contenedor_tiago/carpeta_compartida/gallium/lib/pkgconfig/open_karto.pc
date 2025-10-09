@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: open_karto
-Description: Description of open_karto
-Version: 2.0.4
-Cflags: -I${prefix}/include -I/usr/include
-Libs: -L${prefix}/lib -lOpenKarto /usr/lib/x86_64-linux-gnu/libboost_system.so.1.71.0
-Requires: backward_ros geometry_msgs nav_msgs roscpp sensor_msgs tf

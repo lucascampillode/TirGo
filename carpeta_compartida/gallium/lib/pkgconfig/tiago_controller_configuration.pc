@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: tiago_controller_configuration
-Description: Description of tiago_controller_configuration
-Version: 2.3.18
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

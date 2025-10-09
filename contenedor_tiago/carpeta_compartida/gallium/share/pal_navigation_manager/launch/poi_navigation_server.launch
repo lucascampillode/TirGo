@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<launch>
-  <node pkg="pal_navigation_manager" type="poi_navigation_server_node" name="poi_navigation_server" output="screen">
-    <param name="number_of_retries" value="2"/>
-  </node>
-</launch>

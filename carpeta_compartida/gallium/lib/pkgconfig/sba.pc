@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: sba
-Description: Description of sba
-Version: 1.1.1
-Cflags: -I${prefix}/include -I/usr/include/eigen3
-Libs: -L${prefix}/lib -lsba
-Requires: roscpp bpcg message_runtime std_msgs visualization_msgs geometry_msgs

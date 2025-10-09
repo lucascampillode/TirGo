@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: speed_limit_node
-Description: Description of speed_limit_node
-Version: 2.0.5
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: diagnostic_msgs pluginlib roscpp speed_limit_core std_srvs

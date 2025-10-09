@@ -1,3 +1,0 @@
-#!/bin/bash -e
-abspath=$(dirname "$(cd "${0%/*}" 2>/dev/null; echo "$PWD"/"${0##*/}")")
-. $abspath/orocreate-pkg "$@"

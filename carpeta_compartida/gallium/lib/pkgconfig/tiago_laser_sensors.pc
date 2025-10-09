@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: tiago_laser_sensors
-Description: Description of tiago_laser_sensors
-Version: 2.2.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

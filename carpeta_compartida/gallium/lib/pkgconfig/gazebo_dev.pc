@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: gazebo_dev
-Description: Description of gazebo_dev
-Version: 4.0.1
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

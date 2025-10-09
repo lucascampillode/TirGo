@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: dll2d
-Description: Description of dll2d
-Version: 3.0.1
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -ldll2d
-Requires: 
