@@ -1,4 +1,0 @@
-## pattern to exclude when fetching rosbags to process
-
-#rosbag_to_scans:
-#  exclude_rosbag_pattern: ['battery_charge']

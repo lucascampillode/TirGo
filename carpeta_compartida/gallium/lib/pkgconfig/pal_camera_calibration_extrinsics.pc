@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_camera_calibration_extrinsics
-Description: Description of pal_camera_calibration_extrinsics
-Version: 0.0.3
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

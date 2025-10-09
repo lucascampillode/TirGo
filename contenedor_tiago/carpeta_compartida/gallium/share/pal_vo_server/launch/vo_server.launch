@@ -1,6 +1,0 @@
-<launch>
-  
-  <!-- Run the vo map server -->
-  <node name="pal_vo_server" pkg="pal_vo_server" type="vo_server" output="screen"/>
-
-</launch>

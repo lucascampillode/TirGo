@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: tf_lookup
-Description: Description of tf_lookup
-Version: 0.1.5
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: roscpp message_runtime actionlib actionlib_msgs geometry_msgs tf

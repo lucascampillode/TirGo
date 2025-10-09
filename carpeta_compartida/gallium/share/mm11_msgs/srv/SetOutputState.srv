@@ -1,5 +1,0 @@
-# Set an Output state
-
-uint8 output
-
-uint8 state

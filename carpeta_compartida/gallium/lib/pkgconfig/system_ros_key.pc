@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: system_ros_key
-Description: Description of system_ros_key
-Version: 1.0.2
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

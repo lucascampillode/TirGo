@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_pcl_points_throttle_and_filter
-Description: Description of pal_pcl_points_throttle_and_filter
-Version: 1.1.7
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: roscpp dynamic_reconfigure sensor_msgs

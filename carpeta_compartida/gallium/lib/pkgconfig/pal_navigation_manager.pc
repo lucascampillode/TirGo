@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_navigation_manager
-Description: Description of pal_navigation_manager
-Version: 0.1.13
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

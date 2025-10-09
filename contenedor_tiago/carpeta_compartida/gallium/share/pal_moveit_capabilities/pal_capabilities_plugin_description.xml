@@ -1,9 +1,0 @@
-<library path="libpal_moveit_capabilities">
-
-  <class name="move_group/CapabilityLoader" type="move_group::CapabilityLoader" base_class_type="move_group::MoveGroupCapability">
-    <description>
-      Load move_group capability plugins after launching move_group.launch
-    </description>
-  </class>
-
-</library>

@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: trac_ik_lib
-Description: Description of trac_ik_lib
-Version: 1001.6.6
-Cflags: -I${prefix}/include -I/usr/include
-Libs: -L${prefix}/lib -ltrac_ik /usr/lib/x86_64-linux-gnu/libboost_date_time.so.1.71.0 -lnlopt
-Requires: kdl_parser roscpp urdf

@@ -1,5 +1,0 @@
-string ipAddress #Ip of the TCP Server
-int32 port #Port to use
----
-bool available #True if the TCP Server is available, false if it's not
-uint32 suggestedSleepTime #Ms suggested to the client to sleep before trying again

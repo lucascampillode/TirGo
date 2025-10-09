@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: rqt_current_limit_controller
-Description: Description of rqt_current_limit_controller
-Version: 1.0.4
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

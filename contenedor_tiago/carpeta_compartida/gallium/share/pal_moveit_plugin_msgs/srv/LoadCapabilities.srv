@@ -1,5 +1,0 @@
-# list of capabilities
-string[] capabilities
-----
-bool success
-string error

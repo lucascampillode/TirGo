@@ -1,3 +1,0 @@
-<launch>
-    <node pkg="pal_map_utils" type="compressed_map_publisher" name="compressed_map_publisher"/>
-</launch>

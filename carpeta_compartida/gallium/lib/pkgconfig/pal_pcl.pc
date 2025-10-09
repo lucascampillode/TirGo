@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_pcl
-Description: Description of pal_pcl
-Version: 1.4.3
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -lpal_pcl
-Requires: cv_bridge sensor_msgs message_filters visualization_msgs pcl_ros pcl_conversions message_runtime dynamic_reconfigure

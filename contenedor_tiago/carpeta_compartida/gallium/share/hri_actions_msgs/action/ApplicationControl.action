@@ -1,6 +1,0 @@
-# an (optional) JSON-encoded string passed to the underlying application
-# controller.
-string parameters
----
----
-

@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: behaviortree_cpp_v3
-Description: Description of behaviortree_cpp_v3
-Version: 103.8.3
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -lbehaviortree_cpp_v3
-Requires: roslib

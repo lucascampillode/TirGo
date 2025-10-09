@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: doxygen_catkin
-Description: Description of doxygen_catkin
-Version: 0.0.4
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

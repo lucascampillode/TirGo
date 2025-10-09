@@ -1,8 +1,0 @@
-<library path="libpal_moveit_plugins">
-  <class name="occupancy_map_monitor/PalPointCloudOctomapUpdater" type="occupancy_map_monitor::PalPointCloudOctomapUpdater" base_class_type="occupancy_map_monitor::OccupancyMapUpdater">
-    <description>
-      A extended version of the regular PointCloudOctomapUpdate of moveit_ros_perception that allows for the starting and stopping of the octomap through service calls
-    </description>
-  </class>
-
-</library>

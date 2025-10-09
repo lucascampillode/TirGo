@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_statistics
-Description: Description of pal_statistics
-Version: 1.5.1
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -lpal_statistics -lextract_rosbag_signals
-Requires: pal_statistics_msgs roscpp

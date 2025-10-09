@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: controller_manager_msgs
-Description: Description of controller_manager_msgs
-Version: 0.5.4
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: std_msgs message_runtime
