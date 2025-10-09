@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: pal_deploy
-Description: Description of pal_deploy
-Version: 2.0.2
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

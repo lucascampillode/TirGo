@@ -1,8 +1,0 @@
-prefix=/opt/pal/gallium
-
-Name: ddynamic_reconfigure_python
-Description: Description of ddynamic_reconfigure_python
-Version: 0.0.2
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

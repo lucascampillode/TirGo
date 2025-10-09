@@ -1,5 +1,0 @@
-<library path="lib/libpolycost_layer">
-  <class type="polycost::PolyCostLayer" base_class_type="costmap_2d::Layer">
-    <description>Costmap layer that allows special cost manipulation inside polygons.</description>
-  </class>
-</library>

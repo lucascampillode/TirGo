@@ -1,0 +1,21 @@
+# === ROS / catkin (artefactos) ===
+carpeta_compartida/ros_ws/build/
+carpeta_compartida/ros_ws/devel/
+carpeta_compartida/ros_ws/logs/
+**/.ros/
+
+# === Vendor externo (no versionar) ===
+carpeta_compartida/vendor/gallium/
+
+# === Python ===
+__pycache__/
+*.pyc
+
+# === Varios ===
+*.log
+*.bag
+*.swp
+*~
+
+# === VS Code (opcional) ===
+.vscode/
