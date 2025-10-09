@@ -5,8 +5,7 @@ carpeta_compartida/ros_ws/logs/
 **/.ros/
 
 # === Vendor externo (no versionar) ===
-carpeta_compartida/vendor/gallium/
-
+carpeta_compartida/gallium/
 # === Python ===
 __pycache__/
 *.pyc
