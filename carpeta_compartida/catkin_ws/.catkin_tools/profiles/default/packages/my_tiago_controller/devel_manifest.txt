@@ -1,5 +1,0 @@
-my_tiago_controller
-/home/ud/carpeta_compartida/catkin_ws/devel/.private/my_tiago_controller/cmake.lock /home/ud/carpeta_compartida/catkin_ws/devel/./cmake.lock
-/home/ud/carpeta_compartida/catkin_ws/devel/.private/my_tiago_controller/lib/pkgconfig/my_tiago_controller.pc /home/ud/carpeta_compartida/catkin_ws/devel/lib/pkgconfig/my_tiago_controller.pc
-/home/ud/carpeta_compartida/catkin_ws/devel/.private/my_tiago_controller/share/my_tiago_controller/cmake/my_tiago_controllerConfig-version.cmake /home/ud/carpeta_compartida/catkin_ws/devel/share/my_tiago_controller/cmake/my_tiago_controllerConfig-version.cmake
-/home/ud/carpeta_compartida/catkin_ws/devel/.private/my_tiago_controller/share/my_tiago_controller/cmake/my_tiago_controllerConfig.cmake /home/ud/carpeta_compartida/catkin_ws/devel/share/my_tiago_controller/cmake/my_tiago_controllerConfig.cmake

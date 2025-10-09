@@ -1,8 +1,0 @@
-prefix=/home/ud/carpeta_compartida/catkin_ws/install
-
-Name: biomedical_instrumentation_an_robotics
-Description: Description of biomedical_instrumentation_an_robotics
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 
