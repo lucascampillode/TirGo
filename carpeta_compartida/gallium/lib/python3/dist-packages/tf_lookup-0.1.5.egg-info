@@ -1,0 +1,12 @@
+Metadata-Version: 1.1
+Name: tf_lookup
+Version: 0.1.5
+Summary: Centralizes tf lookups for nodes that don't rely heavily on tf and thus don't need a dedicated tfListener
+Home-page: UNKNOWN
+Author: Paul Mathieu
+Author-email: paul.mathieu@pal-robotics.com
+License: BSD
+Description: UNKNOWN
+Platform: UNKNOWN
+Requires: actionlib
+Requires: tf

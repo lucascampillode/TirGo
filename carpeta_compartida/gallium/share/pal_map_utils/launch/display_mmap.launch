@@ -1,0 +1,16 @@
+<launch>
+    <arg name="map" />
+    <param name="mmap" type="yaml" command="bash -c 'cat &quot;$(arg map)/mmap.yaml&quot; 2> /dev/null || echo &quot;{}&quot;'" />
+    <node name="map_server" pkg="map_server" type="map_server" args="$(arg map)/map.yaml"/>
+
+    <node pkg="pal_waypoint" type="poi_marker_server_node" name="poi_marker_server_node" />
+
+    <!-- VO map server -->
+    <include file="$(find pal_vo_server)/launch/vo_server.launch">
+    </include>
+
+    <!-- Highways -->
+    <include file="$(find highways_server)/launch/highways_server.launch"/>
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find pal_map_utils)/config/mmap.rviz" required="true"/>
+</launch>

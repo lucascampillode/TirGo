@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: plotjuggler
+Description: Description of plotjuggler
+Version: 102.8.6
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: rosbag_storage roscpp roscpp_serialization tf tf2_ros diagnostic_msgs nav_msgs sensor_msgs plotjuggler_msgs

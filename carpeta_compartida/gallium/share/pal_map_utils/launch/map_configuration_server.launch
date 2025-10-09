@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="pal_map_utils" type="map_configuration_server" name="map_configuration_server"/>
+</launch>

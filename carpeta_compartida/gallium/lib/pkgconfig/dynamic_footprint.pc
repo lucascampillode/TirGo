@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: dynamic_footprint
+Description: Description of dynamic_footprint
+Version: 0.0.14
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib 
+Requires: message_runtime rospy std_msgs geometry_msgs tf

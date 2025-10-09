@@ -1,0 +1,28 @@
+#filtered cloud reference frame
+base_frame_id: "base_footprint"
+#input point cloud downsampling
+downsampling_leaf_size: 0.02         #leaft size of the downsampling filter
+#filtering points belonging to floor
+max_x_wrt_base_footprint:  3.0             #points expressed in base_frame_id with x greater than this will not be considered
+number_of_divisions: 3                     #the range in base_frame_id along x starting at 0 and ending at max_x_wrt_base_footprint
+                                           #will be divided in number_of_divisions segments and each one will have
+                                           #its own threshold min_obstacle_height based on linear interpolation
+                                           #from min_obstacle_height_starting_value to min_obstacle_height_ending_value
+min_obstacle_height_starting_value: 0.03   #points below this height and above -mind_distance_below_floor will be filtered out
+min_obstacle_height_ending_value: 0.07     #points below this height and above -mind_distance_below_floor will be filtered out
+max_obstacle_height: 0.95                  #points above this height will be filtered out
+##########################################################################################################################################
+# Projection of points below floor level to a given plane above the floor (useful to detect downstairs)
+##########################################################################################################################################
+min_y_wrt_base_footprint: -0.7       #points expressed in base_frame_id with y lower than this will not be considered
+max_y_wrt_base_footprint:  0.7       #points expressed in base_frame_id with y greater than this will not be considered
+min_distance_below_floor:  0.06      #points expressed in base_frame_id with z > than -min_distance_below_floor will not be considered
+projection_height: 0.4               #plane Z = projection_height (expressed wrt base_frame_id) is the plane where the points will be projected on
+##########################################################################################################################################
+#radius filter removal (for noise):
+enable_radius_filter: True
+radius: 0.05
+min_neighbors: 12
+##########################################################################################################################################
+#flip PCL bellow ground (true for ramp detection)
+flip_verticaly: true

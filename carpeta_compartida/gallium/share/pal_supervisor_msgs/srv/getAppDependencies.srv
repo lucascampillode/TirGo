@@ -1,0 +1,3 @@
+string appName #Name of the application 
+---
+pal_supervisor_msgs/DependencyStatus[] dependencies #Array of dependencies

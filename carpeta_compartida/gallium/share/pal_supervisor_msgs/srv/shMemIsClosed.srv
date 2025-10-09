@@ -1,0 +1,4 @@
+string appName #Name of the application sending the command
+int32 key #Shared memory Key
+---
+bool isClosed #True if the sharedMemory with the given key has been closed

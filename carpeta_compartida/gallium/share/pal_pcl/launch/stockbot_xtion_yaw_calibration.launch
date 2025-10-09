@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="camera" default="base"    /> <!-- "base" for camera pointing downwards or "roof" for camera pointing upwards -->
+  <node name="xtion_yaw_calibration" pkg="pal_pcl" type="pal_stockbot_cam_yaw_calibration_node" output="screen">
+    <remap from="cloud" to="/$(arg camera)_rgbd_camera/depth/points"/>
+    <remap from="laser_scan" to="/scan" />
+    <param name="camera" type="string" value="$(arg camera)"  />
+  </node>
+
+</launch>

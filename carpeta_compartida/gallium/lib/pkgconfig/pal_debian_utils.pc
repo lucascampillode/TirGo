@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_debian_utils
+Description: Description of pal_debian_utils
+Version: 1.1.4
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

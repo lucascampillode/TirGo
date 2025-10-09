@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="rate"                      default="1"                    />
+  <arg name="cloud"                     default="/remove_main_plane_xtion/nonplane"  />
+
+  <node name="cylinder_detector" pkg="pal_pcl" type="cylinder_detector" output="screen">
+    <remap from="cloud"                     to="$(arg cloud)"     />
+    <param name="rate"                      type="double" value="$(arg rate)"  />
+  </node>
+
+</launch>

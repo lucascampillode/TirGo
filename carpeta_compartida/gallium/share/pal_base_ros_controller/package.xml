@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pal_base_ros_controller</name>
+  <version>0.10.0</version>
+  <description>The pal_base_ros_controller package</description>
+
+  <maintainer email="hilario@todo.todo">hilario</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>cmake_modules</build_depend>
+  <build_depend>pal_controller_interface</build_depend>
+
+  <build_export_depend>pal_controller_interface</build_export_depend>
+
+  <depend>pal_local_joint_control</depend>
+  <depend>backward_ros</depend>
+  <depend>pluginlib</depend>
+  <depend>controller_interface</depend>
+  <depend>pal_ariles</depend>
+  <depend>property_bag</depend>
+  <depend>pal_utils</depend>
+
+  <build_depend>pal_ros_utils</build_depend>
+  <exec_depend>pal_ros_utils</exec_depend>
+  <build_depend>pal_physics_utils</build_depend>
+  <exec_depend>pal_physics_utils</exec_depend>
+  <build_depend>legged_state_estimator</build_depend>
+  <exec_depend>legged_state_estimator</exec_depend>
+  <build_depend>contact_estimator</build_depend>
+  <exec_depend>contact_estimator</exec_depend>
+
+  <export>
+    <controller_interface plugin="${prefix}/controller_plugins.xml" />
+  </export>
+
+</package>

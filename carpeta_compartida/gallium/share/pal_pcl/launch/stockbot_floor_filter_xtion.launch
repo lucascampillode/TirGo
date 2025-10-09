@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+<node name="floor_filter_xtion" pkg="pal_pcl" type="pal_stockbot_floor_filter_node" output="screen">
+  <remap from="cloud1" to="/base_rgbd_camera/depth/points"/>
+  <remap from="cloud2" to="/roof_rgbd_camera/depth/points"/>
+  <rosparam command="load" file="$(find pal_pcl)/config/stockbot_floor_filter_xtion.yaml" />
+</node>
+</launch>

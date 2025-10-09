@@ -1,0 +1,9 @@
+<library path="lib/libcartesian_impedance_controller">
+
+  <class name="impedance_control/CartesianImpedance" type="impedance_control::CartesianImpedance" base_class_type="controller_interface::ControllerBase">
+    <description>
+      Cartesian impedance controller.
+    </description>
+  </class>
+
+</library>

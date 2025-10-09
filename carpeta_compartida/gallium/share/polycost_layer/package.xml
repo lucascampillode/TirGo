@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>polycost_layer</name>
+  <version>1.0.1</version>
+  <description>Costmap layer that allows special cost manipulation inside polygons.</description>
+
+  <maintainer email="stephan.kurzawe@tu-dortmund.de">Stephan Kurzawe</maintainer>
+  <maintainer email="procopio.stein@pal-robotics.com">Procopio Stein</maintainer>
+
+  <license>BSD</license>
+
+  <author email="stephan.kurzawe@tu-dortmund.de">Stephan Kurzawe</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>costmap_2d</build_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>pal_map_utils</build_depend>
+  <build_depend>pal_zoi_detector</build_depend>
+  <build_depend>tf2_ros</build_depend>
+
+  <exec_depend>costmap_2d</exec_depend>
+  <exec_depend>dynamic_reconfigure</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>pal_map_utils</exec_depend>
+  <exec_depend>pal_zoi_detector</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+
+  <build_export_depend>costmap_2d</build_export_depend>
+  <build_export_depend>dynamic_reconfigure</build_export_depend>
+  <build_export_depend>pal_zoi_detector</build_export_depend>
+  <build_export_depend>pal_map_utils</build_export_depend>
+  <build_export_depend>tf2_ros</build_export_depend>
+
+  <test_depend>map_server</test_depend>
+  <test_depend>rostest</test_depend>
+
+  <export>
+    <costmap_2d plugin="${prefix}/costmap_plugins.xml" />
+  </export>
+
+</package>

@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_rosparam_utils
+Description: Description of pal_rosparam_utils
+Version: 0.1.2
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib 
+Requires: roscpp pal_ros_utils

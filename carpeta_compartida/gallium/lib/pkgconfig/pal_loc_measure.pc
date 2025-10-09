@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_loc_measure
+Description: Description of pal_loc_measure
+Version: 1.0.3
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

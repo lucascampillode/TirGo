@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_physics_utils
+Description: Description of pal_physics_utils
+Version: 0.4.1
+Cflags: -I${prefix}/include -I/usr/include
+Libs: -L${prefix}/lib -lpal_physics_utils /usr/lib/x86_64-linux-gnu/libboost_system.so.1.71.0
+Requires: pal_utils rbdl math_utils roscpp joint_trajectory_controller pal_ariles sensor_msgs tf2_ros tf2_geometry_msgs geometry_msgs trac_ik_lib kdl_parser

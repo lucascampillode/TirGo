@@ -1,0 +1,5 @@
+# Returns nlines last lines of app's log
+string app
+int32 nlines
+---
+string log

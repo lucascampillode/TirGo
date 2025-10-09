@@ -1,0 +1,18 @@
+<package format="2">
+  <name>pal_moveit_capabilities</name>
+  <version>0.1.0</version>
+  <description>Moveit capabilities for the move_group </description>
+  <maintainer email="david.terkuile@pal-robotics.com">David ter Kuile</maintainer>
+
+  <license>Proprietary</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>moveit_ros_move_group</depend>
+  <depend>pal_moveit_plugin_msgs</depend>
+
+  <export>
+    <moveit_ros_move_group plugin="${prefix}/pal_capabilities_plugin_description.xml"/>
+  </export>
+
+</package>

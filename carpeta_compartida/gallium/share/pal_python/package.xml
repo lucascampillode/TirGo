@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>pal_python</name>
+  <version>1.0.0</version>
+  <description>PAL python utils.</description>
+
+  <maintainer email="victor.lopez@pal-robotics.com">Victor Lopez Boya</maintainer>
+  <author email="siegfried.gevatter@pal-robotics.com">Siegfried-A. Gevatter Pujals</author>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-future</exec_depend>
+  <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-future</exec_depend>
+
+  <exec_depend>actionlib</exec_depend>
+  <exec_depend>actionlib_msgs</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>diagnostic_msgs</exec_depend>
+  <exec_depend>pal_device_msgs</exec_depend>
+  <exec_depend>pal_interaction_msgs</exec_depend>
+  <exec_depend>rosgraph</exec_depend>
+  <exec_depend>roslib</exec_depend>
+  <exec_depend>rospy</exec_depend>
+
+</package>

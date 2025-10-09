@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_ros_utils
+Description: Description of pal_ros_utils
+Version: 0.3.3
+Cflags: -I${prefix}/include -I/usr/include/eigen3
+Libs: -L${prefix}/lib -lpal_ros_utils
+Requires: roscpp rospy geometry_msgs tf math_utils pal_geometry_tools pal_utils geometric_shapes property_bag ddynamic_reconfigure dynamic_introspection interactive_markers urdf pluginlib pal_joint_trajectory_controller pal_statistics pal_control_msgs sensor_msgs mm11_msgs

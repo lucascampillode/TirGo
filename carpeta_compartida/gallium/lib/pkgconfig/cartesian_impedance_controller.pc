@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: cartesian_impedance_controller
+Description: Description of cartesian_impedance_controller
+Version: 0.0.2
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: control_toolbox controller_interface ddynamic_reconfigure hardware_interface rbdl roscpp pal_ros_utils std_msgs cmake_modules eigen_checks pal_base_ros_controller pal_physics_utils pluginlib

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>dll2d</name>
+  <version>3.0.1</version>
+  <description>The dll2d package</description>
+
+  <author email="jose.garcia@pal-robotics.com">JoseCarlos</author>
+  <maintainer email="jose.garcia@pal-robotics.com">JoseCarlos</maintainer>
+
+  <license>Propietary</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>libceres-dev</depend>
+  
+</package>

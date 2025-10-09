@@ -1,0 +1,6 @@
+(cl:in-package mm11_msgs-msg)
+(cl:export '(TYPE-VAL
+          TYPE
+          TEXT-VAL
+          TEXT
+))

@@ -1,0 +1,70 @@
+
+
+# URL of the picture/animation to overlay on the face; currently only supports
+# absolute local path
+string media_url
+
+# duration, in seconds, of the overlay visibility
+# - if the duration is larger than the duration of the animation, the animation
+# will loop.
+# - a duration of 0 means 'forever'. In this case, the action *will never
+# complete* on its own. Cancelling the action will remove the overlay from the
+# face.
+float32 duration
+
+
+###############################################
+## LAYER
+
+# display the image in the background (the eye's iris/pupil will be drawn on
+# top of the overlay
+uint8 BACKGROUND=0
+# display the image on top of the eye (the eye's iris/pupil will be occluded by
+# the image, except where transparent)
+uint8 FOREGROUND=1
+
+# one of BACKGROUND or FOREGROUND
+uint8 layer
+
+###############################################
+## LAYOUT
+
+# extend the provided image to cover both eyes.
+# Note: this typically is the only sensible option for robot with a single face panel
+uint8 EXTEND=0
+# on robots with 2 panels (one per eye), copy the provided image onto each eye
+uint8 COPY=1
+#  on robots with 2 panels (one per eye), mirror the provided image onto each eyes (symmetry over the vertical axis)
+uint8 MIRROR=2
+# on robots with 2 panels (one per eye), only display the image on the left eye
+uint8 LEFT_EYE_ONLY=3
+# on robots with 2 panels (one per eye), only display the image on the right eye
+uint8 RIGHT_EYE_ONLY=4
+
+# one of the layout constant defined above
+uint8 layout
+
+
+# scale of the image: 1.0 (default) means full width of the face/eye (depending
+# on the chosen layout); 0.1 means 10% of the width.
+# Note that any value <= 0.0 is ignored (replaced by 1.0)
+float32 scale
+
+# position offset, expressed as a proportion of the face or eye's width/height. Values
+# in [-1.0, 1.0] range.
+#
+# (0.0, 0.0) means that the image is centered with the face/eye
+# (-1.0, 1.0) means that the image's center would be located in the top left
+# corner of the face/eye panel.
+float32 offset_x
+float32 offset_y
+
+###############################################
+## EFFECTS
+
+# if true, the overlay will fade in/fade out
+bool fade
+
+---
+---
+

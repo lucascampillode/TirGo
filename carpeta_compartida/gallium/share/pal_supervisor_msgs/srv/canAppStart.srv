@@ -1,0 +1,4 @@
+string appName #Name of the application 
+---
+bool canStart #True if the application can start
+string description  #Reason why an application can't start. empty if can start

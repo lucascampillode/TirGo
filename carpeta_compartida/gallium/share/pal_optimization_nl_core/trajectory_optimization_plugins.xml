@@ -1,0 +1,10 @@
+<library path="lib/libdummy_solver">
+
+  <class name="trajectory_optimization::DummySolver" type="trajectory_optimization::DummySolver" base_class_type="trajectory_optimization::OptimizerBase">
+    <description>
+      Trajectory optimization dummy solver plugin
+    </description>
+  </class>
+
+</library>
+
