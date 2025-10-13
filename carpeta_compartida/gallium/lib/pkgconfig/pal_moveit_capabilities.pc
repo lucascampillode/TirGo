@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_moveit_capabilities
+Description: Description of pal_moveit_capabilities
+Version: 0.1.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

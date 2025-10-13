@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <arg name="config"/>
+  <arg name="state"           default="localization"/> <!-- localization, mapping, stop -->
+  <arg name="is_sim"          default="false"/>
+  <arg name="file"            default="$(env HOME)/.pal/pose.yaml"/>
+  <arg name="frequency"       default="1.0"/>
+  <arg name="base_frame"      default="/base_footprint"/>
+  <arg name="map_frame"       default="/map"/>
+  <arg name="multiple"        default="false"/>
+  <arg name="robot_namespace" default=""/>
+
+  <!-- Pal Navigation Sm -->
+  <node pkg ="pal_navigation_sm" type="pal_navigation_sm_node.py" name="pal_navigation_sm" output="screen">
+    <rosparam file="$(arg config)" command="load"/> 
+    <param name="state"           value="$(arg state)"/>
+    <param name="is_sim"          value="$(arg is_sim)"/>
+    <param name="multiple"        value="$(arg multiple)"/>
+    <param name="robot_namespace" value="$(arg robot_namespace)"/>
+  </node>
+
+</launch>

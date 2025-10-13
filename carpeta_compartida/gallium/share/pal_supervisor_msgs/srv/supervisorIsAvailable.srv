@@ -1,0 +1,2 @@
+---
+bool available #True if the Supervisor is available, false if it's not

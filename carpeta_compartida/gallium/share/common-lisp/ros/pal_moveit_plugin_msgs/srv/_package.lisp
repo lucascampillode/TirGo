@@ -1,0 +1,10 @@
+(cl:defpackage pal_moveit_plugin_msgs-srv
+  (:use )
+  (:export
+   "LOADCAPABILITIES"
+   "<LOADCAPABILITIES-REQUEST>"
+   "LOADCAPABILITIES-REQUEST"
+   "<LOADCAPABILITIES-RESPONSE>"
+   "LOADCAPABILITIES-RESPONSE"
+  ))
+

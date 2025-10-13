@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: polycost_layer
+Description: Description of polycost_layer
+Version: 1.0.1
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib -lpolycost_layer
+Requires: costmap_2d dynamic_reconfigure pal_zoi_detector pal_map_utils tf2_ros

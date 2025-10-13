@@ -1,0 +1,10 @@
+Este documento explica como lanzar comandos a Tiago y como conectarse al Sim de tiago:
+
+
+LANZAR A TIAGO REAL
+
+# source ~/carpeta_compartida/gallium/setup.bash
+# source ~/carpeta_compartida/setup_env.sh
+Ejemplo: rostopic list => ver los topics disponibles
+
+LANZAR A TIAGO SIM

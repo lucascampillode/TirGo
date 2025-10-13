@@ -1,0 +1,11 @@
+Metadata-Version: 1.1
+Name: dynamic_footprint
+Version: 0.0.14
+Summary: Dynamic footprint by computing the convex hull of a set of joints in a robot.
+Home-page: UNKNOWN
+Author: Luca Marchionni
+Author-email: luca.marchionni@pal-robotics.com
+License: BSD
+Description: UNKNOWN
+Platform: UNKNOWN
+Requires: numpy

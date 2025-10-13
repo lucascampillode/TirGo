@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: repositories_tiago
+Description: Description of repositories_tiago
+Version: 4.0.2
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

@@ -1,0 +1,4 @@
+string appName #Name of the application sending the command
+int32 key #Shared memory Key
+---
+string userId #Returns the user ID related to the Shared memory

@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pal_robotiq_85_description
+Description: Description of pal_robotiq_85_description
+Version: 0.0.19
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

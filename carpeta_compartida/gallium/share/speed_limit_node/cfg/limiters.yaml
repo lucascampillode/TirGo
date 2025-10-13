@@ -1,0 +1,34 @@
+# List of limiters plugins to load
+#
+# Limiters are as follows
+# some_name: ["some_name", "plugin_name_as_per_pluginlib"]
+
+speed_limiters:
+#  dummy: ["Dummy",      "pal/SpeedLimiterDummy"]
+#  zero : ["ElZero",     "pal/SpeedLimiterZero"]
+  laser: ["LaserFront", "pal/SpeedLimiterSensorLaser"]
+#  sonar: ["SonarCloud", "pal/SpeedLimiterSensorSonarCloud"]
+
+# Plugins' parameters are looked up in
+# namespace /node_name/plugin_instance_name/
+
+# Parameters for 'LaserFront'
+LaserFront:
+  base_frame: base_link
+  sensor_frame: base_laser_link
+  max_range: 4
+  obstacle_distance_ub_: 0.3
+  obstacle_distance_lb_: 0.05
+  out_collision_factor: 0.5
+  collision_check: False   # check if any state along the estimated trajectory is in collision
+
+
+#SonarCloud:
+#  base_frame: base_link
+#  sensor_frame: base_laser_link
+#  cutout_x: 2
+#  cutout_y: 2
+#  cutout_z: 2
+#  obstacle_distance_upper_bound: 0.5
+#  obstacle_distance_lower_bound: 0.05
+#  out_collision_factor: 0.4

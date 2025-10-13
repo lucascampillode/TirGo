@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: speed_limit_core
+Description: Description of speed_limit_core
+Version: 2.0.5
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib -lspeed_limit_core
+Requires: geometry_msgs pluginlib roscpp tf2_ros tf2_geometry_msgs

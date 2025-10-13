@@ -1,0 +1,21 @@
+<library path="src">
+  <class name="CurrentLimitController"
+         type="rqt_current_limit_controller.current_limit_controller.CurrentLimitController"
+         base_class_type="rqt_gui_py::Plugin">
+    <description>
+      Graphical frontend for interacting with current_limit_controller instances.
+    </description>
+    <qtgui>
+      <group>
+        <label>Robot Tools</label>
+        <icon type="theme">folder</icon>
+        <statustip>Plugins related to robot tools.</statustip>
+      </group>
+      <label>Current limit controller</label>
+      <icon>resource/scope.png</icon>
+      <statustip>
+        Send commands to running current limit controller.
+      </statustip>
+    </qtgui>
+  </class>
+</library>

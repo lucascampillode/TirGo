@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="arm"  default="True"/>
+  <arg name="end_effector"  default="pal-gripper"/>
+  <arg name="ft_sensor"  default="false"/>
+  <arg name="laser_model"  default="hokuyo"/>
+  <arg name="camera_model"  default="orbbec-astra"/>
+  <arg name="advanced_navigation" default="False"/>
+  <arg name="base_type" default="pmb2"/>
+
+  <include file="$(find tiago_2dnav_gazebo)/launch/tiago_navigation.launch" pass_all_args="true"/>
+
+</launch>

@@ -1,0 +1,7 @@
+<launch>
+<node name="stf1"       pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 /map /base_footprint 50"/>
+<node name="stf2"       pkg="tf" type="static_transform_publisher" args="0 0 0.15 0 0.0  0 /base_footprint /base_link 50"/>
+<node name="stf3"       pkg="tf" type="static_transform_publisher" args="0 0 0.61 0 0.23 0.026 /base_link /base_rgbd_camera_link 50"/>
+<node name="stf4"       pkg="tf" type="static_transform_publisher" args="0.0 0.049 0.0 0 0 0 /base_rgbd_camera_link /base_rgbd_camera_depth_frame 50"/>
+<node name="stf5"       pkg="tf" type="static_transform_publisher" args="0 0 0 -1.57 0 -1.57 /base_rgbd_camera_depth_frame /base_rgbd_camera_depth_optical_frame 50"/>
+</launch>

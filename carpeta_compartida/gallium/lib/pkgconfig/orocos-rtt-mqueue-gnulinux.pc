@@ -1,0 +1,12 @@
+prefix=/opt/pal/gallium
+exec_prefix=${prefix}  # defining another variable in terms of the first
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: Orocos-RTT-MQUEUE                                     # human-readable name
+Description: Open Robot Control Software: Real-Time Tookit # human-readable description
+Requires: orocos-rtt-gnulinux
+Version: 2.9.0
+Libs: -L${libdir} -lorocos-rtt-mqueue-gnulinux 
+Libs.private:
+Cflags: -I${includedir}/rtt/mqueue 

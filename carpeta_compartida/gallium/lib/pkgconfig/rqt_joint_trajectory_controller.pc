@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: rqt_joint_trajectory_controller
+Description: Description of rqt_joint_trajectory_controller
+Version: 0.4.9
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

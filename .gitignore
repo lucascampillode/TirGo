@@ -1,0 +1,22 @@
+# ROS / catkin (artefactos y ws antiguo)
+carpeta_compartida/ros_ws/build/
+carpeta_compartida/ros_ws/devel/
+carpeta_compartida/ros_ws/logs/
+carpeta_compartida/catkin_ws/            # ignora workspace viejo completo
+**/.ros/
+
+# Vendor / backups
+carpeta_compartida/catkin_ws_src_backup_*/
+
+# Python
+__pycache__/
+*.pyc
+
+# Varios
+*.log
+*.bag
+*.swp
+*~
+
+# VS Code
+.vscode/

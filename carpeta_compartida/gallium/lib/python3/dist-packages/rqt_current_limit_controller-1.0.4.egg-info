@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: rqt_current_limit_controller
+Version: 1.0.4
+Summary: Graphical frontend for interacting with current_limit_controller instances.
+Home-page: http://wiki.ros.org/rqt_current_limit_controller
+Author: Luca Marchionni
+Author-email: luca.marchionni@pal-robotics.com
+License: Modified BSD
+Description: UNKNOWN
+Platform: UNKNOWN

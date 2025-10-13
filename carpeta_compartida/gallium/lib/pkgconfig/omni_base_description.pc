@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: omni_base_description
+Description: Description of omni_base_description
+Version: 0.0.13
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

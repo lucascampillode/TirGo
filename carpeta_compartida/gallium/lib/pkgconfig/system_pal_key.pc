@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: system_pal_key
+Description: Description of system_pal_key
+Version: 1.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

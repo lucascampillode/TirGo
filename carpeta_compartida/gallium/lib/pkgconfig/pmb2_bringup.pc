@@ -1,0 +1,8 @@
+prefix=/opt/pal/gallium
+
+Name: pmb2_bringup
+Description: Description of pmb2_bringup
+Version: 3.0.32
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

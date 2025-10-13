@@ -1,0 +1,132 @@
+#! /usr/bin/python3
+
+
+####################################################################
+####################################################################
+##
+## AUTO-GENERATED Application SERVER
+##
+## you should not need to modify this file.
+##
+####################################################################
+
+import sys
+import rospy
+import json
+from actionlib.action_server import ActionServer
+import hri_actions_msgs.msg
+import threading
+
+import {{ id }}.application_controller
+
+
+class ApplicationControlActionServer:
+    # create messages that are used to publish feedback/result
+    _feedback = hri_actions_msgs.msg.ApplicationControlFeedback()
+    _result = hri_actions_msgs.msg.ApplicationControlResult()
+
+    def __init__(self, name, auto_start=True):
+        self._action_name = name
+        
+        ctrl_action = "/applications" + self._action_name + "/control"
+
+        self._as = ActionServer(
+            ctrl_action,
+            hri_actions_msgs.msg.ApplicationControlAction,
+            goal_cb=self.goal_cb,
+            cancel_cb=self.cancel_cb,
+            auto_start=False,
+        )
+
+        self.application_controller = {{ id }}.application_controller.ApplicationController()
+
+        self._execute_thread = None
+        self._is_running = False
+
+        self._as.start()
+
+        if auto_start:
+
+            rospy.loginfo("[APPLICATION {{ id }}] auto-starting...")
+
+            ok, _ = self.start_application()
+
+            if not ok:
+                sys.exit(1)
+
+            rospy.loginfo("[APPLICATION {{ id }}] successfully started.")
+
+        rospy.loginfo("[APPLICATION {{ id }}] Ready. Start/stop your app via the ROS action %s" % ctrl_action)
+
+    def goal_cb(self, goal):
+
+        rospy.loginfo("[APPLICATION {{ id }}] requesting start")
+
+        if not self.application_controller:
+            rospy.logwarn("[APPLICATION {{ id }}] start rejected: controller not ready")
+            goal.set_rejected(text="Application controller not ready")
+            return
+
+
+        if self._execute_thread and self._execute_thread.is_alive():
+            rospy.logwarn("[APPLICATION {{ id }}] start rejected: already running")
+            goal.set_rejected(text="Application already running")
+            return
+
+
+        self.application_controller.cancellation_requested = False
+
+        params = None
+        if goal.get_goal().parameters:
+            try:
+                params = json.loads(goal.get_goal().parameters)
+            except json.JSONDecodeError as je:
+                rospy.logwarn("[APPLICATION {{ id }}] start rejected: invalid JSON parameters")
+                goal.set_rejected(text=str(je))
+                return
+
+        ok, exception = self.start_application(params)
+
+        if ok:
+            rospy.loginfo("[APPLICATION {{ id }}] successfully started.")
+            goal.set_accepted()
+        else:
+            goal.set_aborted(text=str(exception))
+
+
+    def start_application(self, params=None):
+
+        self._execute_thread = threading.Thread(target=self.application_controller.run, args=(params,))
+        self._execute_thread.daemon = True
+        
+        try:
+            self._execute_thread.start()
+        except Exception as e:
+            rospy.logwarn("[APPLICATION {{ id }}] unexpected error: %s" % e)
+            self._execute_thread.join()
+            return False, e
+
+        return True, None
+
+
+    def cancel_cb(self, goal):
+
+        if not self._execute_thread or not self._execute_thread.is_alive():
+            goal.set_canceled(text="application not running")
+
+        rospy.logwarn("[APPLICATION {{ id }}] requesting cancelation")
+        self.application_controller.cancellation_requested = True
+
+        self._execute_thread.join()
+
+        goal.set_canceled(text="Successfully stopped the application")
+        rospy.loginfo("[APPLICATION {{ id }}] successfully stopped")
+
+if __name__ == "__main__":
+
+    rospy.init_node("{{ id }}")
+
+    auto_start = rospy.get_param("~autostart", True)
+
+    server = ApplicationControlActionServer(rospy.get_name(), auto_start)
+    rospy.spin()

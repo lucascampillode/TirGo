@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="has_thermal" default="false"/>
+  <node name="pal_head_manager" pkg="pal_head_manager" type="pal_head_manager_node" output="screen">
+    <remap from="camera_info"        to="/head_front_camera/color/camera_info"/>
+    <remap from="sound_localisation" to="/sound_localisation"/>
+    <remap from="faces"              to="/pal_face/faces"/>
+    <remap from="fullbodies"         to="/fullbody_2d_detector/detections"/>
+    <remap from="persons"            to="/pal_person/detections"/>
+    <remap from="waving"             to="/wave_detector_far/actions"/>
+    <remap from="pose_goal"          to="pose_goal"/>
+    <rosparam param="look_to_link">"/look_link_ps"</rosparam>
+    <rosparam param="look_to_marker">"/aruco_single/pose"</rosparam>
+    <rosparam param="look_to_cmd_vel">"/look_cmd_vel_ps"</rosparam>
+    <rosparam param="look_to_wildcard">"/look_to_wildcard"</rosparam>
+    
+    <rosparam unless="$(arg has_thermal)" param="optical_frame">head_front_camera_color_optical_frame</rosparam>
+    <rosparam if="$(arg has_thermal)" param="optical_frame">thermal_camera</rosparam>
+    <rosparam param="max_velocity">0.2</rosparam>
+    <rosparam param="min_duration">0.4</rosparam>
+  </node>
+</launch>
+

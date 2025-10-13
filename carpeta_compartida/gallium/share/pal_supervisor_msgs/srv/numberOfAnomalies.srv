@@ -1,0 +1,3 @@
+---
+int32 numErrors #Number of errors
+int32 numWarnings #Number of warnings
