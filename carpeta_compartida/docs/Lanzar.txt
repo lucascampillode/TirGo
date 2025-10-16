@@ -3,8 +3,23 @@ Este documento explica como lanzar comandos a Tiago y como conectarse al Sim de 
 
 LANZAR A TIAGO REAL
 
-# source ~/carpeta_compartida/gallium/setup.bash
-# source ~/carpeta_compartida/setup_env.sh
+source ~/carpeta_compartida/gallium/setup.bash
+source ~/carpeta_compartida/setup_env.sh
 Ejemplo: rostopic list => ver los topics disponibles
 
 LANZAR A TIAGO SIM
+source ~/carpeta_compartida/setup_env_sim.sh
+source ~/carpeta_compartida/ros_ws/devel/setup.bash
+
+Checks rápidos
+
+¿Estoy en local?
+
+echo $ROS_MASTER_URI   # http://localhost:11311
+echo ${ROS_IP:-<vacio>}
+pgrep -a rosmaster     # debería haber uno
+
+¿Estoy en remoto?
+echo $ROS_MASTER_URI   # http://tiago-222c:11311
+echo $ROS_IP           # tu IP en esa red
+ping -c1 tiago-222c

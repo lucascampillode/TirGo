@@ -1,0 +1,14 @@
+<launch>
+  <node pkg="stt_vosk" type="stt_vosk_node.py" name="stt_vosk" output="screen">
+    <param name="model_path" value="$(env HOME)/models/vosk-es-small"/>
+    <param name="sample_rate" value="16000"/>
+    <param name="chunk" value="8000"/>
+
+    <!-- Usa el índice que te salió: 9 -->
+    <param name="device_index" value="9"/>
+
+    <param name="publish_partial" value="true"/>
+    <param name="wake_word" value="hola tirgo"/>
+  </node>
+
+</launch>

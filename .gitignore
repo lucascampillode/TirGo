@@ -7,7 +7,6 @@ carpeta_compartida/catkin_ws/            # ignora workspace viejo completo
 
 # Vendor / backups
 carpeta_compartida/catkin_ws_src_backup_*/
-
 # Python
 __pycache__/
 *.pyc
