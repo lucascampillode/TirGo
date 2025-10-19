@@ -15,5 +15,7 @@ services:
       - /dev:/dev
     devices:
       - /dev/dri:/dev/dri
+    group_add:
+      - "audio" 
     tmpfs:
       - /dev/shm:rw

@@ -1,0 +1,3 @@
+<launch>
+  <node pkg="tirgo_ui" type="web_server.py" name="tirgo_ui_web" output="screen"/>
+</launch>

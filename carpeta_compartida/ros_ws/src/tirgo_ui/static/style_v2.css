@@ -1,0 +1,122 @@
+/* TirGoPharma – Neo-Clinic Lite (claro, clínico, sin estridencias) */
+:root{
+  --bg:#F7F9FB;          /* fondo muy claro azulado */
+  --panel:#FFFFFF;       /* panel blanco puro */
+  --ink:#1F2937;         /* texto principal (gray-800) */
+  --muted:#6B7280;       /* texto secundario (gray-500) */
+  --primary:#2B6CB0;     /* azul médico */
+  --primary-weak:#E8F1FB;/* azul muy suave para pills */
+  --success:#2F855A;     /* verde éxito sobrio */
+  --border:#E5E7EB;      /* gris claro */
+  --radius:14px;
+  --shadow: 0 10px 24px rgba(17, 24, 39, 0.06);
+}
+
+*{ box-sizing:border-box }
+html,body{ height:100% }
+body{
+  margin:0; padding:24px;
+  background: radial-gradient(1100px 600px at 15% -10%, #dbeafe55, transparent), var(--bg);
+  color:var(--ink);
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial;
+}
+
+/* App bar */
+.appbar{
+  display:flex; align-items:center; gap:16px;
+  background: var(--panel);
+  border:1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  padding:16px 18px; box-shadow: var(--shadow);
+  margin-bottom:18px;
+}
+.brand h1{ font-size:20px; margin:0; font-weight:700 }
+
+/* Layout */
+.grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px,1fr));
+  gap:18px; margin-top:16px;
+}
+.card, .panel{
+  background: var(--panel);
+  border:1px solid var(--border);
+  border-radius: var(--radius);
+  padding:18px; box-shadow: var(--shadow);
+}
+.card h3{ margin:6px 0 8px 0 }
+
+.hero{
+  background: var(--panel);
+  border:1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  padding:28px; box-shadow: var(--shadow);
+  text-align:center;
+}
+.hero h2{ margin:0 0 6px 0 }
+
+.form{ display:grid; gap:12px; max-width:620px }
+.form input, .form select{
+  padding:12px 14px; border:1px solid #D1D5DB; border-radius:12px; background:#fff; color:var(--ink);
+  outline:none; transition: box-shadow .2s, border-color .2s;
+}
+.form input:focus, .form select:focus{
+  border-color:#9DB7DA; box-shadow: 0 0 0 3px #DBEAFE;
+}
+.actions{ display:flex; gap:10px; justify-content:flex-end; align-items:center }
+.actions.space{ justify-content:space-between }
+
+.pill{
+  display:inline-block; padding:6px 10px; border-radius:999px;
+  background: var(--primary-weak); color: var(--primary);
+  border:1px solid #d2e5fb; font-size:.9em; margin:6px 0;
+}
+
+.btn{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:10px 14px; border-radius:12px; border:1px solid #CBD5E1;
+  background:#fff; color:var(--ink); text-decoration:none; cursor:pointer;
+  transition: transform .05s ease-in-out, box-shadow .2s, border-color .2s;
+}
+.btn:hover{ transform: translateY(-1px); box-shadow:0 8px 16px rgba(0,0,0,.06) }
+.btn.primary{
+  background: linear-gradient(180deg, #3B82F6, #2563EB);
+  color:#fff; border-color:#2563EB;
+}
+.btn.ghost{
+  background:transparent; border-color:transparent; color:var(--muted);
+}
+.btn.success{
+  background: linear-gradient(180deg, #48BB78, #2F855A);
+  color:#f0fff4; border-color:#2F855A;
+}
+
+/* Texto utilitario */
+.muted{ color:var(--muted) }
+.small{ font-size:.9em }
+.ok{ color:var(--success) }
+.err{ color:#DC2626 }
+.toast{
+  background:#fff; border:1px solid var(--border);
+  padding:12px 14px; border-radius:12px; box-shadow: var(--shadow);
+}
+
+/* Progreso wizard */
+.progress{
+  height:10px; background:#EEF2FF; border-radius:999px;
+  border:1px solid #E5E7EB; overflow:hidden; margin:10px 0 18px 0;
+}
+.progress > div{
+  height:100%; width:0%;
+  background: linear-gradient(90deg, #93C5FD, #3B82F6);
+  transition:width .25s ease;
+}
+
+/* Stepper */
+.step{
+  border:1px dashed #E5E7EB; border-radius:12px; padding:14px; background:#FFFFFF;
+}
+.step h4{ margin:0 0 8px 0; font-weight:600 }
+
+/* Result */
+.result{ margin-top:14px }

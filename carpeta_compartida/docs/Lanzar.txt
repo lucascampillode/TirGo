@@ -8,8 +8,13 @@ source ~/carpeta_compartida/setup_env.sh
 Ejemplo: rostopic list => ver los topics disponibles
 
 LANZAR A TIAGO SIM
+source /opt/ros/noetic/setup.bash
 source ~/carpeta_compartida/setup_env_sim.sh
 source ~/carpeta_compartida/ros_ws/devel/setup.bash
+roscore
+launch_tiago_simulation
+Ejemplo: rostopic list => ver los topics disponibles
+
 
 Checks rápidos
 

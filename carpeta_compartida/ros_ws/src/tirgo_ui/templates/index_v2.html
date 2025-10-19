@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TirGoPharma</title>
+
+  <!-- Tipografía: Inter (limpia y técnica) -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_v2.css') }}" />
+</head>
+<body>
+  <header class="appbar">
+    <div class="brand">
+      <h1>TirGoPharma</h1>
+    </div>
+  </header>
+
+  {% if msg %}
+    <p class="{{ 'err' if error else 'ok' }} toast">{{ msg }}</p>
+  {% endif %}
+
+  {# --- PANTALLA DE ESPERA (hotword) --- #}
+  {% if view == 'await_hotword' %}
+    <section class="hero">
+      <h2>Di “hola, Tirgo”</h2>
+      <p class="muted">Estoy escuchando… Cuando te oiga, desbloquearé las opciones.</p>
+      <form method="post" action="{{ url_for('simulate_hola') }}" onsubmit="setTimeout(()=>location.reload(),300);">
+        <button class="btn ghost">Simular “hola” (demo)</button>
+      </form>
+    </section>
+    <script>
+      const tick = async () => {
+        try {
+          const r = await fetch('/state', {cache:'no-store'});
+          const j = await r.json();
+          if (j.hotword) location.reload();
+        } catch(e) {}
+        setTimeout(tick, 800);
+      };
+      tick();
+    </script>
+  {% endif %}
+
+  {# --- MENÚ PRINCIPAL --- #}
+  {% if not view %}
+  <section class="grid">
+    <article class="card">
+      <h3>Consultar</h3>
+      <p class="muted">Identifícate y verás tus medicamentos permitidos para recoger.</p>
+      <a class="btn primary" href="{{ url_for('consultar') }}">Entrar</a>
+    </article>
+
+    <article class="card">
+      <h3>Leer</h3>
+      <p class="muted">Pide un medicamento. Si no es tipo R y hay stock, te lo llevo directo.</p>
+      <a class="btn primary" href="{{ url_for('leer') }}">Entrar</a>
+    </article>
+
+    <article class="card">
+      <h3>Diagnóstico</h3>
+      <p class="muted">Test guiado. Si la mejor opción es tipo R, te avisaré para que visites al médico.</p>
+      <a class="btn primary" href="{{ url_for('diagnostico') }}">Entrar</a>
+    </article>
+  </section>
+  {% endif %}
+
+  {# --- CONSULTAR --- #}
+  {% if view == 'consultar' %}
+  <section class="panel">
+    <h2>Consultar</h2>
+    <form method="post" action="{{ url_for('consultar') }}" class="form">
+      <label>Nombre</label>
+      <input name="nombre" placeholder="Nombre" required />
+      <label>Apellidos</label>
+      <input name="apellidos" placeholder="Apellidos" required />
+      <label>DNI</label>
+      <input name="dni" placeholder="12345678A" required />
+      <div class="actions">
+        <a class="btn" href="{{ url_for('index') }}">Volver</a>
+        <button class="btn primary" type="submit">Buscar permitidos</button>
+      </div>
+    </form>
+  </section>
+  {% endif %}
+
+  {% if view == 'consultar_result' %}
+  <section class="panel">
+    <h2>Permitidos</h2>
+    <p class="muted">Paciente: <b>{{ paciente.nombre }} {{ paciente.apellidos }}</b> (DNI hash {{ paciente.dni_hash[:8] }}…)</p>
+    <div class="grid">
+      {% for row in allowed %}
+        <article class="card">
+          <h3>{{ row['nombre'] }}</h3>
+          <p class="pill">Tipo {{ row['tipo'] }}</p>
+          <p class="muted small">Stock: {{ row['qty'] }}</p>
+          <a class="btn success" href="{{ url_for('recoger', med_id=row['id'], dni_hash=paciente.dni_hash) }}">Recoger</a>
+        </article>
+      {% else %}
+        <article class="card">
+          <h3>Sin opciones disponibles</h3>
+          <p class="muted">Ahora mismo no tienes medicamentos para recoger.</p>
+          <a class="btn" href="{{ url_for('index') }}">Volver al inicio</a>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# --- LEER --- #}
+  {% if view == 'leer' %}
+  <section class="panel">
+    <h2>Pedir medicamento</h2>
+    <form method="post" action="{{ url_for('leer') }}" class="form">
+      <label>Medicamento</label>
+      <input name="med" placeholder="Paracetamol 1g" required />
+      <p class="muted small">Si es tipo R, te pediremos identificación y receta.</p>
+      <div class="actions">
+        <a class="btn" href="{{ url_for('index') }}">Volver</a>
+        <button class="btn primary" type="submit">Pedir</button>
+      </div>
+    </form>
+  </section>
+  {% endif %}
+
+  {% if view == 'leer_ident' %}
+  <section class="panel">
+    <h2>Requiere receta</h2>
+    <p class="muted">Identifícate para comprobar tu elegibilidad:</p>
+    <form method="post" action="{{ url_for('leer_ident') }}" class="form">
+      <input type="hidden" name="med_id" value="{{ med['id'] }}" />
+      <label>Nombre</label>
+      <input name="nombre" required />
+      <label>Apellidos</label>
+      <input name="apellidos" required />
+      <label>DNI</label>
+      <input name="dni" required />
+      <div class="actions">
+        <a class="btn" href="{{ url_for('leer') }}">Volver</a>
+        <button class="btn primary" type="submit">Comprobar y pedir</button>
+      </div>
+    </form>
+  </section>
+  {% endif %}
+
+  {# --- DIAGNÓSTICO MULTIPASO --- #}
+  {% if view == 'diagnostico' %}
+  <section class="panel">
+    <h2>Diagnóstico guiado</h2>
+    <p class="muted">Responde a las preguntas y te recomendaré la opción más segura.</p>
+
+    <div class="progress"><div id="prog"></div></div>
+
+    <form id="wiz" class="form">
+      <div class="step" data-step="1">
+        <h4>1) Síntoma principal</h4>
+        <select name="sx" required>
+          <option value="">— Selecciona —</option>
+          <option value="dolor">Dolor leve o moderado</option>
+          <option value="fiebre">Fiebre</option>
+          <option value="resfriado">Resfriado/congestión</option>
+          <option value="tos">Tos</option>
+          <option value="infeccion">Posible infección</option>
+        </select>
+      </div>
+
+      <div class="step" data-step="2">
+        <h4>2) Edad</h4>
+        <select name="edad" required>
+          <option value="">— Selecciona —</option>
+          <option value="adulto">Adulto (≥ 18)</option>
+          <option value="adolescente">Adolescente (12–17)</option>
+          <option value="nino">Niño (6–11)</option>
+        </select>
+      </div>
+
+      <div class="step" data-step="3">
+        <h4>3) ¿Alergia a AINEs?</h4>
+        <select name="aine" required>
+          <option value="">— Selecciona —</option>
+          <option value="no">No</option>
+          <option value="si">Sí</option>
+        </select>
+      </div>
+
+      <div class="step" data-step="4">
+        <h4>4) Problemas gástricos</h4>
+        <select name="gastric" required>
+          <option value="">— Selecciona —</option>
+          <option value="no">No</option>
+          <option value="si">Sí</option>
+        </select>
+      </div>
+
+      <div class="step" data-step="5">
+        <h4>5) Anticoagulantes</h4>
+        <select name="aco" required>
+          <option value="">— Selecciona —</option>
+          <option value="no">No</option>
+          <option value="si">Sí</option>
+        </select>
+      </div>
+
+      <div class="step" data-step="6">
+        <h4>6) Enfermedad hepática</h4>
+        <select name="hep" required>
+          <option value="">— Selecciona —</option>
+          <option value="no">No</option>
+          <option value="si">Sí</option>
+        </select>
+      </div>
+
+      <div class="step" data-step="7">
+        <h4>7) Embarazo o lactancia</h4>
+        <select name="preg" required>
+          <option value="">— Selecciona —</option>
+          <option value="no">No</option>
+          <option value="si">Sí</option>
+        </select>
+      </div>
+
+      <div class="step" data-step="8">
+        <h4>8) Preferencia de formato</h4>
+        <select name="forma" required>
+          <option value="">— Selecciona —</option>
+          <option value="comprimido">Comprimido</option>
+          <option value="sobre">Sobre/bebible</option>
+          <option value="indiferente">Indiferente</option>
+        </select>
+      </div>
+
+      <div class="step" data-step="9">
+        <h4>9) Duración del síntoma</h4>
+        <select name="dur" required>
+          <option value="">— Selecciona —</option>
+          <option value="agudo">&lt; 3 días</option>
+          <option value="subagudo">3–14 días</option>
+          <option value="cronico">&gt; 14 días</option>
+        </select>
+      </div>
+
+      <div class="actions space">
+        <button class="btn" type="button" id="prev">⬅ Anterior</button>
+        <div class="muted small" id="stepTxt">Paso 1 / 9</div>
+        <button class="btn primary" type="button" id="next">Siguiente ➡</button>
+      </div>
+    </form>
+
+    <div id="result" class="result card" style="display:none;">
+      <h3 id="rTitle">Resultado</h3>
+      <p id="rMsg" class="muted"></p>
+      <form id="rForm" method="post" action="{{ url_for('leer') }}" style="display:none;">
+        <input type="hidden" name="med" id="rMed" />
+        <button class="btn success" type="submit">Pedir este</button>
+        <a class="btn" href="{{ url_for('diagnostico') }}">Volver a empezar</a>
+      </form>
+      <div id="rDoctor" style="display:none;">
+        <p class="warn"><b>Recomendación: visita a tu médico</b></p>
+        <a class="btn" href="{{ url_for('diagnostico') }}">Volver</a>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- SCRIPT DEL WIZARD -->
+  <script>
+  (function(){
+    const form = document.getElementById('wiz'); if(!form) return;
+    const steps = [...form.querySelectorAll('.step')];
+    const total = steps.length;
+    const prog  = document.getElementById('prog');
+    const stepTxt = document.getElementById('stepTxt');
+    const btnPrev = document.getElementById('prev');
+    const btnNext = document.getElementById('next');
+    let idx = 0;
+
+    const show = i => {
+      idx = Math.max(0, Math.min(total-1, i));
+      steps.forEach((el,k)=> el.style.display = (k===idx?'block':'none'));
+      const pct = Math.round(((idx)/ (total)) * 100);
+      if (prog) prog.style.width = Math.max(6, pct) + '%';
+      stepTxt.textContent = `Paso ${idx+1} / ${total}`;
+      btnPrev.disabled = idx===0;
+      btnNext.textContent = idx===total-1 ? 'Ver resultado' : 'Siguiente ➡';
+    };
+
+    const validateStep = () => {
+      const required = steps[idx].querySelectorAll('select[required], input[required]');
+      for (const r of required){ if(!r.value){ r.focus(); return false; } }
+      return true;
+    };
+
+    const computeRecommendation = () => {
+      const data = Object.fromEntries(new FormData(form).entries());
+      if (data.sx === 'infeccion' || data.dur === 'cronico')
+        return {type:'R', med:null, reason:'Síntomas que pueden requerir antibiótico o evaluación médica.'};
+      const aine_risk = (data.aine==='si') || (data.gastric==='si') || (data.aco==='si') || (data.preg==='si');
+      if (['fiebre','dolor'].includes(data.sx)){
+        if (data.hep==='si')
+          return {type:'R', med:null, reason:'Ante enfermedad hepática, consulta a tu médico antes de analgésicos.'};
+        const med = 'Paracetamol 1g';
+        return {type:'NR', med, reason: aine_risk ? 'Evita AINEs: Paracetamol recomendado.' : 'Paracetamol adecuado para dolor/fiebre.'};
+      }
+      if (data.sx === 'resfriado' || data.sx === 'tos'){
+        return {type:'NR', med:'Vitamina C 1g', reason:'Apoyo sintomático leve. Hidratación y reposo.'};
+      }
+      return {type:'NR', med:'Paracetamol 1g', reason:'Opción segura por defecto.'};
+    };
+
+    btnPrev.addEventListener('click', ()=> show(idx-1));
+    btnNext.addEventListener('click', ()=>{
+      if (!validateStep()) return;
+      if (idx < total-1){ show(idx+1); return; }
+      const res = computeRecommendation();
+      const box = document.getElementById('result');
+      const rTitle = document.getElementById('rTitle');
+      const rMsg = document.getElementById('rMsg');
+      const rForm = document.getElementById('rForm');
+      const rMed  = document.getElementById('rMed');
+      const rDoc  = document.getElementById('rDoctor');
+      box.style.display = 'block';
+      if (res.type === 'R'){
+        rTitle.textContent = 'Necesitas receta';
+        rMsg.textContent = res.reason + ' Te recomendamos visitar a tu médico.';
+        rForm.style.display = 'none';
+        rDoc.style.display = 'block';
+        window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+      } else {
+        rTitle.textContent = 'Recomendación disponible';
+        rMsg.textContent = res.reason;
+        rMed.value = res.med;
+        rForm.style.display = 'block';
+        rDoc.style.display = 'none';
+        window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+      }
+    });
+    show(0);
+  })();
+  </script>
+</body>
+</html>
