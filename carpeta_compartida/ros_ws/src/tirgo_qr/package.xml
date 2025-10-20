@@ -1,0 +1,12 @@
+<package format="2">
+  <name>tirgo_qr</name>
+  <version>0.0.1</version>
+  <description>QR scanner node for TirGo</description>
+  <maintainer email="you@example.com">you</maintainer>
+  <license>BSD</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>rospy</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend>
+</package>

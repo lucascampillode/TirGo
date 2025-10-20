@@ -76,6 +76,21 @@ def ros_master_up() -> bool:
 
 _pub_state = _pub_status = _pub_error = None
 
+# --- QR globals ---
+_qr_cmd_pub = None
+_qr_last = {"text": None, "ts": 0.0}
+_qr_event = threading.Event()
+
+def qr_result_cb(msg: String):
+    try:
+        txt = msg.data if hasattr(msg, "data") else str(msg)
+    except Exception:
+        txt = str(msg)
+    _qr_last["text"] = txt
+    _qr_last["ts"] = time.time()
+    _qr_event.set()
+
+
 def stt_cb(msg: String):
     try:
         txt = msg.data if hasattr(msg, "data") else str(msg)
@@ -111,6 +126,14 @@ def init_ros():
         class DummyPub:
             def publish(self, *_a, **_k): pass
         _pub_state = _pub_status = _pub_error = DummyPub()
+        # --- QR pubs/subs ---
+        global _qr_cmd_pub
+        _qr_cmd_pub = rospy.Publisher('tirgo/qr/cmd', String, queue_size=10)
+        try:
+            rospy.Subscriber('tirgo/qr/result', String, qr_result_cb)
+        except Exception:
+            pass
+
 
 def pub_state(s: str):
     try:
@@ -423,6 +446,73 @@ def diagnostico():
     recomendado = 'Paracetamol 1g' if (sx=='dolor' or aine=='si') else 'Vitamina C 1g'
     return render_template('index_v2.html', state='VALIDATED', view='diag_result',
                            recomendado=recomendado, db_path=DB_PATH)
+
+
+# ---------------- Receta QR ----------------
+@APP.route('/receta_qr', methods=['GET'])
+def receta_qr():
+    if not hotword_active():
+        return redirect(url_for('index'))
+    pub_state('MODE_SELECTED')
+    return render_template('index_v2.html', state='MODE_SELECTED', view='receta_qr', db_path=DB_PATH)
+
+@APP.route('/receta_qr/start', methods=['POST'])
+def receta_qr_start():
+    if not hotword_active():
+        return redirect(url_for('index'))
+
+    _qr_event.clear()
+    if _qr_cmd_pub is not None:
+        try:
+            _qr_cmd_pub.publish(String(data='START') if ROS_AVAILABLE and hasattr(String,'data') else 'START')
+            rospy.loginfo('[QR] START solicitado')
+        except Exception as e:
+            pub_error('QR_START_FAIL', f'No se pudo iniciar: {e}')
+            return render_template('index_v2.html', state='ERROR', msg='No se pudo iniciar el escaneo', error=True, db_path=DB_PATH)
+
+    got = _qr_event.wait(timeout=10.0)
+    if not got or not _qr_last.get('text'):
+        pub_error('QR_TIMEOUT', 'No se detectó ningún QR')
+        return render_template('index_v2.html', state='ERROR', msg='No se detectó ningún QR. Intenta acercar el código.', error=True, db_path=DB_PATH)
+
+    import json
+    raw = _qr_last['text']
+    try:
+        data = json.loads(raw)
+    except Exception:
+        pub_error('QR_BAD_PAYLOAD', 'Formato de QR no válido')
+        return render_template('index_v2.html', state='ERROR', msg='QR no válido (se esperaba JSON).', error=True, db_path=DB_PATH)
+
+    dni = data.get('dni') or data.get('DNI') or data.get('patient_dni')
+    med_name = data.get('med') or data.get('medicamento') or data.get('drug')
+    nombre = data.get('nombre','Paciente'); apellidos = data.get('apellidos','')
+
+    if not (dni and med_name):
+        pub_error('QR_MISSING_FIELDS', 'Faltan dni o medicamento')
+        return render_template('index_v2.html', state='ERROR', msg='El QR debe incluir dni y medicamento.', error=True, db_path=DB_PATH)
+
+    med = lookup_medicamento_by_name(med_name)
+    if not med:
+        pub_error('NOT_FOUND', 'Medicamento no existe')
+        return render_template('index_v2.html', state='ERROR', msg=f'Medicamento "{med_name}" no encontrado.', error=True, db_path=DB_PATH)
+
+    pid = find_or_create_paciente(nombre, apellidos, dni) or None
+
+    if med['tipo'] == 'R':
+        conn = db()
+        r = conn.execute('SELECT 1 FROM recetas WHERE paciente_id=? AND medicamento_id=? AND activa=1',
+                         (pid, med['id'])).fetchone()
+        conn.close()
+        if not r:
+            pub_error('RESTRICTED', 'No hay receta activa')
+            return render_template('index_v2.html', state='ERROR', msg='Receta no válida o caducada para este R.', error=True, db_path=DB_PATH)
+
+    if get_stock(med['id']) <= 0:
+        pub_error('NO_STOCK', 'Sin stock')
+        return render_template('index_v2.html', state='ERROR', msg='Sin stock', error=True, db_path=DB_PATH)
+
+    threading.Thread(target=simulate_navigate_and_dispense, args=(med, h_dni(dni)), daemon=True).start()
+    return render_template('index_v2.html', state='NAVIGATING_TO_STORAGE', msg='Leyendo receta y preparando tu pedido', db_path=DB_PATH)
 
 # ---------------- main ----------------
 if __name__ == '__main__':

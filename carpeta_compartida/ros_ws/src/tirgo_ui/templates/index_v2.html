@@ -14,7 +14,11 @@
 <body>
   <header class="appbar">
     <div class="brand">
-      <h1>TirGoPharma</h1>
+      <h1>TirGoPharma
+<form action="/receta_qr" method="get" style="display:inline-block;margin:0.25rem">
+  <button type="submit" class="btn btn-primary">Lectura de receta (QR)</button>
+</form>
+</h1>
     </div>
   </header>
 
@@ -339,5 +343,17 @@
     show(0);
   })();
   </script>
+
+{% if view == 'receta_qr' %}
+  <section class="card">
+    <h2>Lectura de receta con QR</h2>
+    <p>Cuando estés listo, pulsa iniciar y enseña tu código QR a la cámara del robot.</p>
+    <form action="/receta_qr/start" method="post">
+      <button type="submit" class="btn btn-success">Iniciar escaneo</button>
+    </form>
+    <p class="muted">Consejos: acerca el QR, evita reflejos, manténlo estable.</p>
+  </section>
+{% endif %}
+
 </body>
 </html>
