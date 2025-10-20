@@ -1,4 +1,15 @@
 FROM ros:noetic
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-noetic-cv-bridge \
+    ros-noetic-image-transport \
+    libzbar0 \
+    python3-pip \
+    python3-venv \
+    libgl1 \
+    libglib2.0-0 \
+ && rm -rf /var/lib/apt/lists/*
+
+
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
@@ -75,3 +86,13 @@ RUN printf '%s\n' \
 USER TirGo
 
 ENTRYPOINT ["sleep", "infinity"]
+
+
+# Build catkin workspace (if present)
+RUN if [ -d "/ros_ws/src" ]; then \
+      . /opt/ros/noetic/setup.sh && \
+      cd /ros_ws && catkin_make; \
+    fi
+
+
+EXPOSE 8000
