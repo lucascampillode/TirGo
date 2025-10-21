@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+import os, runpy, sys
+os.environ.setdefault('PYTHONDONTWRITEBYTECODE','1')
+os.environ.setdefault('LC_ALL','C.UTF-8')
+os.environ.setdefault('LANG','C.UTF-8')
+os.environ.setdefault('PORT','9000')
+os.environ.setdefault('TIRGO_DB', '/home/TirGo/carpeta_compartida/ros_ws/src/tirgo_ui/data/tirgo.db')
+os.environ.setdefault('TIRGO_HOTWORD','hola')
+os.environ.setdefault('TIRGO_HOTWORD_WINDOW','10.0')
+os.environ.setdefault('TIRGO_STT_TOPIC','/stt/text')
+os.environ.setdefault('TIRGO_PEPPER','cambia-esto')
+
+# fallback por si setup.py aún no está perfecto
+PKG_SRC = os.path.join(os.path.dirname(__file__), '..', 'src')
+sys.path.insert(0, os.path.abspath(PKG_SRC))
+
+runpy.run_module('tirgo_ui.app', run_name='__main__')

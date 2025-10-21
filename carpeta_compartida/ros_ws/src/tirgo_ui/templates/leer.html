@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}TirGoPharma · Pedir{% endblock %}
+{% block content %}
+<section class="panel">
+  <h2>Pedir medicamento</h2>
+  <form method="post" action="{{ url_for('leer.leer') }}" class="form">
+    <label>Medicamento</label>
+    <input name="med" placeholder="Paracetamol 1g" required />
+    <p class="muted small">Si es tipo R, te pediremos identificación y receta.</p>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('main.index') }}">Volver</a>
+      <button class="btn primary" type="submit">Pedir</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

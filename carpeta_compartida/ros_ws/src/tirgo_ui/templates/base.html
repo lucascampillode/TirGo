@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}TirGoPharma{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_v2.css') }}" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="appbar">
+    <div class="brand"><h1>TirGoPharma</h1></div>
+  </header>
+
+  {% if msg %}<p class="{{ 'err' if error else 'ok' }} toast">{{ msg }}</p>{% endif %}
+
+  {% block content %}{% endblock %}
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

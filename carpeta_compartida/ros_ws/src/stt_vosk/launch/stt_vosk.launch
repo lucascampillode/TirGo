@@ -1,6 +1,6 @@
 <launch>
   <node pkg="stt_vosk" type="stt_vosk_node.py" name="stt_vosk" output="screen">
-    <param name="model_path" value="$(env HOME)/models/vosk-es-small"/>
+    <param name="model_path" value="/home/TirGo/carpeta_compartida/models/vosk-es-small "/>
     <param name="sample_rate" value="16000"/>
     <param name="chunk" value="8000"/>
 

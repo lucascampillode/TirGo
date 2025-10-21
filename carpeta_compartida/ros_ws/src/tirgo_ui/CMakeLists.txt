@@ -8,7 +8,10 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_package()
 
+## tras find_package(catkin REQUIRED ...):
+catkin_python_setup()
+
 catkin_install_python(PROGRAMS
-  scripts/web_server.py
+  scripts/tirgo_web_server
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

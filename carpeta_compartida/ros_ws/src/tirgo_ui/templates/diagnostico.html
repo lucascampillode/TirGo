@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}TirGoPharma · Diagnóstico{% endblock %}
+{% block content %}
+<section class="panel">
+  <h2>Diagnóstico guiado</h2>
+  <p class="muted">Responde a las preguntas y te recomendaré la opción más segura.</p>
+
+  <div class="progress"><div id="prog"></div></div>
+
+  <form id="wiz" class="form">
+    <div class="step" data-step="1">
+      <h4>1) Síntoma principal</h4>
+      <select name="sx" required>
+        <option value="">— Selecciona —</option>
+        <option value="dolor">Dolor leve o moderado</option>
+        <option value="fiebre">Fiebre</option>
+        <option value="resfriado">Resfriado/congestión</option>
+        <option value="tos">Tos</option>
+        <option value="infeccion">Posible infección</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="2">
+      <h4>2) Edad</h4>
+      <select name="edad" required>
+        <option value="">— Selecciona —</option>
+        <option value="adulto">Adulto (≥ 18)</option>
+        <option value="adolescente">Adolescente (12–17)</option>
+        <option value="nino">Niño (6–11)</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="3">
+      <h4>3) ¿Alergia a AINEs?</h4>
+      <select name="aine" required>
+        <option value="">— Selecciona —</option>
+        <option value="no">No</option>
+        <option value="si">Sí</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="4">
+      <h4>4) Problemas gástricos</h4>
+      <select name="gastric" required>
+        <option value="">— Selecciona —</option>
+        <option value="no">No</option>
+        <option value="si">Sí</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="5">
+      <h4>5) Anticoagulantes</h4>
+      <select name="aco" required>
+        <option value="">— Selecciona —</option>
+        <option value="no">No</option>
+        <option value="si">Sí</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="6">
+      <h4>6) Enfermedad hepática</h4>
+      <select name="hep" required>
+        <option value="">— Selecciona —</option>
+        <option value="no">No</option>
+        <option value="si">Sí</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="7">
+      <h4>7) Embarazo o lactancia</h4>
+      <select name="preg" required>
+        <option value="">— Selecciona —</option>
+        <option value="no">No</option>
+        <option value="si">Sí</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="8">
+      <h4>8) Preferencia de formato</h4>
+      <select name="forma" required>
+        <option value="">— Selecciona —</option>
+        <option value="comprimido">Comprimido</option>
+        <option value="sobre">Sobre/bebible</option>
+        <option value="indiferente">Indiferente</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="9">
+      <h4>9) Duración del síntoma</h4>
+      <select name="dur" required>
+        <option value="">— Selecciona —</option>
+        <option value="agudo">&lt; 3 días</option>
+        <option value="subagudo">3–14 días</option>
+        <option value="cronico">&gt; 14 días</option>
+      </select>
+    </div>
+
+    <div class="actions space">
+      <button class="btn" type="button" id="prev">⬅ Anterior</button>
+      <div class="muted small" id="stepTxt">Paso 1 / 9</div>
+      <button class="btn primary" type="button" id="next">Siguiente ➡</button>
+    </div>
+  </form>
+
+  <div id="result" class="result card" style="display:none;">
+    <h3 id="rTitle">Resultado</h3>
+    <p id="rMsg" class="muted"></p>
+    <form id="rForm" method="post" action="{{ url_for('leer.leer') }}" style="display:none;">
+      <input type="hidden" name="med" id="rMed" />
+      <button class="btn success" type="submit">Pedir este</button>
+      <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Volver a empezar</a>
+    </form>
+    <div id="rDoctor" style="display:none;">
+      <p class="warn"><b>Recomendación: visita a tu médico</b></p>
+      <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Volver</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  const form = document.getElementById('wiz'); if(!form) return;
+  const steps = [...form.querySelectorAll('.step')];
+  const total = steps.length;
+  const prog  = document.getElementById('prog');
+  const stepTxt = document.getElementById('stepTxt');
+  const btnPrev = document.getElementById('prev');
+  const btnNext = document.getElementById('next');
+  let idx = 0;
+
+  const show = i => {
+    idx = Math.max(0, Math.min(total-1, i));
+    steps.forEach((el,k)=> el.style.display = (k===idx?'block':'none'));
+    const pct = Math.round(((idx)/ (total)) * 100);
+    if (prog) prog.style.width = Math.max(6, pct) + '%';
+    stepTxt.textContent = `Paso ${idx+1} / ${total}`;
+    btnPrev.disabled = idx===0;
+    btnNext.textContent = idx===total-1 ? 'Ver resultado' : 'Siguiente ➡';
+  };
+
+  const validateStep = () => {
+    const req = steps[idx].querySelectorAll('select[required], input[required]');
+    for (const r of req){ if(!r.value){ r.focus(); return false; } }
+    return true;
+  };
+
+  const computeRecommendation = () => {
+    const data = Object.fromEntries(new FormData(form).entries());
+    if (data.sx === 'infeccion' || data.dur === 'cronico')
+      return {type:'R', med:null, reason:'Síntomas que pueden requerir antibiótico o evaluación médica.'};
+    const aine_risk = (data.aine==='si') || (data.gastric==='si') || (data.aco==='si') || (data.preg==='si');
+    if (['fiebre','dolor'].includes(data.sx)){
+      if (data.hep==='si')
+        return {type:'R', med:null, reason:'Ante enfermedad hepática, consulta a tu médico antes de analgésicos.'};
+      const med = 'Paracetamol 1g';
+      return {type:'NR', med, reason: aine_risk ? 'Evita AINEs: Paracetamol recomendado.' : 'Paracetamol adecuado para dolor/fiebre.'};
+    }
+    if (data.sx === 'resfriado' || data.sx === 'tos'){
+      return {type:'NR', med:'Vitamina C 1g', reason:'Apoyo sintomático leve. Hidratación y reposo.'};
+    }
+    return {type:'NR', med:'Paracetamol 1g', reason:'Opción segura por defecto.'};
+  };
+
+  btnPrev.addEventListener('click', ()=> show(idx-1));
+  btnNext.addEventListener('click', ()=>{
+    if (!validateStep()) return;
+    if (idx < total-1){ show(idx+1); return; }
+    const res = computeRecommendation();
+    const box = document.getElementById('result');
+    const rTitle = document.getElementById('rTitle');
+    const rMsg = document.getElementById('rMsg');
+    const rForm = document.getElementById('rForm');
+    const rMed  = document.getElementById('rMed');
+    const rDoc  = document.getElementById('rDoctor');
+    box.style.display = 'block';
+    if (res.type === 'R'){
+      rTitle.textContent = 'Necesitas receta';
+      rMsg.textContent = res.reason + ' Te recomendamos visitar a tu médico.';
+      rForm.style.display = 'none';
+      rDoc.style.display = 'block';
+      window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+    } else {
+      rTitle.textContent = 'Recomendación disponible';
+      rMsg.textContent = res.reason;
+      rMed.value = res.med;
+      rForm.style.display = 'block';
+      rDoc.style.display = 'none';
+      window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+    }
+  });
+  show(0);
+})();
+</script>
+{% endblock %}

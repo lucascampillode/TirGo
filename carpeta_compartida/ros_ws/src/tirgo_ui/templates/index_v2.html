@@ -27,9 +27,10 @@
     <section class="hero">
       <h2>Di “hola, Tirgo”</h2>
       <p class="muted">Estoy escuchando… Cuando te oiga, desbloquearé las opciones.</p>
-      <form method="post" action="{{ url_for('simulate_hola') }}" onsubmit="setTimeout(()=>location.reload(),300);">
+      <form method="post" action="{{ url_for('main.simulate_hola') }}" onsubmit="setTimeout(()=>location.reload(),300);">
         <button class="btn ghost">Simular “hola” (demo)</button>
       </form>
+      <p class="small muted">Ventana de detección activa: {{ window_secs }} s</p>
     </section>
     <script>
       const tick = async () => {
@@ -50,19 +51,19 @@
     <article class="card">
       <h3>Consultar</h3>
       <p class="muted">Identifícate y verás tus medicamentos permitidos para recoger.</p>
-      <a class="btn primary" href="{{ url_for('consultar') }}">Entrar</a>
+      <a class="btn primary" href="{{ url_for('consultar.consultar') }}">Entrar</a>
     </article>
 
     <article class="card">
       <h3>Leer</h3>
       <p class="muted">Pide un medicamento. Si no es tipo R y hay stock, te lo llevo directo.</p>
-      <a class="btn primary" href="{{ url_for('leer') }}">Entrar</a>
+      <a class="btn primary" href="{{ url_for('leer.leer') }}">Entrar</a>
     </article>
 
     <article class="card">
       <h3>Diagnóstico</h3>
       <p class="muted">Test guiado. Si la mejor opción es tipo R, te avisaré para que visites al médico.</p>
-      <a class="btn primary" href="{{ url_for('diagnostico') }}">Entrar</a>
+      <a class="btn primary" href="{{ url_for('diagnostico.diagnostico') }}">Entrar</a>
     </article>
   </section>
   {% endif %}
@@ -71,7 +72,7 @@
   {% if view == 'consultar' %}
   <section class="panel">
     <h2>Consultar</h2>
-    <form method="post" action="{{ url_for('consultar') }}" class="form">
+    <form method="post" action="{{ url_for('consultar.consultar') }}" class="form">
       <label>Nombre</label>
       <input name="nombre" placeholder="Nombre" required />
       <label>Apellidos</label>
@@ -79,7 +80,7 @@
       <label>DNI</label>
       <input name="dni" placeholder="12345678A" required />
       <div class="actions">
-        <a class="btn" href="{{ url_for('index') }}">Volver</a>
+        <a class="btn" href="{{ url_for('main.index') }}">Volver</a>
         <button class="btn primary" type="submit">Buscar permitidos</button>
       </div>
     </form>
@@ -96,13 +97,13 @@
           <h3>{{ row['nombre'] }}</h3>
           <p class="pill">Tipo {{ row['tipo'] }}</p>
           <p class="muted small">Stock: {{ row['qty'] }}</p>
-          <a class="btn success" href="{{ url_for('recoger', med_id=row['id'], dni_hash=paciente.dni_hash) }}">Recoger</a>
+          <a class="btn success" href="{{ url_for('leer.recoger', med_id=row['id']) }}?dni_hash={{ paciente.dni_hash }}">Recoger</a>
         </article>
       {% else %}
         <article class="card">
           <h3>Sin opciones disponibles</h3>
           <p class="muted">Ahora mismo no tienes medicamentos para recoger.</p>
-          <a class="btn" href="{{ url_for('index') }}">Volver al inicio</a>
+          <a class="btn" href="{{ url_for('main.index') }}">Volver al inicio</a>
         </article>
       {% endfor %}
     </div>
@@ -113,12 +114,12 @@
   {% if view == 'leer' %}
   <section class="panel">
     <h2>Pedir medicamento</h2>
-    <form method="post" action="{{ url_for('leer') }}" class="form">
+    <form method="post" action="{{ url_for('leer.leer') }}" class="form">
       <label>Medicamento</label>
       <input name="med" placeholder="Paracetamol 1g" required />
       <p class="muted small">Si es tipo R, te pediremos identificación y receta.</p>
       <div class="actions">
-        <a class="btn" href="{{ url_for('index') }}">Volver</a>
+        <a class="btn" href="{{ url_for('main.index') }}">Volver</a>
         <button class="btn primary" type="submit">Pedir</button>
       </div>
     </form>
@@ -129,7 +130,7 @@
   <section class="panel">
     <h2>Requiere receta</h2>
     <p class="muted">Identifícate para comprobar tu elegibilidad:</p>
-    <form method="post" action="{{ url_for('leer_ident') }}" class="form">
+    <form method="post" action="{{ url_for('leer.leer_ident') }}" class="form">
       <input type="hidden" name="med_id" value="{{ med['id'] }}" />
       <label>Nombre</label>
       <input name="nombre" required />
@@ -138,7 +139,7 @@
       <label>DNI</label>
       <input name="dni" required />
       <div class="actions">
-        <a class="btn" href="{{ url_for('leer') }}">Volver</a>
+        <a class="btn" href="{{ url_for('leer.leer') }}">Volver</a>
         <button class="btn primary" type="submit">Comprobar y pedir</button>
       </div>
     </form>
@@ -251,14 +252,14 @@
     <div id="result" class="result card" style="display:none;">
       <h3 id="rTitle">Resultado</h3>
       <p id="rMsg" class="muted"></p>
-      <form id="rForm" method="post" action="{{ url_for('leer') }}" style="display:none;">
+      <form id="rForm" method="post" action="{{ url_for('leer.leer') }}" style="display:none;">
         <input type="hidden" name="med" id="rMed" />
         <button class="btn success" type="submit">Pedir este</button>
-        <a class="btn" href="{{ url_for('diagnostico') }}">Volver a empezar</a>
+        <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Volver a empezar</a>
       </form>
       <div id="rDoctor" style="display:none;">
         <p class="warn"><b>Recomendación: visita a tu médico</b></p>
-        <a class="btn" href="{{ url_for('diagnostico') }}">Volver</a>
+        <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Volver</a>
       </div>
     </div>
   </section>

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}TirGoPharma · Consultar{% endblock %}
+{% block content %}
+<section class="panel">
+  <h2>Consultar</h2>
+  <form method="post" action="{{ url_for('consultar.consultar') }}" class="form">
+    <label>Nombre</label>
+    <input name="nombre" placeholder="Nombre" required />
+    <label>Apellidos</label>
+    <input name="apellidos" placeholder="Apellidos" required />
+    <label>DNI</label>
+    <input name="dni" placeholder="12345678A" required />
+    <div class="actions">
+      <a class="btn" href="{{ url_for('main.index') }}">Volver</a>
+      <button class="btn primary" type="submit">Buscar permitidos</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

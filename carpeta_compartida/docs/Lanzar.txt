@@ -2,7 +2,7 @@ Este documento explica como lanzar comandos a Tiago y como conectarse al Sim de 
 
 
 LANZAR A TIAGO REAL
-
+source /opt/ros/noetic/setup.bash
 source ~/carpeta_compartida/gallium/setup.bash
 source ~/carpeta_compartida/setup_env.sh
 Ejemplo: rostopic list => ver los topics disponibles

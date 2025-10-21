@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}TirGoPharma · Identificación{% endblock %}
+{% block content %}
+<section class="panel">
+  <h2>Requiere receta</h2>
+  <p class="muted">Identifícate para comprobar tu elegibilidad:</p>
+  <form method="post" action="{{ url_for('leer.leer_ident') }}" class="form">
+    <input type="hidden" name="med_id" value="{{ med['id'] }}" />
+    <label>Nombre</label>
+    <input name="nombre" required />
+    <label>Apellidos</label>
+    <input name="apellidos" required />
+    <label>DNI</label>
+    <input name="dni" required />
+    <div class="actions">
+      <a class="btn" href="{{ url_for('leer.leer') }}">Volver</a>
+      <button class="btn primary" type="submit">Comprobar y pedir</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

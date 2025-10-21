@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}TirGoPharma · Permitidos{% endblock %}
+{% block content %}
+<section class="panel">
+  <h2>Permitidos</h2>
+  <p class="muted">Paciente: <b>{{ paciente.nombre }} {{ paciente.apellidos }}</b> (DNI hash {{ paciente.dni_hash[:8] }}…)</p>
+  <div class="grid">
+    {% for row in allowed %}
+      <article class="card">
+        <h3>{{ row['nombre'] }}</h3>
+        <p class="pill">Tipo {{ row['tipo'] }}</p>
+        <p class="muted small">Stock: {{ row['qty'] }}</p>
+        <a class="btn success" href="{{ url_for('leer.recoger', med_id=row['id']) }}?dni_hash={{ paciente.dni_hash }}">Recoger</a>
+      </article>
+    {% else %}
+      <article class="card">
+        <h3>Sin opciones disponibles</h3>
+        <p class="muted">Ahora mismo no tienes medicamentos para recoger.</p>
+        <a class="btn" href="{{ url_for('main.index') }}">Volver al inicio</a>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
