@@ -26,6 +26,10 @@ RUN apt update && apt install -y --no-install-recommends \
     ros-noetic-usb-cam \
     htop \
     libxmlrpc-core-c3-dev \
+    ros-noetic-teleop-twist-keyboard \
+    ros-noetic-teleop-twist-joy \
+    ros-noetic-slam-gmapping \ 
+
     # ---- AUDIO ----
     alsa-utils libasound2 libasound2-data libasound2-dev \
     portaudio19-dev python3-pyaudio \
