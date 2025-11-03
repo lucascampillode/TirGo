@@ -1,20 +1,28 @@
 {% extends "base.html" %}
 {% block title %}TirGoPharma · Identificación{% endblock %}
+
 {% block content %}
 <section class="panel">
-  <h2>Requiere receta</h2>
-  <p class="muted">Identifícate para comprobar tu elegibilidad:</p>
+  <h2>Identificación para {{ med.nombre }}</h2>
+
   <form method="post" action="{{ url_for('leer.leer_ident') }}" class="form">
-    <input type="hidden" name="med_id" value="{{ med['id'] }}" />
-    <label>Nombre</label>
-    <input name="nombre" required />
-    <label>Apellidos</label>
-    <input name="apellidos" required />
-    <label>DNI</label>
-    <input name="dni" required />
+    <input type="hidden" name="med_id" value="{{ med.id }}">
+    <div class="row">
+      <label>Nombre</label>
+      <input name="nombre" required />
+    </div>
+    <div class="row">
+      <label>Apellidos</label>
+      <input name="apellidos" required />
+    </div>
+    <div class="row">
+      <label>DNI</label>
+      <input name="dni" required />
+    </div>
+
     <div class="actions">
-      <a class="btn" href="{{ url_for('leer.leer') }}">Volver</a>
-      <button class="btn primary" type="submit">Comprobar y pedir</button>
+      <a class="btn" href="{{ url_for('main.index') }}">Cancelar</a>
+      <button class="btn primary" type="submit">Validar y continuar</button>
     </div>
   </form>
 </section>

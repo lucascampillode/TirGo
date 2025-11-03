@@ -3,9 +3,10 @@ from .config import TEMPLATE_DIR, STATIC_DIR, PORT, DEBUG
 from .storage_mongo import init_db_if_needed
 from .routes import all_blueprints
 from . import rosio
+import os
 
 APP: Flask = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
-
+APP.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret")  # cambia "dev-secret" en prod
 def _register():
     rosio.init()  # pubs/subs ROS
     try:

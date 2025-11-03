@@ -14,10 +14,29 @@
     <div class="brand"><h1>TirGoPharma</h1></div>
   </header>
 
+  {# Mensaje “legacy” por compatibilidad #}
   {% if msg %}<p class="{{ 'err' if error else 'ok' }} toast">{{ msg }}</p>{% endif %}
+
+  {# Mensajes flash de Flask #}
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% if msgs %}
+      <div class="flash-area">
+        {% for cat, text in msgs %}
+          <div class="flash flash-{{ cat }}">{{ text }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
 
   {% block content %}{% endblock %}
 
-  {% block scripts %}{% endblock %}
+  {% block scripts %}
+  <script>
+    // Oculta automáticamente los mensajes flash tras ~3s
+    setTimeout(() => {
+      document.querySelectorAll('.flash').forEach(el => el.style.display = 'none');
+    }, 3000);
+  </script>
+  {% endblock %}
 </body>
 </html>

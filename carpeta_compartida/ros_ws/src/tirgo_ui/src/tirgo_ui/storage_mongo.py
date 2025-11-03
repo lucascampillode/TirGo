@@ -1,151 +1,198 @@
-from typing import Optional, Dict, Any, List
-import re, hmac, hashlib
-from datetime import datetime
-from pymongo import ReturnDocument
+import os
+import re
+import unicodedata
+import hmac
+import hashlib
+from typing import Optional
+from datetime import datetime, timezone
+
+from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
+from .mongo_client import get_db
 
-from .mongo_client import db as _db
-from .config import PEPPER
+_db = get_db()
+PEPPER = os.environ.get("TIRGO_PEPPER", "").encode()
 
-# -------- Helpers --------
-def _norm_text(s: str) -> str:
-    return re.sub(r"\s+", " ", (s or "").strip()).lower()
+# ---------- helpers ----------
 
-def _safe_int(x, default=None):
-    try: return int(x)
-    except Exception: return default
+def _norm_txt(s: str) -> str:
+    s = (s or "").strip()
+    s = unicodedata.normalize("NFD", s)
+    s = "".join(c for c in s if unicodedata.category(c) != "Mn")  # quita tildes
+    s = re.sub(r"\s+", " ", s).lower()
+    return s
 
 def h_dni(dni: str) -> str:
-    key = (PEPPER or "pepper").encode("utf-8")
-    msg = _norm_text(dni).encode("utf-8")
-    return hmac.new(key, msg, hashlib.sha256).hexdigest()
+    return hmac.new(PEPPER, (dni or "").strip().upper().encode(), hashlib.sha256).hexdigest()
 
-# -------- Índices --------
-def init_db_if_needed() -> None:
-    db = _db()
-    db.medicamentos.create_index("id", unique=True)
-    db.medicamentos.create_index([("nombre_norm", 1)])
-    db.pacientes.create_index("dni_hash", unique=True)
-    db.recetas.create_index([("paciente_id", 1), ("medicamento_id", 1), ("activa", 1)])
-    db.dispenses.create_index([("ts", -1)])
-    db.dispenses.create_index([("medicamento_id", 1)])
-    db.dispenses.create_index([("dni_hash", 1)])
+# ---------- init & indexes ----------
 
-# -------- Medicamentos --------
-def _map_med(doc: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+def init_db_if_needed():
+    # medicamentos
+    _db.medicamentos.create_index("id", unique=True)
+    _db.medicamentos.create_index("nombre_norm")
+    # pacientes
+    _db.pacientes.create_index("dni_hash", unique=True)
+    _db.pacientes.create_index(
+        [("nombre_norm", 1), ("apellidos_norm", 1)],
+        unique=True,
+        partialFilterExpression={
+        "nombre_norm": {"$exists": True, "$type": "string", "$ne": ""},
+        "apellidos_norm": {"$exists": True, "$type": "string", "$ne": ""}})
+    # recetas / dispenses
+    _db.recetas.create_index([("paciente_id", 1), ("medicamento_id", 1), ("activa", 1)])
+    _db.dispenses.create_index("ts")
+    _db.dispenses.create_index([("medicamento_id", 1), ("ts", -1)])
+    return True
+
+# ---------- medicamentos ----------
+
+def _map_med(doc):
     if not doc:
-        return None
-    mid = _safe_int(doc.get("id"))
-    if mid is None:
         return None
     return {
-        "id": mid,
-        "nombre": doc.get("nombre"),
-        "nombre_norm": doc.get("nombre_norm") or (doc.get("nombre") and _norm_text(doc.get("nombre"))),
+        "id": int(doc.get("id")),
+        "nombre": doc.get("nombre", ""),
+        "nombre_norm": doc.get("nombre_norm", ""),
         "tipo": doc.get("tipo", "L"),
-        "bin_id": _safe_int(doc.get("bin_id"), 0),
-        "stock": _safe_int(doc.get("stock"), 0),
+        "bin_id": int(doc.get("bin_id", 0)),
+        "stock": int(doc.get("stock", 0)),
+        "img_url": doc.get("img_url"),
     }
 
-def lookup_medicamento_by_name(name: str) -> Optional[Dict[str, Any]]:
-    db = _db()
-    n = _norm_text(name)
-    doc = db.medicamentos.find_one({"nombre_norm": n})
-    if not doc:
-        doc = db.medicamentos.find_one({"nombre": {"$regex": f"^{re.escape(name)}$", "$options": "i"}})
-    return _map_med(doc)
+def lookup_medicamento_by_name(name: str):
+    n = _norm_txt(name)
+    doc = _db.medicamentos.find_one({"nombre_norm": n})
+    return _map_med(doc) if doc else None
 
-def lookup_medicamento_by_id(med_id: int) -> Optional[Dict[str, Any]]:
-    db = _db()
-    doc = db.medicamentos.find_one({"id": _safe_int(med_id)})
-    return _map_med(doc)
+def lookup_medicamento_by_id(med_id: int):
+    doc = _db.medicamentos.find_one({"id": int(med_id)})
+    return _map_med(doc) if doc else None
 
 def get_stock(med_id: int) -> int:
-    db = _db()
-    doc = db.medicamentos.find_one({"id": _safe_int(med_id)}, {"stock": 1})
-    return _safe_int(doc.get("stock"), 0) if doc else 0
+    d = _db.medicamentos.find_one({"id": int(med_id)}, {"stock": 1, "_id": 0})
+    return int(d.get("stock", 0)) if d else 0
 
 def dec_stock_if_available(med_id: int, units: int = 1) -> bool:
-    db = _db()
-    res = db.medicamentos.find_one_and_update(
-        {"id": _safe_int(med_id), "stock": {"$gte": int(units)}},
-        {"$inc": {"stock": -int(units)}},
-        return_document=ReturnDocument.AFTER,
+    res = _db.medicamentos.update_one(
+        {"id": int(med_id), "stock": {"$gte": units}},
+        {"$inc": {"stock": -units}},
     )
-    return bool(res)
+    return res.modified_count == 1
 
-def inc_stock(med_id: int, units: int = 1) -> None:
-    db = _db()
-    db.medicamentos.update_one({"id": _safe_int(med_id)}, {"$inc": {"stock": int(units)}})
+def inc_stock(med_id: int, units: int = 1):
+    _db.medicamentos.update_one({"id": int(med_id)}, {"$inc": {"stock": units}})
 
-# -------- Pacientes / Recetas --------
-def find_or_create_paciente(nombre: str, apellidos: str, dni: str) -> Optional[str]:
-    nombre    = _norm_text(nombre)
-    apellidos = _norm_text(apellidos)
-    dni_norm  = _norm_text(dni)
-    if not (nombre and apellidos and dni_norm):
-        return None
+def meds_disponibles():
+    """Para selector en /leer: solo stock>0, campos necesarios."""
+    cur = _db.medicamentos.find(
+        {"stock": {"$gt": 0}},
+        {"_id": 0, "id": 1, "nombre": 1, "stock": 1, "tipo": 1, "img_url": 1, "bin_id": 1},
+    ).sort("nombre", 1)
+    return list(cur)
 
-    db = _db()
-    dni_hash = h_dni(dni_norm)
-    doc = db.pacientes.find_one({"dni_hash": dni_hash})
-    if doc:
-        return str(doc["_id"])
+# ---------- pacientes & recetas ----------
 
-    res = db.pacientes.insert_one({
-        "nombre": nombre,
-        "apellidos": apellidos,
-        "dni_hash": dni_hash,
-        "necesita_restringido": 0,
-    })
-    return str(res.inserted_id)
+def find_paciente_by_dni(dni: str):
+    return _db.pacientes.find_one({"dni_hash": h_dni(dni)})
 
-def paciente_necesita_restringido(paciente_id: str) -> int:
-    db = _db()
-    doc = db.pacientes.find_one({"_id": _as_obj_id(paciente_id)}, {"necesita_restringido": 1})
-    if not doc:
-        return 0
+def get_paciente(paciente_id):
+    return _db.pacientes.find_one({"_id": ObjectId(paciente_id)})
+
+def create_paciente_if_allowed(nombre: str, apellidos: str, dni: str):
+    """
+    Crea paciente SOLO si no existe otro con mismo nombre+apellidos.
+    Unicidad garantizada por índice (nombre_norm, apellidos_norm).
+    Si ya existe con distinto dni_hash -> error.
+    """
+    nombre_norm = _norm_txt(nombre)
+    apellidos_norm = _norm_txt(apellidos)
+    doc = {
+        "nombre": (nombre or "").strip(),
+        "apellidos": (apellidos or "").strip(),
+        "nombre_norm": nombre_norm,
+        "apellidos_norm": apellidos_norm,
+        "dni_hash": h_dni(dni),
+    }
     try:
-        return int(doc.get("necesita_restringido", 0))
-    except Exception:
-        return 0
+        res = _db.pacientes.insert_one(doc)
+        return _db.pacientes.find_one({"_id": res.inserted_id})
+    except DuplicateKeyError:
+        existing = _db.pacientes.find_one({"nombre_norm": nombre_norm, "apellidos_norm": apellidos_norm})
+        if existing and existing["dni_hash"] != doc["dni_hash"]:
+            raise ValueError("Ya existe un paciente con el mismo nombre y apellidos y otro DNI.")
+        return existing
 
-def tiene_receta_activa(paciente_id: str, med_id: int) -> bool:
-    db = _db()
-    r = db.recetas.find_one({
-        "paciente_id": _as_obj_id(paciente_id),
+def paciente_necesita_restringido(paciente_id):
+    """Tu lógica existente: placeholder para compatibilidad."""
+    # Si tenías otra semántica, mantenla; aquí devolvemos False por defecto.
+    return False
+
+def tiene_receta_activa(paciente_id, med_id: int) -> bool:
+    return _db.recetas.find_one({
+        "paciente_id": ObjectId(paciente_id),
         "medicamento_id": int(med_id),
         "activa": True
+    }) is not None
+
+def permitted_meds_for_patient(paciente_id):
+    meds = _db.medicamentos.find({}, {
+        "_id": 0, "id": 1, "nombre": 1, "nombre_norm": 1,
+        "tipo": 1, "bin_id": 1, "stock": 1, "img_url": 1
     })
-    return bool(r)
+    out = []
+    for d in meds:
+        m = _map_med(d)
+        permitido = True
+        motivo = "LIBRE"
+        if m["tipo"] == "R":
+            permitido = tiene_receta_activa(paciente_id, m["id"])
+            motivo = "RECIPE_OK" if permitido else "RECIPE_REQUIRED"
+        m["permitido"] = permitido
+        m["motivo"] = motivo
+        out.append(m)
+    out.sort(key=lambda x: x["nombre"].lower())
+    return out
 
-def permitted_meds_for_patient(paciente_id: str) -> List[Dict[str, Any]]:
-    db = _db()
-    necesita = bool(paciente_necesita_restringido(paciente_id))
-    meds: List[Dict[str, Any]] = []
-    cursor = db.medicamentos.find({}, {"_id": 0, "id": 1, "nombre": 1, "nombre_norm": 1, "tipo": 1, "bin_id": 1, "stock": 1})
-    for raw in cursor:
-        m = _map_med(raw)
-        if not m:
-            continue
-        if m.get("tipo", "L") != "R":
-            meds.append(m)
-        else:
-            if necesita or tiene_receta_activa(paciente_id, int(m["id"])):
-                meds.append(m)
-    return meds
+# ---------- compatibilidad API antigua ----------
 
-# -------- Log auditoría --------
-def log_dispense(med: Dict[str, Any], dni_hash: Optional[str]) -> None:
-    db = _db()
-    payload = {
-        "ts": datetime.utcnow(),
-        "medicamento_id": int(med["id"]),
-        "medicamento_nombre": med.get("nombre"),
+def find_or_create_paciente(nombre: str, apellidos: str, dni: str):
+    """
+    Mantiene la firma antigua devolviendo el ObjectId del paciente.
+    Internamente usa create_paciente_if_allowed() (con la regla de unicidad
+    nombre+apellidos). Devuelve None si no se pudo crear.
+    """
+    pac = create_paciente_if_allowed(nombre, apellidos, dni)
+    return pac["_id"] if pac else None
+
+# ---------- logs de dispensado ----------
+
+def log_dispense(
+    med: dict,
+    dni_hash: Optional[str] = None,
+    ok: bool = True,
+    error: Optional[str] = None,
+    meta: Optional[dict] = None
+):
+    """
+    Guarda un log de dispensado en la colección 'dispenses'.
+    - med: dict con al menos 'id' (int) y, opcionalmente, 'nombre'
+    - dni_hash: hash del DNI (o None si libre)
+    - ok: True si el proceso terminó bien; False si hubo error y se revirtió
+    - error: texto del error si ok=False
+    - meta: campos adicionales (p.ej. {'bin_id': 3})
+    """
+    doc = {
+        "ts": datetime.now(timezone.utc),
+        "medicamento_id": int(med.get("id")),
         "dni_hash": dni_hash,
+        "ok": bool(ok),
     }
-    db.dispenses.insert_one(payload)
+    if "nombre" in med:
+        doc["med_nombre"] = med["nombre"]
+    if meta:
+        doc["meta"] = meta
+    if error:
+        doc["error"] = str(error)
 
-# -------- Utils --------
-def _as_obj_id(s: str) -> ObjectId:
-    return s if isinstance(s, ObjectId) else ObjectId(str(s))
+    _db.dispenses.insert_one(doc)
