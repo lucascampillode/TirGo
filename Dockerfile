@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LC_ALL=C.UTF-8
 
 # =========================
-#  Dependencias de sistema (añadimos audio)
+#  Dependencias de sistema (incluye audio)
 # =========================
 RUN apt update && apt install -y --no-install-recommends \
     rviz \
@@ -32,7 +32,7 @@ RUN apt update && apt install -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
 # =========================
-#  Librerías Python (añadimos vosk + sounddevice)
+#  Librerías Python (añadimos pymongo para MongoDB)
 # =========================
 RUN pip install --no-cache-dir \
     catkin_tools \
@@ -40,6 +40,7 @@ RUN pip install --no-cache-dir \
     opencv-python \
     flask \
     flask-cors \
+    pymongo \
     vosk \
     pyaudio \
     sounddevice \
@@ -59,8 +60,8 @@ RUN groupadd -g 1000 TirGo && \
     usermod -aG audio TirGo
 
 # =========================
-#  ALSA por defecto → tu micro hw:1,7 a 16 kHz mono
-#  (Si cambia el índice del micro, edita "hw:1,7" aquí)
+#  ALSA por defecto → micro hw:1,7 a 16 kHz mono
+#  (Si cambia el índice del micro, edita "hw:1,7")
 # =========================
 RUN printf '%s\n' \
 'pcm.!default {' \
@@ -73,5 +74,7 @@ RUN printf '%s\n' \
 '}' > /home/TirGo/.asoundrc && chown TirGo:TirGo /home/TirGo/.asoundrc
 
 USER TirGo
+WORKDIR /home/TirGo
 
+# DEV DORMIDO: tú ejecutarás todo a mano
 ENTRYPOINT ["sleep", "infinity"]

@@ -1,21 +1,29 @@
 {% extends "base.html" %}
 {% block title %}TirGoPharma · Dime “hola”{% endblock %}
+
 {% block content %}
 <section class="hero">
   <h2>Di “hola, Tirgo”</h2>
   <p class="muted">Estoy escuchando… Cuando te oiga, desbloquearé las opciones.</p>
-  <form method="post" action="{{ url_for('main.simulate_hola') }}" onsubmit="setTimeout(()=>location.reload(),300);">
+
+  {# Botón demo opcional: solo si TIRGO_DEV=1 y existe el endpoint simulate_hola #}
+  <form method="post" action="{{ url_for('main.simulate_hola') }}" onsubmit="setTimeout(()=>location.reload(),300);" style="margin-top:1rem;">
     <button class="btn ghost">Simular “hola” (demo)</button>
   </form>
-  <p class="small muted">Ventana de detección activa: {{ window_secs }} s</p>
 </section>
 {% endblock %}
+
 {% block scripts %}
 <script>
-  const tick = async () => {
-    try { const r = await fetch('/state',{cache:'no-store'}); const j = await r.json(); if (j.hotword) location.reload(); }
-    catch(e) {}
+  // Consultar si la sesión está activa (nuevo modelo sin “ventana”)
+  async function tick() {
+    try {
+      const r = await fetch('/session_status', { cache: 'no-store' });
+      const j = await r.json();
+      if (j && j.active) { location.reload(); return; }
+    } catch (e) { /* noop */ }
     setTimeout(tick, 800);
-  }; tick();
+  }
+  tick();
 </script>
 {% endblock %}

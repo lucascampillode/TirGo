@@ -28,3 +28,8 @@ pgrep -a rosmaster     # debería haber uno
 echo $ROS_MASTER_URI   # http://tiago-222c:11311
 echo $ROS_IP           # tu IP en esa red
 ping -c1 tiago-222c
+
+
+____________________________________
+
+rosrun tirgo_ui tirgo_web_server 

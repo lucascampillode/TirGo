@@ -1,22 +1,26 @@
-import threading, time
-from typing import Optional
-from . import rosio
-from .storage import db, get_stock, dec_stock_if_available, log_dispense
+from typing import Optional, Dict, Any
+import time
+from .storage_mongo import get_stock, dec_stock_if_available, log_dispense
+# Si quieres revertir en caso de fallo hardware:
+# from .storage_mongo import inc_stock
 
-_nav_lock = threading.Lock()
+def _do_physical_dispense(med: Dict[str, Any]) -> bool:
+    # TODO: integra tu driver real (GPIO/serie). Simulamos retardo:
+    time.sleep(1.0)
+    return True
 
-def dispense_physical(med, dni_hash: Optional[str] = None) -> None:
-    with _nav_lock:
-        rosio.pub_state('DISPENSING')
-        conn = db()
-        try:
-            if get_stock(med['id']) <= 0:
-                rosio.pub_error('NO_STOCK', 'Sin stock al dispensar'); rosio.pub_state('ERROR'); return
-            if not dec_stock_if_available(conn, med['id']):
-                rosio.pub_error('NO_STOCK', 'Sin stock (race)'); rosio.pub_state('ERROR'); return
-            log_dispense(conn, med['id'], dni_hash, 'ok', med['nombre'])
-            conn.commit()
-        finally:
-            conn.close()
-        rosio.pub_state('READY')
-        time.sleep(0.2)
+def dispense_physical(med: Dict[str, Any], dni_hash: Optional[str]) -> bool:
+    med_id = int(med["id"])
+    if get_stock(med_id) <= 0:
+        return False
+
+    if not dec_stock_if_available(med_id, units=1):
+        return False
+
+    hw_ok = _do_physical_dispense(med)
+    # if not hw_ok: inc_stock(med_id, 1)  # opcional
+    try:
+        log_dispense(med, dni_hash)
+    except Exception:
+        pass
+    return hw_ok
