@@ -11,14 +11,13 @@ from ..storage_mongo import (
 from ..services import dispense_physical
 from .. import session, rosio
 import threading
-from bson import ObjectId  # 👈 lo teníamos ya
+from bson import ObjectId
 
 bp = Blueprint('leer', __name__)
 
-# 👇 añadimos esto para poder acceder a la db y editar la receta
+# --- Utilidad para acceder a la DB cuando necesitemos toquetear recetas ----
 def _get_db_from_storage():
     from .. import storage_mongo as store
-    # probamos los nombres típicos que usa tu proyecto
     for name in ("db", "mongo", "database", "mongo_db", "_db", "_mongo"):
         if hasattr(store, name):
             return getattr(store, name)
@@ -58,7 +57,17 @@ def leer_post():
         rosio.pub_error('NOT_FOUND', 'Medicamento no existe')
         return redirect(url_for('leer.leer_get'))
 
-    if med.get('tipo') != 'R':
+    # ✅ Normaliza el tipo para evitar sorpresas de espacios/minúsculas
+    tipo = (med.get('tipo') or '').strip().upper()
+
+    # Log de diagnóstico
+    try:
+        print(f"[leer_post] med_id={med_id} -> nombre={med.get('nombre')} tipo={tipo} bin={med.get('bin_id')}")
+    except Exception:
+        pass
+
+    # LIBRE: dispensa directa
+    if tipo != 'R':
         if get_stock(med['id']) <= 0:
             rosio.pub_error('NO_STOCK', 'Sin stock')
             flash('Sin stock', 'error')
@@ -72,6 +81,7 @@ def leer_post():
         session.end_session()
         return render_template('status.html', state='DISPENSING', msg='Preparando tu producto')
 
+    # RESTRINGIDO: identificar
     rosio.pub_state('IDENTIFYING')
     return render_template('leer_ident.html', med=med)
 
@@ -133,7 +143,7 @@ def leer_ident():
             necesita     = paciente_necesita_restringido(pid)
             tiene_receta = tiene_receta_activa(pid, med_id)
 
-            if med.get('tipo') == 'R' and not (tiene_receta or necesita):
+            if (med.get('tipo') or '').strip().upper() == 'R' and not (tiene_receta or necesita):
                 rosio.pub_error('RESTRICTED', 'No autorizado para este R')
                 return render_template('status.html', state='ERROR',
                                        msg='Este medicamento requiere receta válida. Visita a tu médico.',
@@ -152,7 +162,7 @@ def leer_ident():
 
             threading.Thread(target=dispense_physical, args=(med, None), daemon=True).start()
 
-            # 👇 DESACTIVAR LA RECETA QUE HEMOS USADO
+            # 👇 DESACTIVAR LA RECETA USADA (si venía)
             if receta_id_s:
                 db = _get_db_from_storage()
                 if db is not None:
@@ -162,7 +172,6 @@ def leer_ident():
                             {"$set": {"activa": False}}
                         )
                     except Exception as e:
-                        # si falla no rompemos la dispensación
                         print("[leer] no se pudo desactivar la receta:", e)
 
             session.end_session()
@@ -182,7 +191,7 @@ def leer_ident():
     necesita     = paciente_necesita_restringido(pid)
     tiene_receta = tiene_receta_activa(pid, med_id)
 
-    if med.get('tipo') == 'R' and not (tiene_receta or necesita):
+    if (med.get('tipo') or '').strip().upper() == 'R' and not (tiene_receta or necesita):
         rosio.pub_error('RESTRICTED', 'No autorizado para este R')
         return render_template('status.html', state='ERROR',
                                msg='Este medicamento requiere receta válida. Visita a tu médico.',

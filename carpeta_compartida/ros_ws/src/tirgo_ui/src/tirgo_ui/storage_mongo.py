@@ -37,8 +37,11 @@ def init_db_if_needed():
         [("nombre_norm", 1), ("apellidos_norm", 1)],
         unique=True,
         partialFilterExpression={
-        "nombre_norm": {"$exists": True, "$type": "string", "$ne": ""},
-        "apellidos_norm": {"$exists": True, "$type": "string", "$ne": ""}})
+            # Existe y es > ""  => no vacío (válido en partial indexes)
+            "nombre_norm":     {"$exists": True, "$gt": ""},
+            "apellidos_norm":  {"$exists": True, "$gt": ""},
+        }
+    )
     # recetas / dispenses
     _db.recetas.create_index([("paciente_id", 1), ("medicamento_id", 1), ("activa", 1)])
     _db.dispenses.create_index("ts")
@@ -66,8 +69,17 @@ def lookup_medicamento_by_name(name: str):
     return _map_med(doc) if doc else None
 
 def lookup_medicamento_by_id(med_id: int):
-    doc = _db.medicamentos.find_one({"id": int(med_id)})
-    return _map_med(doc) if doc else None
+    """Devuelve un medicamento por id exacto (int). Sin _id de Mongo."""
+    from .mongo_client import get_db
+    db = get_db()
+    try:
+        med_id = int(med_id)
+    except Exception:
+        return None
+    doc = db.medicamentos.find_one({"id": med_id}, {"_id": 0})
+    if doc and "tipo" in doc and isinstance(doc["tipo"], str):
+        doc["tipo"] = doc["tipo"].strip().upper()
+    return doc
 
 def get_stock(med_id: int) -> int:
     d = _db.medicamentos.find_one({"id": int(med_id)}, {"stock": 1, "_id": 0})

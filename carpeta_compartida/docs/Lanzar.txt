@@ -32,4 +32,4 @@ ping -c1 tiago-222c
 
 ____________________________________
 
-rosrun tirgo_ui tirgo_web_server 
+LANZAR WEB

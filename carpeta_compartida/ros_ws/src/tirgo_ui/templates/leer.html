@@ -6,11 +6,14 @@
   <h2>Selecciona un medicamento</h2>
 
   {% if meds and meds|length > 0 %}
-  <form method="post" action="{{ url_for('leer.leer_ident') }}" class="form">
+  <!-- 🔁 Cambiado: enviamos a leer_post (no a leer_ident) -->
+  <form method="post" action="{{ url_for('leer.leer_post') }}" class="form">
     <div class="grid">
       {% for m in meds %}
-      {% set nombre = m.nombre|lower %}
-      {# radio fuera, con id único #}
+      {% set nombre = (m.nombre|default(''))|lower %}
+      {% set tipo = (m.tipo|default(''))|trim|upper %}
+
+      <!-- radio fuera, con id único -->
       <input
         type="radio"
         id="med-{{ m.id }}"
@@ -20,7 +23,8 @@
         required
         style="display:none"
       >
-      {# label que se pinta según el nombre #}
+
+      <!-- label que se pinta según el nombre -->
       <label
         for="med-{{ m.id }}"
         class="card
@@ -46,12 +50,13 @@
             {% endif %}
           {% endif %}
         </div>
+
         <div class="info">
           <div class="name">{{ m.nombre }}</div>
           <div class="meta">
             <span>Stock: {{ m.stock }}</span>
             <span>Bin: {{ m.bin_id }}</span>
-            <span class="{{ 'tag-r' if m.tipo=='R' else 'tag-l' }}">{{ 'R' if m.tipo=='R' else 'L' }}</span>
+            <span class="{{ 'tag-r' if tipo=='R' else 'tag-l' }}">{{ tipo if tipo in ['R','L'] else tipo }}</span>
           </div>
         </div>
       </label>

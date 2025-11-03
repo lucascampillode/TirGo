@@ -1,29 +1,47 @@
 {% extends "base.html" %}
-{% block title %}TirGoPharma · Identificación{% endblock %}
-
 {% block content %}
-<section class="panel">
-  <h2>Identificación para {{ med.nombre }}</h2>
 
-  <form method="post" action="{{ url_for('leer.leer_ident') }}" class="form">
-    <input type="hidden" name="med_id" value="{{ med.id }}">
-    <div class="row">
-      <label>Nombre</label>
-      <input name="nombre" required />
-    </div>
-    <div class="row">
-      <label>Apellidos</label>
-      <input name="apellidos" required />
-    </div>
-    <div class="row">
-      <label>DNI</label>
-      <input name="dni" required />
-    </div>
+<h2>Identificación para medicamento restringido</h2>
 
-    <div class="actions">
-      <a class="btn" href="{{ url_for('main.index') }}">Cancelar</a>
-      <button class="btn primary" type="submit">Validar y continuar</button>
-    </div>
-  </form>
-</section>
+<p>Producto: <strong>{{ med.nombre }}</strong></p>
+
+{% if error or msg %}
+  <div class="flash error">{{ msg or 'Error' }}</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('leer.leer_ident') }}" class="form">
+  <input type="hidden" name="med_id" value="{{ med.id }}">
+
+  <div class="row">
+    <label>Nombre</label>
+    <input type="text" name="nombre" placeholder="Nombre" required>
+  </div>
+
+  <div class="row">
+    <label>Apellidos</label>
+    <input type="text" name="apellidos" placeholder="Apellidos" required>
+  </div>
+
+  <div class="row">
+    <label>DNI</label>
+    <input type="text" name="dni" placeholder="DNI" required>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn-primary">Confirmar</button>
+    <a href="{{ url_for('leer.leer') }}" class="btn">Cancelar</a>
+  </div>
+</form>
+
+<style>
+  .form { max-width:520px; padding:12px; border:1px solid #ddd; border-radius:12px; }
+  .row { display:flex; flex-direction:column; margin:.5rem 0; }
+  label { font-weight:600; margin-bottom:.25rem; }
+  input { padding:.5rem .6rem; border:1px solid #ccc; border-radius:8px; }
+  .actions { display:flex; gap:.5rem; margin-top:.75rem; }
+  .btn { display:inline-block; padding:.5rem .9rem; border-radius:8px; text-decoration:none; border:none; cursor:pointer; background:#eee; }
+  .btn-primary { background:#0d6efd; color:#fff; }
+  .flash.error { padding:.5rem .75rem; border-radius:6px; background:#fee2e2; color:#991b1b; margin:.5rem 0; }
+</style>
+
 {% endblock %}
