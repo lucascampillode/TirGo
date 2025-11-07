@@ -11,13 +11,12 @@
 </head>
 <body>
   <header class="appbar">
-    <div class="brand"><h1>TirGoPharma</h1></div>
+    <!-- volvemos al “esperar hola” -->
+    <a class="brand" href="{{ url_for('main.reset_hotword') }}">TirGoPharma</a>
   </header>
 
-  {# Mensaje “legacy” por compatibilidad #}
   {% if msg %}<p class="{{ 'err' if error else 'ok' }} toast">{{ msg }}</p>{% endif %}
 
-  {# Mensajes flash de Flask #}
   {% with msgs = get_flashed_messages(with_categories=true) %}
     {% if msgs %}
       <div class="flash-area">
@@ -32,7 +31,6 @@
 
   {% block scripts %}
   <script>
-    // Oculta automáticamente los mensajes flash tras ~3s
     setTimeout(() => {
       document.querySelectorAll('.flash').forEach(el => el.style.display = 'none');
     }, 3000);
