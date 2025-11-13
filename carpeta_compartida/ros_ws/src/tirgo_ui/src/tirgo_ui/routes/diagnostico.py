@@ -1,16 +1,24 @@
-from flask import Blueprint, render_template, request, url_for, redirect
-from .. import hotword, rosio
-from ..config import DB_PATH
+# src/tirgo_ui/routes/diagnostico.py
+from flask import Blueprint, request, render_template, redirect, url_for
+from .. import session, rosio
 
 bp = Blueprint('diagnostico', __name__)
 
-@bp.route('/diagnostico', methods=['GET','POST'])
+@bp.route('/diagnostico', methods=['GET', 'POST'])
 def diagnostico():
-    if not hotword.is_active():
+    if not session.is_active():
         return redirect(url_for('main.index'))
+
     if request.method == 'GET':
-        rosio.pub_state('MODE_SELECTED')
-        return render_template('diagnostico.html', db_path=DB_PATH)
-    # si quieres procesar server-side, añade aquí la lógica;
-    # por ahora lo hace el JS y redirige a /leer con la recomendación.
-    return redirect(url_for('leer.leer'))
+        rosio.pub_state('DIAG_START')
+        return render_template('diagnostico.html')
+
+    # --- POST: tu lógica de diagnóstico aquí ---
+    decision = (request.form.get('decision') or '').strip().lower()
+    if decision == 'finalizar':
+        # si aquí consideras que termina la operación:
+        session.end_session()
+        return redirect(url_for('main.index'))
+
+    # si no finaliza, seguir en la misma pantalla o redirigir:
+    return render_template('diagnostico.html', msg='Acción registrada')

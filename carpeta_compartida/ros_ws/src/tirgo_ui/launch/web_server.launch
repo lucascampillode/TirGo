@@ -1,11 +1,9 @@
 <launch>
-  <node pkg="tirgo_ui"
-        type="tirgo_web_server"
-        name="tirgo_web_server"
-        output="screen">
-    <env name="PORT" value="9000"/>
-    <env name="TIRGO_DB" value="$(env HOME)/tirgo.db"/>
-    <env name="TIRGO_HOTWORD" value="hola"/>
-    <env name="TIRGO_STT_TOPIC" value="/stt/text"/>
+  <arg name="host" default="0.0.0.0"/>
+  <arg name="port" default="5000"/>
+
+  <node pkg="tirgo_ui" type="tirgo_web_server" name="tirgo_web_server" output="screen">
+    <param name="host" value="$(arg host)"/>
+    <param name="port" value="$(arg port)"/>
   </node>
 </launch>

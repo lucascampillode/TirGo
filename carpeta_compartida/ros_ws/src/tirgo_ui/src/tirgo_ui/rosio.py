@@ -1,8 +1,9 @@
+# src/tirgo_ui/rosio.py
 import os, socket
 from urllib.parse import urlparse
 from typing import Any, Dict
-from .config import STT_TOPIC_DEFAULT
-from . import hotword
+from .config import STT_TOPIC_DEFAULT, TIRGO_HOTWORD
+from . import session
 
 try:
     import rospy
@@ -10,15 +11,18 @@ try:
     ROS_AVAILABLE = True
 except Exception:
     ROS_AVAILABLE = False
-    class _DummyPub: 
+
+    class _DummyPub:
         def publish(self, *_a, **_k): pass
+
     class _DummyRospy:
         def init_node(self, *a, **k): pass
         def loginfo(self, *a, **k): print(*a)
         def signal_shutdown(self, *a, **k): pass
         def get_param(self, *a, **k): return STT_TOPIC_DEFAULT
         def Subscriber(self, *a, **k): return None
-        Publisher = lambda *a, **k: _DummyPub()
+        Publisher = staticmethod(lambda *a, **k: _DummyPub())
+
     rospy = _DummyRospy()     # type: ignore
     String = str              # type: ignore
     Bool   = bool             # type: ignore
@@ -49,6 +53,7 @@ def init():
             rospy.init_node('tirgo_web_server_v2', anonymous=True, disable_signals=True)
         except Exception:
             pass
+
         _pub_state  = rospy.Publisher('tirgo/ui/state',  String, queue_size=10)
         _pub_status = rospy.Publisher('tirgo/ui/status', String, queue_size=10)
         _pub_error  = rospy.Publisher('tirgo/ui/error',  String, queue_size=10)
@@ -61,10 +66,11 @@ def init():
         rospy.Subscriber('/tirgo/tiago/arrived', Bool,  lambda m: _set_flag("tiago_arrived", bool(getattr(m,'data',m))))
         rospy.Subscriber('/tirgo/dispense/ready', Bool, lambda m: _set_flag("dispense_ready", bool(getattr(m,'data',m))))
         rospy.Subscriber('/tirgo/tiago/picked', Bool,  lambda m: _set_flag("tiago_picked", bool(getattr(m,'data',m))))
+
         try: rospy.loginfo(f"[STT] suscrito a {stt_topic}")
         except Exception: pass
     else:
-        class DummyPub: 
+        class DummyPub:
             def publish(self, *_a, **_k): pass
         _pub_state = _pub_status = _pub_error = DummyPub()
         pub_mission_start = pub_dispense_req = DummyPub()
@@ -74,18 +80,26 @@ def _set_flag(k: str, v: bool):
     try: rospy.loginfo(f"[FLAG] {k}={v}")
     except Exception: pass
 
-def flags() -> Dict[str,bool]:
+def flags() -> Dict[str, bool]:
     return dict(_last_flags)
 
 def _stt_cb(msg: Any):
+    """Callback de STT: si oímos la hotword, abrimos sesión de operación."""
     try:
         txt = msg.data if hasattr(msg, "data") else str(msg)
     except Exception:
         txt = str(msg)
-    if hotword.contains_hotword(txt):
-        hotword.bump_now()
-        try: rospy.loginfo(f"[HOTWORD] detectada: {txt}")
-        except Exception: pass
+    text_norm = (txt or "").strip().lower()
+
+    if TIRGO_HOTWORD.lower() in text_norm:
+        if not session.is_active():
+            session.start_session(op_name="voice_unlock")
+            try: rospy.loginfo(f"[HOTWORD] '{TIRGO_HOTWORD}' detectada en: {text_norm}")
+            except Exception: pass
+            pub_state(f"hotword:{TIRGO_HOTWORD}")
+        else:
+            try: rospy.loginfo("[HOTWORD] sesión ya activa, ignorando nuevo unlock")
+            except Exception: pass
 
 def pub_state(s: str):
     try:

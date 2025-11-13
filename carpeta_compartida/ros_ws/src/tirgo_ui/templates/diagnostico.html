@@ -76,17 +76,7 @@
     </div>
 
     <div class="step" data-step="8">
-      <h4>8) Preferencia de formato</h4>
-      <select name="forma" required>
-        <option value="">— Selecciona —</option>
-        <option value="comprimido">Comprimido</option>
-        <option value="sobre">Sobre/bebible</option>
-        <option value="indiferente">Indiferente</option>
-      </select>
-    </div>
-
-    <div class="step" data-step="9">
-      <h4>9) Duración del síntoma</h4>
+      <h4>8) Duración del síntoma</h4>
       <select name="dur" required>
         <option value="">— Selecciona —</option>
         <option value="agudo">&lt; 3 días</option>
@@ -97,7 +87,7 @@
 
     <div class="actions space">
       <button class="btn" type="button" id="prev">⬅ Anterior</button>
-      <div class="muted small" id="stepTxt">Paso 1 / 9</div>
+      <div class="muted small" id="stepTxt">Paso 1 / 8</div>
       <button class="btn primary" type="button" id="next">Siguiente ➡</button>
     </div>
   </form>
@@ -105,18 +95,28 @@
   <div id="result" class="result card" style="display:none;">
     <h3 id="rTitle">Resultado</h3>
     <p id="rMsg" class="muted"></p>
+
+    {# cuando hay medicamento --> mandamos med_id #}
     <form id="rForm" method="post" action="{{ url_for('leer.leer') }}" style="display:none;">
-      <input type="hidden" name="med" id="rMed" />
+      <input type="hidden" name="med_id" id="rMed" />
       <button class="btn success" type="submit">Pedir este</button>
       <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Volver a empezar</a>
     </form>
+
+    {# cuando es médico / receta #}
     <div id="rDoctor" style="display:none;">
       <p class="warn"><b>Recomendación: visita a tu médico</b></p>
-      <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Volver</a>
+      <a class="btn" href="{{ url_for('main.index') }}">Volver al inicio</a>
+    </div>
+
+    {# cuando es consejo sin medicación #}
+    <div id="rAdvice" style="display:none;">
+      <a class="btn" href="{{ url_for('main.index') }}">Volver al inicio</a>
     </div>
   </div>
 </section>
 {% endblock %}
+
 {% block scripts %}
 <script>
 (function(){
@@ -128,6 +128,14 @@
   const btnPrev = document.getElementById('prev');
   const btnNext = document.getElementById('next');
   let idx = 0;
+
+  // ⚠️ Mapea tus nombres a los IDs reales de tu tabla
+  const MED_ID_MAP = {
+    "Paracetamol 1g": "101",
+    "Ibuprofeno 400 mg": "202",
+    "Amoxicilina 500 mg": "303",
+    "Omeprazol 20 mg": "404"
+  };
 
   const show = i => {
     idx = Math.max(0, Math.min(total-1, i));
@@ -145,27 +153,81 @@
     return true;
   };
 
+  // lógica adaptada a tus 4 medicamentos + consejo + derivación
   const computeRecommendation = () => {
     const data = Object.fromEntries(new FormData(form).entries());
-    if (data.sx === 'infeccion' || data.dur === 'cronico')
-      return {type:'R', med:null, reason:'Síntomas que pueden requerir antibiótico o evaluación médica.'};
-    const aine_risk = (data.aine==='si') || (data.gastric==='si') || (data.aco==='si') || (data.preg==='si');
-    if (['fiebre','dolor'].includes(data.sx)){
-      if (data.hep==='si')
-        return {type:'R', med:null, reason:'Ante enfermedad hepática, consulta a tu médico antes de analgésicos.'};
-      const med = 'Paracetamol 1g';
-      return {type:'NR', med, reason: aine_risk ? 'Evita AINEs: Paracetamol recomendado.' : 'Paracetamol adecuado para dolor/fiebre.'};
+
+    // 1) casos que deben ir a médico sí o sí
+    if (data.dur === 'cronico' || data.hep === 'si') {
+      return {
+        kind: 'DOCTOR',
+        med: null,
+        reason: 'Tus síntomas requieren valoración médica presencial.'
+      };
     }
-    if (data.sx === 'resfriado' || data.sx === 'tos'){
-      return {type:'NR', med:'Vitamina C 1g', reason:'Apoyo sintomático leve. Hidratación y reposo.'};
+
+    // 2) infección → amoxi, pero con receta
+    if (data.sx === 'infeccion') {
+      return {
+        kind: 'RX',
+        med: 'Amoxicilina 500 mg',
+        reason: 'Parece un proceso infeccioso. La amoxicilina 500 mg requiere receta y debe pautarla un médico.'
+      };
     }
-    return {type:'NR', med:'Paracetamol 1g', reason:'Opción segura por defecto.'};
+
+    // 3) problemas gástricos → omeprazol
+    if (data.gastric === 'si') {
+      return {
+        kind: 'MED',
+        med: 'Omeprazol 20 mg',
+        reason: 'Refieres molestias gástricas. Se puede usar Omeprazol 20 mg de forma puntual. Si empeora, acude a tu médico.'
+      };
+    }
+
+    // 4) dolor o fiebre → ibuprofeno si puede, si no paracetamol
+    if (data.sx === 'dolor' || data.sx === 'fiebre') {
+      const aine_risk = (data.aine === 'si') || (data.aco === 'si') || (data.preg === 'si');
+      if (aine_risk) {
+        return {
+          kind: 'MED',
+          med: 'Paracetamol 1g',
+          reason: 'Dolor/fiebre con factores de riesgo para AINEs: Paracetamol 1g es la opción más segura.'
+        };
+      } else {
+        return {
+          kind: 'MED',
+          med: 'Ibuprofeno 400 mg',
+          reason: 'Dolor/fiebre en persona sin contraindicaciones: Ibuprofeno 400 mg.'
+        };
+      }
+    }
+
+    // 5) resfriado/tos leve y agudo → consejo sin medicación
+    if ((data.sx === 'resfriado' || data.sx === 'tos') && data.dur === 'agudo') {
+      return {
+        kind: 'ADVICE',
+        med: null,
+        reason: 'Parece un cuadro leve. Descansa, hidrátate bien, puedes tomar vitaminas o miel/limón. Si empeora o dura más de 3–5 días, consulta.'
+      };
+    }
+
+    // 6) por defecto → paracetamol
+    return {
+      kind: 'MED',
+      med: 'Paracetamol 1g',
+      reason: 'Opción segura por defecto.'
+    };
   };
 
   btnPrev.addEventListener('click', ()=> show(idx-1));
   btnNext.addEventListener('click', ()=>{
     if (!validateStep()) return;
-    if (idx < total-1){ show(idx+1); return; }
+    if (idx < total-1){
+      show(idx+1);
+      return;
+    }
+
+    // último paso → calcular
     const res = computeRecommendation();
     const box = document.getElementById('result');
     const rTitle = document.getElementById('rTitle');
@@ -173,22 +235,38 @@
     const rForm = document.getElementById('rForm');
     const rMed  = document.getElementById('rMed');
     const rDoc  = document.getElementById('rDoctor');
+    const rAdvice = document.getElementById('rAdvice');
+
     box.style.display = 'block';
-    if (res.type === 'R'){
-      rTitle.textContent = 'Necesitas receta';
-      rMsg.textContent = res.reason + ' Te recomendamos visitar a tu médico.';
-      rForm.style.display = 'none';
+    rForm.style.display = 'none';
+    rDoc.style.display = 'none';
+    rAdvice.style.display = 'none';
+
+    if (res.kind === 'DOCTOR') {
+      rTitle.textContent = 'Derivado a médico';
+      rMsg.textContent = res.reason;
       rDoc.style.display = 'block';
-      window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+    } else if (res.kind === 'RX') {
+      rTitle.textContent = 'Necesita receta médica';
+      rMsg.textContent = res.reason;
+      rDoc.style.display = 'block';
+    } else if (res.kind === 'ADVICE') {
+      rTitle.textContent = 'Recomendación sin medicación';
+      rMsg.textContent = res.reason;
+      rAdvice.style.display = 'block';
     } else {
+      // MED → aquí sí mandamos al /leer con med_id
       rTitle.textContent = 'Recomendación disponible';
       rMsg.textContent = res.reason;
-      rMed.value = res.med;
+
+      const medId = MED_ID_MAP[res.med] || '';
+      rMed.value = medId;   // <input name="med_id" ...>
       rForm.style.display = 'block';
-      rDoc.style.display = 'none';
-      window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
     }
+
+    window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
   });
+
   show(0);
 })();
 </script>
