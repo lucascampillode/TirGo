@@ -26,6 +26,10 @@ RUN apt update && apt install -y --no-install-recommends \
     ros-noetic-usb-cam \
     htop \
     libxmlrpc-core-c3-dev \
+    ros-noetic-teleop-twist-keyboard \
+    ros-noetic-teleop-twist-joy \
+    ros-noetic-map-server \
+    ros-noetic-move-base-msgs \
     # ---- AUDIO ----
     alsa-utils libasound2 libasound2-data libasound2-dev \
     portaudio19-dev python3-pyaudio \
@@ -52,6 +56,7 @@ RUN pip install --no-cache-dir \
 RUN groupadd -g 1000 TirGo && \
     useradd -ms /bin/bash TirGo -u 1000 -g 1000 && \
     echo "TirGo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+    echo "source /opt/ros/noetic/setup.bash" >> /home/TirGo/.bashrc && \
     echo "source /home/TirGo/carpeta_compartida/setup_env.sh" >> /home/TirGo/.bashrc && \
     echo 'TirGo:TirGo' | chpasswd && \
     chown -R TirGo:TirGo /home/TirGo && \
