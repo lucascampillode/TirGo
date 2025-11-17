@@ -28,6 +28,8 @@ RUN apt update && apt install -y --no-install-recommends \
     libxmlrpc-core-c3-dev \
     ros-noetic-teleop-twist-keyboard \
     ros-noetic-teleop-twist-joy \
+    ros-noetic-map-server \
+    ros-noetic-move-base-msgs \
     # ---- AUDIO ----
     alsa-utils libasound2 libasound2-data libasound2-dev \
     portaudio19-dev python3-pyaudio \
@@ -73,7 +75,5 @@ RUN printf '%s\n' \
 '    channels 1' \
 '  }' \
 '}' > /home/TirGo/.asoundrc && chown TirGo:TirGo /home/TirGo/.asoundrc
-
-
 
 ENTRYPOINT ["sleep", "infinity"]
