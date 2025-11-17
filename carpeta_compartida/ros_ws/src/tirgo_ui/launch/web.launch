@@ -1,0 +1,24 @@
+<launch>
+  <!-- ===== Args con defaults seguros (cámbialos al lanzar si quieres) ===== -->
+  <arg name="port"              default="9001" />
+  <arg name="flask_secret_key"  default="dev-secret" />
+  <arg name="hotword"           default="hola" />
+  <arg name="stt_topic"         default="/stt/text" />
+  <arg name="pepper"            default="cadena-larga-estable" />
+  <arg name="tirgo_dev"         default="1" />
+  <!-- Con auth (recomendado): -->
+  <arg name="mongo_uri" default="mongodb://tirgo_app:tirgo@127.0.0.1:27017/tirgo?authSource=tirgo" />
+  <!-- Sin auth: cambia el arg mongo_uri a: mongodb://127.0.0.1:27017/tirgo -->
+
+  <!-- ===== Exporta las variables de entorno para el proceso ===== -->
+  <env name="PORT"                value="$(arg port)" />
+  <env name="FLASK_SECRET_KEY"    value="$(arg flask_secret_key)" />
+  <env name="TIRGO_HOTWORD"       value="$(arg hotword)" />
+  <env name="TIRGO_STT_TOPIC"     value="$(arg stt_topic)" />
+  <env name="TIRGO_PEPPER"        value="$(arg pepper)" />
+  <env name="TIRGO_DEV"           value="$(arg tirgo_dev)" />
+  <env name="MONGO_URI"           value="$(arg mongo_uri)" />
+
+  <!-- ===== Lanza el servidor web ===== -->
+  <node pkg="tirgo_ui" type="tirgo_web_server" name="tirgo_web" output="screen" />
+</launch>

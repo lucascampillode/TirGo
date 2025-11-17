@@ -1,24 +1,76 @@
 {% extends "base.html" %}
-{% block title %}TirGoPharma · Permitidos{% endblock %}
+{% block title %}TirGoPharma · Consultar{% endblock %}
+
 {% block content %}
 <section class="panel">
-  <h2>Permitidos</h2>
-  <p class="muted">Paciente: <b>{{ paciente.nombre }} {{ paciente.apellidos }}</b> (DNI hash {{ paciente.dni_hash[:8] }}…)</p>
-  <div class="grid">
-    {% for row in allowed %}
-      <article class="card">
-        <h3>{{ row['nombre'] }}</h3>
-        <p class="pill">Tipo {{ row['tipo'] }}</p>
-        <p class="muted small">Stock: {{ row['qty'] }}</p>
-        <a class="btn success" href="{{ url_for('leer.recoger', med_id=row['id']) }}?dni_hash={{ paciente.dni_hash }}">Recoger</a>
-      </article>
-    {% else %}
-      <article class="card">
-        <h3>Sin opciones disponibles</h3>
-        <p class="muted">Ahora mismo no tienes medicamentos para recoger.</p>
-        <a class="btn" href="{{ url_for('main.index') }}">Volver al inicio</a>
-      </article>
-    {% endfor %}
+  <h2>Recetas activas del paciente</h2>
+
+  <p class="muted">
+    Paciente: <b>{{ paciente.nombre }} {{ paciente.apellidos }}</b>
+  </p>
+
+  {% if msg %}
+    <p>{{ msg }}</p>
+  {% endif %}
+
+  {% if has_meds %}
+    <div class="grid">
+      {% for m in meds %}
+      <div class="card">
+        <h4>{{ m.nombre }}</h4>
+        <p class="muted small">Stock: {{ m.stock }} · Bin: {{ m.bin_id }}</p>
+        {% if m.tipo == 'R' %}
+          <span class="tag-r">Receta</span>
+        {% else %}
+          <span class="tag-l">Libre</span>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('leer.leer_ident') }}" style="margin-top:8px;">
+          <input type="hidden" name="med_id" value="{{ m.id }}">
+          <input type="hidden" name="skip_ident" value="1">
+          <input type="hidden" name="paciente_id" value="{{ paciente._id }}">
+          {# 👇 este es el que vamos a desactivar en leer.py #}
+          <input type="hidden" name="receta_id" value="{{ m._receta_id }}">
+          <button class="btn primary" type="submit">Pedir este</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No hay recetas activas.</p>
+  {% endif %}
+
+  <div class="actions" style="margin-top:1rem;">
+    <a class="btn" href="{{ url_for('main.index') }}">Volver al inicio</a>
   </div>
 </section>
+
+<style>
+.grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.card {
+  border:1px solid #ddd;
+  border-radius:10px;
+  padding:10px;
+  background:#fff;
+}
+.tag-r {
+  background:#fbe4e4;
+  color:#a00;
+  padding:2px 6px;
+  border-radius:6px;
+  font-size:12px;
+}
+.tag-l {
+  background:#e8f7ea;
+  color:#0a7;
+  padding:2px 6px;
+  border-radius:6px;
+  font-size:12px;
+}
+</style>
 {% endblock %}

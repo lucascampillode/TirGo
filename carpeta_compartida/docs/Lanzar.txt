@@ -28,3 +28,26 @@ pgrep -a rosmaster     # debería haber uno
 echo $ROS_MASTER_URI   # http://tiago-222c:11311
 echo $ROS_IP           # tu IP en esa red
 ping -c1 tiago-222c
+
+
+____________________________________
+
+LANZAR WEB
+
+
+
+export MONGO_URI="mongodb://tirgo_app:tirgo@127.0.0.1:27017/tirgo?authSource=tirgo"
+export FLASK_SECRET_KEY="dev-secret"
+export TIRGO_HOTWORD="hola"
+export TIRGO_STT_TOPIC="/stt/text"
+export TIRGO_DEV="1"                      # activa /simulate_hola
+export PORT="9001"
+
+
+
+cd ~/carpeta_compartida/ros_ws
+catkin_make
+source devel/setup.bash
+
+
+rosrun tirgo_ui tirgo_web_server

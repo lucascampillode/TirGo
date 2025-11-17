@@ -430,7 +430,7 @@ if __name__ == '__main__':
     init_ros()
     pub_state('IDLE')
     try:
-        APP.run(host='0.0.0.0', port=int(os.environ.get('PORT','8000')),
+        APP.run(host='0.0.0.0', port=int(os.environ.get('PORT','9005')),
                 debug=False, use_reloader=False)
     except KeyboardInterrupt:
         try:

@@ -1,36 +1,44 @@
-from flask import Blueprint, jsonify, render_template
-from .. import hotword, rosio
-from ..config import WINDOW_SECS, DB_PATH
+from flask import Blueprint, render_template, redirect, url_for, jsonify
+from jinja2 import TemplateNotFound
+import os
+from .. import session
 
-bp = Blueprint('main', __name__)
+bp = Blueprint("main", __name__)
 
-@bp.after_app_request
-def no_cache(resp):
-    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    resp.headers['Pragma'] = 'no-cache'
-    return resp
-
-@bp.get('/healthz')
-def healthz():
-    import os
-    return jsonify({'ok': True, 'db': os.path.exists(DB_PATH)})
-
-@bp.get('/state')
-def state():
-    flags = rosio.flags()
-    return jsonify({'hotword': hotword.is_active(),
-                    'remaining': hotword.remaining(),
-                    'window_secs': WINDOW_SECS,
-                    **flags})
-
-@bp.post('/simulate_hola')
-def simulate_hola():
-    hotword.bump_now()
-    return jsonify({'ok': True, 'hotword': True})
-
-@bp.route('/')
+@bp.get("/")
 def index():
-    rosio.pub_state('MODE_SELECTED')
-    if not hotword.is_active():
-        return render_template('await_hotword.html', window_secs=WINDOW_SECS, db_path=DB_PATH)
-    return render_template('menu.html', db_path=DB_PATH)
+    # si no hay sesión activa -> mostrar pantalla de hotword
+    if not session.is_active():
+        try:
+            return render_template("await_hotword.html")
+        except TemplateNotFound:
+            try:
+                return render_template("index_v2.html")
+            except TemplateNotFound:
+                return "<h3>Di la hotword para desbloquear</h3>", 200
+    # si hay sesión activa -> mostrar menú
+    return render_template("menu.html")
+
+@bp.get("/session_status")
+def session_status():
+    return jsonify({"active": session.is_active()})
+
+@bp.post("/simulate_hola")
+def simulate_hola():
+    if os.environ.get("TIRGO_DEV") != "1":
+        return ("", 404)
+    session.start_session(op_name="dev_sim")
+    return jsonify({"ok": True, "active": True})
+
+@bp.post("/cancelar")
+def cancelar_operacion():
+    session.end_session()
+    return redirect(url_for("main.index"))
+
+# ✨ NUEVO: para poder volver desde el logo
+@bp.get("/reset_hotword")
+def reset_hotword():
+    # cerramos la sesión actual (si la hay)
+    session.end_session()
+    # y volvemos al index, que ya enseñará await_hotword
+    return redirect(url_for("main.index"))
