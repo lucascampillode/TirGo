@@ -1,275 +1,198 @@
-Resumen del problema biomédico (síntesis del Hito 1, máx. 1 página).
+# Hito 2: Diseño Conceptual del Sistema Robótico
 
-1. Resumen del problema biomédico
-En el contexto hospitalario, una de las tareas que más tiempo y recursos del personal sanitario consume es la dispensación de medicamentos. Este proceso, además de implicar un elevado coste operativo, presenta riesgos asociados a errores humanos (confusión de dosis o fármacos) y retrasos en la entrega, afectando tanto a la seguridad del paciente como a la eficiencia del sistema de salud.
-El proyecto TIRGO PHARMA plantea una solución basada en la automatización del proceso de dispensación y entrega de medicamentos mediante la integración del robot TiaGo con un dispensador automático controlado por una Raspberry Pi. El dispensador almacena distintos tipos de comprimidos y los libera bajo demanda en un punto de recogida. El robot TiaGo recoge el medicamento con su gripper y lo transporta de forma autónoma hasta el paciente, garantizando una entrega segura y trazable.
-La interacción con el paciente se realiza a través de una interfaz conversacional, que permite confirmar la identidad del usuario, explicar la medicación prescrita y resolver dudas básicas sobre su administración. De esta manera, el sistema combina robótica móvil, manipulación, y comunicación natural para ofrecer un servicio integral de dispensación.
-El impacto esperado de la solución se manifiesta en distintos niveles. Para el personal sanitario, supone una reducción significativa del tiempo dedicado a tareas de transporte y entrega de medicamentos, lo que disminuye la carga operativa y el riesgo de error humano. A nivel del sistema hospitalario, se incrementa la eficiencia global y la trazabilidad del medicamento, optimizando el flujo de trabajo dentro de las unidades clínicas y mejorando la gestión de recursos. Finalmente, desde la perspectiva del paciente, la solución favorece una mayor adherencia al tratamiento, una mejor comprensión de las indicaciones médicas y una experiencia más cercana y personalizada gracias a la interacción con el robot.
-El entorno previsto de implementación es un hospital o centro de salud, aunque las primeras fases del desarrollo se realizan en un laboratorio simulado con conectividad estable y entornos controlados. El sistema se limita al manejo de medicamentos previamente autorizados y cumple con los requisitos de privacidad y seguridad de datos personales y clínicos, fundamentales en el contexto biomédico actual.
+**Proyecto:** TIRGO PHARMA
+**Fecha:** 15 de Noviembre de 2025
 
+**Equipo:**
 
+* Katrin Muñoz Errasti
+* Lucas Campillo de Andrés
+* Ángel Romero de la Maza
 
-Hay que poner los cambios + relevantes que hemos hecho
-2. Arquitectura del sistema:
-2.a) Diagrama general del sistema y descripción de los principales módulos funcionales.
+---
 
-Modulos:
-Módulos principales:
-Módulo de interfaz y diálogo
+## 1. Resumen del Problema Biomédico
 
+En el hospital, la dispensación de medicamentos consume mucho tiempo del personal y es fuente de errores (dosis/fármacos) y retrasos. Esto impacta en la seguridad del paciente y en la eficiencia del sistema.
 
-Reconocimiento y síntesis de voz.
+**Propuesta:** Automatizar la dispensación y entrega con el robot **TIAGo** y un **dispensador** controlado por **Raspberry Pi**.
 
+* El dispensador almacena comprimidos y los libera en un punto de recogida.
+* TIAGo recoge el envase con el gripper y lo transporta de forma autónoma hasta el paciente.
+* La interfaz conversacional confirma identidad, explica la medicación y resuelve dudas básicas.
 
-Sistema de compresión para intenciones farmacéuticas.
+**Impacto esperado:**
 
+* **Personal Sanitario:** menos tiempo en transporte/entrega y menor riesgo de error.
+* **Sistema Hospitalario:** mayor eficiencia y trazabilidad del fármaco.
+* **Paciente:** mejor adherencia, comprensión y experiencia.
 
+**Entorno:** Hospital/centro de salud, solo medicamentos autorizados y con requisitos de privacidad y seguridad.
 
-Módulo de gestión de recetas y órdenes
+---
 
+## 2. Arquitectura del Sistema
 
-Asocia peticiones de medicación con pacientes.
+### 2.a) Diagrama General y Lógica de Control
 
+El sistema se despliega en la red local del robot **(ROS Master de TIAGo)** integrando:
 
-Controla los estados: pendiente, en preparación, dispensado.
+* Ordenador externo (UI/BD)
+* Raspberry Pi del dispensador
 
+**Diagrama de arquitectura:**
 
-Módulo dispensador (Raspberry Pi)
+#### Arquitectura de Control: Estado actual → evolución
 
+**Fase 1 (Actual, basada en *Topics*):**
 
-Controla los servomotores (SG90).
+* La web `tirgo_ui` orquesta: valida (MongoDB via `MONGO_URI`), registra y publica a ROS a través de `rosio.py`:
 
+  * `/tirgo/mission/start` — *String* (inicio de secuencia)
+  * `/tirgo/dispense/request` — *Int32* (bin_id)
+* Hardware (TIAGo + Raspberry) ejecuta y emite *flags*:
 
-Señaliza estado mediante LEDs.
+  * `/tirgo/tiago/arrived`, `/tirgo/dispense/ready`, `/tirgo/tiago/picked`
+* La web escucha y actualiza la UI.
 
+**Fase 2 (Objetivo, basada en *Actions*):**
 
-Módulo robótico (TIAGo++)
+* La web actuará como **Action Client** frente a `/tirgo/dispense_mission`.
+* Nuevo nodo **`tirgo_mission_server`** (SimpleActionServer) gestiona la máquina de estados (navegar, abrir cajetín, confirmar sensores, mover brazo) y devuelve *feedback/result*.
 
+#### Módulos funcionales
 
-Navegación autónoma hasta el punto de recogida y entrega.
+* **UI/Diálogo (UI Client):** `tirgo_ui`. Interacción (táctil/voz, `stt_vosk`). Recoge intención y valida.
+* **Orquestación (Mission Server):** `tirgo_mission_server`. Máquina de estados central.
+* **Backend (MongoDB):** Reglas de negocio (stock/recetas).
+* **Dispensador (HW):** `dispenser_node` en la Raspberry. Acciona servos y publica ACK.
+* **Robótico (Ejecución):** Navegación `move_base`. Pick & Place con `play_motion` (agarre “ciego” con posición mecánica conocida).
 
+### 2.b) Especificación de Componentes de Hardware
 
-Control de gripper para recoger los cilindros.
+| Componente                 | Especificación Técnica              | Justificación / Función                                                        |
+| -------------------------- | ----------------------------------- | ------------------------------------------------------------------------------ |
+| **TIAGo++**                | ROS 1 Noetic, gripper paralelo      | Validación de agarre por corriente del gripper (objeto presente si no cierra). |
+| **Raspberry Pi 3**         | Alimentación a red 220 V            | Puesto fijo hospitalario; operación continua sin baterías.                     |
+| **Servos SG90**            | Empuje tipo pistón                  | Par suficiente validado; diseño simple/robusto frente a trampillas.            |
+| **Estructura dispensador** | 3D PLA; tolvas convergentes         | Unifica salida a un (X,Y,Z) fijo para el pick del robot.                       |
+| **Envases (botes)**        | Cilindro “americano”, tapón naranja | Geometría óptima para gripper paralelo; evita atascos en rampa.                |
+| **Conectividad**           | Wi-Fi (red TIAGo) + Ethernet        | Baja latencia local + acceso a servicios externos.                             |
 
+### 2.c) Interfaz de Usuario (UI/UX) y Flujo de Interacción
 
-Mapeado
+**Diseño:** Web Flask, fondo blanco, tipografía legible y paleta azul “Tirgo Pharma”. Optimizada para tablet.
 
+**Modos de entrada:**
 
-Módulo de registro y trazabilidad (DB)
+* **Voz (manos libres):** hotword “Hola Tirgo” → desbloqueo.
+* **Táctil (cards):** tres tarjetas grandes: *Consultar*, *Leer*, *Diagnóstico*.
 
+**Flujos:**
 
-Guarda logs de cada evento (usuario, hora, medicación).
+* **A) Leer (Catálogo):**
 
+  * Rejilla de tarjetas con foto, dosis, stock, bin_id, badge **L/R**.
+  * Si `stock == 0` → se oculta para evitar frustración.
+  * Si **R** → identificación; si **L** → dispensa directa.
+* **B) Consultar (Pacientes):**
 
-Permite auditoría o análisis posterior.
-Comunicación ROS
+  * Formulario (Nombre, Apellidos, DNI).
+  * **Privacidad:** búsqueda por hash de DNI.
+  * Alta rápida si no existe.
+  * Lista de recetas activas con “Pedir este”.
+* **C) Diagnóstico (Triaje):**
 
+  * Wizard con barra de progreso.
+  * Resultados: **Derivación**, **Consejo**, **Medicación** (botón para pedir).
 
-2.b) Especificación de componentes de hardware: robot base, sensores, actuadores, periféricos, sistemas de comunicación.
+**Ejecución técnica y feedback:**
 
-Componente
-Función principal
-Notas
-Robot TIAGo++
-Transporte y comunicación con el paciente
-ROS 1 Noetic, sensores base y gripper integrados
-Raspberry Pi 3
-Control de dispensador
-Ejecución de nodos ROS y control PWM
-Servomotores SG90
-Apertura/cierre de canales de medicación
-2 unidades, un canal por tipo de comprimido
-LEDs 
-Iluminación durante el proceso de dispensación
-Blanco constante
-Fuentes de 5 V/3 A
-Alimentación estable de la Raspberry y servos
-Fuente independiente
-Estructura impresa en 3D
-Tolvas y rampa de caída
-Diseño modular y reemplazable
-Cámara RGB 
-Verificación visual del dispensador
-Integrable en futuro para lectura de QR
-Conectividad Wi-Fi/Ethernet
-Comunicación ROS entre módulos
-ROS TCPROS o rosbridge WebSocket
+* Validación final (stock/receta) → registro en `dispenses` → publicación ROS (`/tirgo/mission/start`) → barra de estado reactiva a `/tirgo/tiago/picked`, `/tirgo/dispense/ready`.
 
+---
 
-2.c) Esquema preliminar de interfaz de usuario (UI/UX) y fujo de interacción con el sistema.
-Flujo funcional:
-Autenticación del personal sanitario o cliente.
+## 3. Diseño de Software y Comunicación
 
+### 3.a) Arquitectura de Nodos (ROS1)
 
-Selección de paciente o medicación.
+**Integración Flask–ROS:**
 
+* `app.py` (rutas/negocio/Mongo) sin ROS directo.
+* `rosio.py` (pub/sub en hilos) como capa de hardware.
 
-Confirmación → envío de orden ROS
+**Tópicos principales:**
 
+| Dirección | Tópico                    | Tipo              | Función                      |
+| --------- | ------------------------- | ----------------- | ---------------------------- |
+| **Sub**   | `stt/text`                | `std_msgs/String` | Voz: hotword → desbloqueo.   |
+| **Pub**   | `/tirgo/mission/start`    | `std_msgs/String` | Comando maestro de misión.   |
+| **Pub**   | `/tirgo/dispense/request` | `std_msgs/Int32`  | `bin_id` al dispensador.     |
+| **Pub**   | `/tirgo/ui/state`         | `std_msgs/String` | Telemetría UI.               |
+| **Sub**   | `/tirgo/dispense/ready`   | `std_msgs/Bool`   | ACK dispensación finalizada. |
+| **Sub**   | `/tirgo/tiago/arrived`    | `std_msgs/Bool`   | Llegada a destino.           |
 
-Retroalimentación visual y/o verbal:
+**Configuración por entorno:**
 
+* `MONGO_URI`, `TIRGO_HOTWORD`, `TIRGO_STT_TOPIC`, `TIRGO_DEV`.
 
-“Dispensando medicación del paciente Juan Pérez…”
+### 3.b) Estructura del Repositorio
 
+* `tirgo_ui` — Flask, Mongo, `rosio.py`.
+* `stt_vosk` — ASR.
+* `tiago_pharma_dispenser` — drivers Raspberry.
+* `tiago_pharma_bringup` — *launch* globales.
 
-Finalización y registro automático en el log del sistema.
+### 3.c) Infraestructura Docker
 
+* **Stack Datos:** MongoDB + Mongo Express.
+* **Stack ROS:** imagen `ros1_rob_tirgo` (`network_mode: host`) para compartir red con TIAGo/BD.
 
-Principios UX:
-Mensajes claros y breves.
+---
 
+## 4. Análisis de Viabilidad Técnica
 
-Confirmaciones antes de acciones críticas.
+### 4.a) Riesgos y Mitigaciones
 
+| Área              | Riesgo / Limitación                       |  Impacto | Mitigación                                 |
+| ----------------- | ----------------------------------------- | -------: | ------------------------------------------ |
+| Control mecánico  | Atascos en tolva / desincronización       |    Medio | Rampa >45º y rutinas “shake” de servos.    |
+| Manipulación      | Fallo de agarre ciego si se mueve el bote | **Alto** | Cuna con topes para posición determinista. |
+| Migración SW      | Complejidad Topics → ActionServer         |    Medio | Mantener Topics como *fallback* estable.   |
+| IA conversacional | Falsos positivos de hotword               |    Medio | Umbral Vosk + botón “Escuchar”.            |
+| Latencia Wi-Fi    | Pérdida de mensajes a Raspberry           |     Bajo | ACK + *timeouts* en UI.                    |
 
-Diseño adaptado a interfaz web.
+### 4.b) Estrategia de Pruebas
 
+* **Mecánica:** estrés 50 ciclos de caída.
+* **Software:** `TIRGO_DEV=1` para *mocks* de hardware.
+* **Seguridad:** logs inmutables y validación estricta de recetas.
 
-3. Diseño de software y comunicación:
-3.a) Arquitectura de nodos en ROS 1 (diagrama de topics, servicios y acciones).
+---
 
-3.b) Estructura del repositorio y principales packages o módulos.
-SUBIR TODO A DEVELOP PARA VER LOS PAQUETES MERGE
-3.c) Descripción de posibles contenedores Docker y dependencias del entorno.
+## 5. Cronograma de Desarrollo (Hito 3 → Final)
 
-4. Análisis de viabilidad técnica:
-4.a) Identificación de posibles limitaciones técnicas (alcance, precisión, tiempo de res-
-puesta, compatibilidad).
+### 5.a) Plan Temporal
 
-Área
-Riesgo o limitación
-Impacto
-Mitigación
-Control mecánico
-Desincronización entre servos, colisiones internas
-Medio
-Calibración y rutinas de reposo, redimensionamiento de los componentes
-Comunicación ROS
-Latencia o pérdida de paquetes
-Bajo
-Reintentos y confirmación de estados
-IA conversacional
-Ambigüedad de respuesta
-Medio
-Definición clara de intenciones y fallback
-Navegación TIAGo
-Interferencia con flujo hospitalario
-Bajo
-Operación restringida a entornos controlados
-Seguridad de datos
-Privacidad del paciente
-Alto
-Uso de datos simulados en prototipo docente
+| Fase                  | Tareas                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| **Semana 0 (Hito 3)** | Docker + repo; nodo dispensador (servos); logger en Mongo.                           |
+| **Semana 1**          | Puente UI↔ROS; integrar Raspberry en red ROS; pruebas de dispensación simple.        |
+| **Semana 2**          | Lógica (recetas/consultas); UX (feedback + voz); errores de conexión.                |
+| **Semana 3**          | Integración total (voz+nav+manip+dispensa); migración a Actions (si viable); estrés. |
+| **Semana 4**          | *Code freeze*, documentación y demo.                                                 |
 
+### 5.b) Roles y Git
 
-4.b) Estrategia de mitigación y pruebas iniciales.
-Mecánica y control:
+* **Workflow:** *Feature Branch*. Ramas: `feature/MongoDB`, `feature/movimiento-mapeado-ros1`, `feature/ui-flask`.
+* **Responsabilidades:**
 
+  * **ROS/Navegación:** mapas, `move_base`, `play_motion`.
+  * **HW/Electrónica:** diseño 3D, servos, integración Raspberry.
+  * **SW/Interfaz:** Docker, `tirgo_ui` (Flask/Mongo), sistema de voz.
 
-Prototipo de dispensador con 4 variables.
+---
 
-
-Pruebas de ciclo: abrir/cerrar múltiples veces para validar robustez.
-
-
-Software:
-
-
-Tests unitarios en nodos principales.
-
-
-Simulación de comandos desde UI sin hardware para validar flujo.
-
-
-Seguridad básica:
-
-
-Implementar roles/usuarios en entorno demo.
-
-
-Log obligatorio de todas las dispensaciones.
-
-
-Estrategia docente:
-
-
-Documentación clara del flujo para que cualquier miembro del equipo pueda seguirlo.
-
-5. Cronograma de desarrollo:
-Plan temporal
-Semana (Hito 3)
-
-
-Implementar estructura del repositorio según este diseño.
-
-
-Desarrollar tiago_pharma_dispenser_node (control básico de de los 2 servos).
-
-
-Implementar tiago_pharma_logger simple.
-
-
-Semana 1 tras hito 3
-
-
-Implementar tiago_pharma_ui_bridge y flujo básico desde UI → ROS → dispensador.
-
-
-Integrar Raspberry Pi en red ROS.
-
-
-Pruebas funcionales con casos simples (dispensación única).
-
-
-Semana 2
-
-
-Añadir gestor de peticiones tiago_pharma_order_manager.
-
-
-Mejorar interfaz usuario (confirmaciones, estados).
-
-
-Añadir detección de errores básicos de dispensación.
-
-
-Semana 3
-
-
-Integración completa de módulos.
-
-
-Pruebas de estrés (varias dispensaciones, diferentes usuarios).
-
-
-Refinar documentación técnica (diagramas, README, manual básico de uso).
-
-
-Semana 4
-
-
-Ajustes finales.
-
-
-Verificación de coherencia entre requisitos, arquitectura y prototipo.
-
-
-Revisión de contribuciones en Git.
-
-
-2. Arquitectura del sistema
-El sistema se despliega sobre la red del Tiago, que actía como el punto central de ROS, es decir, el ROS master. Tanto el ordenador que lanza la interfaz web como la Raspberry del dispensador se conectan al Wi-Fi del TiaGo de esta manera, todos los nodos ven los mismo tópicos. El ordenador ademas, esta conectado por Ethernet a la red del aula para publicar la web y para levantar MongoDB en local. La idea es que la web sea el punto de entrada pero que la ejecucion fisica (dispensr y mover el robot) la hagan otros nodos de ROS.
-2.a) Diagrama general del sistema y descripción de los principales módulos funcionales.
-	A nivel funcional el sistema se organiza en los siguientes modulos:
-Modulo de interfaz y dialogo: es un nodo ROS que levanta la aplicacion web y muestra al usuario las pantallas de menú, diágnostico, consulta y lectura de receta. Las acciones, se convierten en mensajes ROS que se publican en el ROS master.
-Síntesis de voz: es un nodo que corre en el ordenador y publica en /stt/text el texto reconocido. Actualmente se usa para activar la eb pero el objetivo es que pueda lanzar la peticion de medicación y la orden al robot.
-Gestión de recetas y ordenes: es la logica de la propia interfaz que se conecta a MongoDB. 
-Modulo dispensador (Raspberry Pi): nodo de ROS que esta en la Raspberry conectada al dispensador. Se suscribe al topic de peticion de dispensasicion mueve los servos, señaliza con LEDs y al terminar publica para avisar a la UI.
-
-Modulo robotico (TiaGo): cuando recibe una mision publicada por la UI ejecutta la navegación hasta el punto de recogida, coge el medicamento y vuelve al punto de entrega. Publica eventos del progreso que la UI usa para actualizar la interfaz.
-
-Modulo de registro y trazabilidad (DB): servicio MongoDB que corre en el ordenador. Guarda pacientas, recetas, medicamentos y el historico de dispensaciones. Por la confidencialidad y seguridad de los pacientes la UI es el unico modulo que se conecta aqui.
 
 ```mermaid
 ---
