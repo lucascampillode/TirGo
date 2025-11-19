@@ -2,19 +2,35 @@
 
 Sistema mínimo para levantar navegación básica del robot TIAGo con: teleoperación, carga de mapa, RViz configurado y un cliente que publica posiciones objetivo.
 
+# Navegación y Uso de run_all.sh
+
+Sistema mínimo para levantar navegación básica del robot TIAGo con: teleoperación, carga de mapa, RViz configurado y un cliente que publica posiciones objetivo.
+
+---
+
 ## Requisitos
-  - Ubuntu 20.04 + ROS Noetic
-  - roscore en ejecución
-  - Docker (opcional, recomendado)
-  - Python 3.8+
 
-## Paquetes necesarios:
-  - ros-noetic-teleop-twist-keyboard (No es necesario en la ejecucion pero si para la obtencion de puntos)
-  - ros-noetic-map-server
-  - ros-noetic-move-base-msgs
-  
-  Este módulo implementa el flujo completo de navegación del robot TIAGo dentro del proyecto TirgoPharma, integrando:
+Para la correcta ejecución del sistema, asegúrate de cumplir con lo siguiente:
 
+* **Sistema Operativo:** Ubuntu 20.04
+* **ROS:** Noetic
+* **Servicios:** `roscore` en ejecución
+* **Contenedorización (Opcional, Recomendado):** Docker
+* **Lenguaje de Programación:** Python 3.8+
+
+---
+
+## Paquetes ROS Necesarios
+
+Los siguientes paquetes deben estar instalados:
+
+* `ros-noetic-teleop-twist-keyboard` (Necesario para la obtención de puntos, aunque no para la ejecución)
+* `ros-noetic-map-server`
+* `ros-noetic-move-base-msgs`
+
+Este módulo implementa el flujo completo de navegación del robot TIAGo dentro del proyecto TirgoPharma.
+
+---
 ## Ejecuciónes
  ### run_all.sh
  ```bash
@@ -38,4 +54,5 @@ Sistema mínimo para levantar navegación básica del robot TIAGo con: teleopera
  ```
 
  ## Verificar
- Al lanzar run_all se vera el robot en el mapay se moverá hasta el punto  
+
+Al lanzar run_all.sh, se visualizará el robot en el mapa de RViz y comenzará a moverse hasta la posición objetivo predefinida.
