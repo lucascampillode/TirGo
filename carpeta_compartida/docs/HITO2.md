@@ -238,10 +238,10 @@ El sistema se fundamenta en una arquitectura híbrida que desacopla la lógica d
 
 El nodo `tirgo_ui` no sigue el patrón estándar de ejecución cíclica, sino que integra un servidor web asíncrono.
 
-  * **Gestión de Concurrencia:** Para evitar condiciones de carrera sin bloquear el servidor web, la comunicación entre el hilo de ROS (callbacks) y el hilo principal de Flask se realiza mediante variables de estado compartidas. Dado que los datos intercambiados son banderas booleanas atómicas (ej. `arrived`, `ready`) o cadenas cortas, este enfoque minimiza la latencia frente al uso de colas complejas.
-  * **Separación de Responsabilidades:**
-      * `app.py` / `leer.py` (Lógica): Gestionan el acceso a MongoDB, validan reglas de negocio (recetas, stock) y deciden cuándo actuar. Nunca tocan ROS directamente.
-      * `rosio.py` (Pasarela): Actúa como Gateway. No tiene acceso a la base de datos. Su única función es traducir las decisiones de la web a mensajes ROS y mantener actualizado el estado de los sensores para la UI.
+  * **Patrón Gateway (`rosio.py`):** Se implementa el patrón de diseño Gateway para desacoplar el servidor web de la robótica. El núcleo de la aplicación (`app.py`) no importa librerías de ROS directamente, sino que interactúa con una API abstracta expuesta por `rosio`. Esto permite ejecutar la interfaz en entornos de desarrollo sin hardware (mediante Mocking automático).
+
+  * **Gestión de Concurrencia:** `rosio.py` inicializa el nodo ROS en un hilo secundario (threading), manteniendo el hilo principal libre para el servidor asíncrono de Flask. La sincronización de estado (banderas como `arrived` o `ready`) se gestiona mediante variables atómicas thread-safe, evitando bloqueos en la telemetría de alta frecuencia.
+
 
 #### 2\. Especificación de Interfaces ROS
 
@@ -512,7 +512,7 @@ El foco es validar la repetibilidad de los subsistemas, ya que el agarre ciego d
 | Riesgo a Mitigar | Estrategia de Prueba | Criterio de Éxito |
 | :--- | :--- | :--- |
 | **Atasco y Fricción (Control Mecánico)** | **Prueba de Estrés Secuencial:** 10 ciclos completos y consecutivos de dispensación para cada bin (sin fallos por interferencia entre servos). | El sistema debe superar 8 de 10 ciclos con dispensación y recogida exitosa ($80\%$ de repetibilidad). |
-| **Desviación Posicional (Navegación)** | **Calibración respecto al mapa:** Al comenzar el proceso el robot girará un par de veces sobre sí mismo buscando reanalizar la sala con sus sensores ubicandose en el mapa. | El error posicional se reduce en gran manera al estar calibrado. |
+| **Desviación Posicional (Navegación)** | **Calibración respecto al mapa:** Al comenzar el proceso el robot utiliza conductas de recuperación (girará un par de veces sobre sí mismo) buscando reanalizar la sala con sus sensores ubicandose en el mapa. | El error posicional se reduce en gran manera al estar calibrado. |
 
 #### 2\. Validación de Potencia y Control
 
