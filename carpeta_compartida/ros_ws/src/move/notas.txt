@@ -34,9 +34,25 @@ navigation.rviz en gallium/share/pal_navigation_cfg_tiago/launch/rviz.launch des
 
 
 
-########## MERGE WS (gallium+psico_ws)
-source /home/robotica_tiago/carpeta_compartida/gallium/setup.bash
-cd /home/robotica_tiago/carpeta_compartida/psico_ws
-catkin clean -y
-catkin config --no-extend --merge-devel
-catkin build
+TirGo@angelromero-lenovo:~$ rostopic echo /initialpose 
+header: 
+  seq: 0
+  stamp: 
+    secs: 1763658996
+    nsecs: 986137395
+  frame_id: "map"
+pose: 
+  pose: 
+    position: 
+      x: 0.6286883354187012
+      y: 1.04317045211792
+      z: 0.0
+    orientation: 
+      x: 0.0
+      y: 0.0
+      z: 0.32774684904650947
+      w: 0.9447655809459214
+  covariance: [0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853892326654787]
+
+
+  
