@@ -491,7 +491,7 @@ El siguiente análisis de riesgos evalúa los puntos críticos del diseño conce
 | **Control Mecánico:** Atasco del medicamento en la tolva o rampa. | Medio | **LUCAS COMPLETA ESTO PORFA** |
 | **Manipulación (Lazo Abierto):** Falso Positivo: El bote no cae o el robot agarra aire (el dispensador no tiene sensores de confirmación de caída). | Alto | **Sistema de Validación del Gripper:** El robot utiliza sus sensores de fuerza (monitorización de corriente). El sistema solo avanza si se detecta la fuerza de agarre correcta, actuando como un sensor de contacto final. |
 | **Gestión de Potencia:** Inestabilidad eléctrica de la Raspberry Pi por picos de corriente del servo. | Bajo | **Control Secuencial (Diseño):** Los servomotores nunca se moverán de forma simultánea, ya que los botes se dispensan uno en cada petición, mitigando el riesgo de caídas de tensión por picos. |
-| **Navegación:** Desviación Posicional si la localización no es perfecta. | Medio | **ANGEL CONTESTA ESTO PORFA** |
+| **Navegación:** Desviación Posicional ubicacicion y error de motores. | Medio | **Precisión de Navegación:** Método de calibración al ejecutar el robot que lo ubica en el mapa y asegura una buena calibracion respecto a la sala. Además el robot trabaja con muchos decimales porloque con un filtro paso bajo se puede asegurar evitar ruido.|
 
 #### Otros Riesgos y Limitaciones Clave
 
@@ -512,7 +512,7 @@ El foco es validar la repetibilidad de los subsistemas, ya que el agarre ciego d
 | Riesgo a Mitigar | Estrategia de Prueba | Criterio de Éxito |
 | :--- | :--- | :--- |
 | **Atasco y Fricción (Control Mecánico)** | **Prueba de Estrés Secuencial:** 10 ciclos completos y consecutivos de dispensación para cada bin (sin fallos por interferencia entre servos). | El sistema debe superar 8 de 10 ciclos con dispensación y recogida exitosa ($80\%$ de repetibilidad). |
-| **Desviación Posicional (Navegación)** | **Validación Manual de Docking:** Después de cada navegación, la precisión del punto final de la pinza se medirá manualmente antes de ejecutar el `play_motion`. | El error posicional final no debe exceder la tolerancia geométrica de la cuna de recepción. |
+| **Desviación Posicional (Navegación)** | **Calibración respecto al mapa:** Al comenzar el proceso el robot girará un par de veces sobre sí mismo buscando reanalizar la sala con sus sensores ubicandose en el mapa. | El error posicional se reduce en gran manera al estar calibrado. |
 
 #### 2\. Validación de Potencia y Control
 
@@ -596,9 +596,9 @@ La última fase se dedica a la finalización de la documentación, la preparaci�
 
 ### 5.b) Reparto de Responsabilidades Actualizado
 
-  * **Responsable de navegación y recogida:**
+  * **Responsable de navegación y recogida - Ángel Romero:**
       * Lidera la navegación autónoma y la programación de la manipulación ciega (`play_motion`).
-  * **Responsable de dispensador físico y electrónica:**
+  * **Responsable de dispensador físico y electrónica - Lucas Campillo:**
       * Lidera la finalización del control PWM en la Raspberry Pi y la calibración mecánica del dispensador.
-  * **Responsable de software y HRI:**
+  * **Responsable de software y HRI - Katrin Muñoz:**
       * Lidera la sustitución de la lógica de Tópicos por Actions, la implementación de los Action Servers y la integración del Backend/UI con el Action Server.
