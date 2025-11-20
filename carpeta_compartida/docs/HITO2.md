@@ -1,7 +1,7 @@
 # Hito 2: Diseño Conceptual del Sistema Robótico
 
-**Proyecto:** TIRGO PHARMA  
-**Fecha:** 15 de Noviembre de 2025  
+**Proyecto:** TirGo Pharma  
+**Fecha:** 21 de Noviembre de 2025  
 **Equipo:**
 
   * Katrin Muñoz Errasti
@@ -10,11 +10,31 @@
 
 -----
 
+## Índice de Contenidos
+
+* [1. Resumen del Problema Biomédico](#1-resumen-del-problema-biomédico)
+* [2. Arquitectura del Sistema](#2-arquitectura-del-sistema)
+    * [2.a) Diagrama General y Lógica de Control](#2a-diagrama-general-y-lógica-de-control)
+    * [2.b) Especificación de Componentes de Hardware](#2b-especificación-de-componentes-de-hardware)
+    * [2.c) Interfaz de Usuario (UI/UX) y Flujo de Interacción](#2c-interfaz-de-usuario-uiux-y-flujo-de-interacción)
+* [3. Diseño de Software y Comunicación](#3-diseño-de-software-y-comunicación)
+    * [3.a) Arquitectura de Nodos en ROS 1](#3a-arquitectura-de-nodos-en-ros-1)
+    * [3.b) Estructura del Repositorio y Gestión de Paquetes](#3b-estructura-del-repositorio-y-gestión-de-paquetes)
+    * [3.c) Descripción de Contenedores Docker y Dependencias](#3c-descripción-de-contenedores-docker-y-dependencias)
+* [4. Análisis de Viabilidad Técnica](#4-análisis-de-viabilidad-técnica)
+    * [4.a) Identificación de Limitaciones y Riesgos](#4a-identificación-de-limitaciones-y-riesgos)
+    * [4.b) Estrategia de Mitigación y Pruebas Iniciales](#4b-estrategia-de-mitigación-y-pruebas-iniciales)
+* [5. Cronograma de Desarrollo](#5-cronograma-de-desarrollo)
+    * [5.a) Plan Temporal](#5a-plan-temporal)
+    * [5.b) Reparto de Responsabilidades Actualizado](#5b-reparto-de-responsabilidades-actualizado)
+
+-----
+
 ## 1\. Resumen del Problema Biomédico
 
 En el contexto hospitalario, una de las tareas que más tiempo y recursos del personal sanitario consume es la dispensación de medicamentos. Este proceso, además de implicar un elevado coste operativo, presenta riesgos asociados a errores humanos (confusión de dosis o fármacos) y retrasos en la entrega, afectando tanto a la seguridad del paciente como a la eficiencia del sistema de salud.
 
-El proyecto **TIRGO PHARMA** plantea una solución basada en la automatización del proceso de dispensación y entrega de medicamentos mediante la integración del robot **TIAGo** con un dispensador automático controlado por una **Raspberry Pi**. El dispensador almacena distintos tipos de comprimidos y los libera bajo demanda en un punto de recogida. El robot TIAGo recoge el medicamento con su gripper y lo transporta de forma autónoma hasta el paciente, garantizando una entrega segura y trazable.
+El proyecto **TirGo Pharma** plantea una solución basada en la automatización del proceso de dispensación y entrega de medicamentos mediante la integración del robot **TIAGo** con un dispensador automático controlado por una **Raspberry Pi**. El dispensador almacena distintos tipos de comprimidos y los libera bajo demanda en un punto de recogida. El robot TIAGo recoge el medicamento con su gripper y lo transporta de forma autónoma hasta el paciente, garantizando una entrega segura y trazable.
 
 La interacción con el paciente se realiza a través de una interfaz conversacional, que permite confirmar la identidad del usuario, explicar la medicación prescrita y resolver dudas básicas sobre su administración. De esta manera, el sistema combina robótica móvil, manipulación, y comunicación natural para ofrecer un servicio integral de dispensación.
 
@@ -33,6 +53,54 @@ El entorno previsto de implementación es un hospital o centro de salud, limitá
 ### 2.a) Diagrama General y Lógica de Control
 
 El sistema se despliega sobre la red local del robot TIAGo (ROS Master), integrando el ordenador externo (Interfaz/BD) y la Raspberry Pi del dispensador en un mismo espacio.
+
+```mermaid
+---
+config:
+  look: classic
+  theme: neutral
+  layout: dagre
+---
+flowchart LR
+ subgraph USU["Paciente / Personal"]
+        PAC[("Paciente")]
+        PER[("Personal sanitario")]
+  end
+ subgraph UI["Paquete ROS: tirgo_ui (Flask + ROS)"]
+        HTML[["Páginas HTML<br>templates + static"]]
+        UINODE(("Nodo ROS<br>tirgo_web_server"))
+  end
+ subgraph VOZ["Entrada por voz"]
+        STT(("Nodo STT<br>/stt_vosk"))
+  end
+ subgraph DATA["Backend / Datos"]
+        ME[["MongoExpress"]]
+        DB[("MongoDB<br>recetas, meds/stock, pacientes,<br>registro dispensaciones")]
+  end
+ subgraph DISP["Paquete ROS: dispensador (Raspberry Pi 3B)"]
+        DISP_NODE(("Nodo dispensador"))
+        ACT[["Servos / LEDs"]]
+  end
+ subgraph ROBOT["Paquete ROS: robot / TIAGo"]
+        R_NODE(("Nodo misión / navegación"))
+  end
+    HTML --> UINODE
+    STT -- /stt/text --> UINODE
+    ME --> DB
+    UINODE -. MONGO_URI .-> DB
+    DISP_NODE --> ACT
+    PAC -- navegador web --> HTML
+    PER -- carga física meds --x DISP
+    PER -- gestiona datos --> ME
+    UINODE -- /tirgo/dispense/request<br>(std_msgs/Int32) --> DISP_NODE
+    UINODE -- /tirgo/mission/start<br>(std_msgs/String) --> R_NODE
+    DISP_NODE -- /tirgo/dispense/ready<br>(std_msgs/Bool) --> UINODE
+    R_NODE -- /tirgo/tiago/arrived<br>(std_msgs/Bool) --> UINODE
+    R_NODE -- /tirgo/tiago/picked<br>(std_msgs/Bool) --> UINODE
+    R_NODE -- /tirgo/mission/finish<br>(std_msgs/String) --> UINODE
+    UINODE -- /tirgo/ui/state --> R_NODE
+    UINODE -- /tirgo/ui/error --> R_NODE
+```
 
 #### Topología de Red y Nodos
 
@@ -112,7 +180,7 @@ La selección de hardware prioriza la integración directa y la simplicidad de m
 
 ### 2.c) Interfaz de Usuario (UI/UX) y Flujo de Interacción
 
-La interfaz es una aplicación web (Flask) diseñada bajo criterios de diseño clínico: fondo blanco limpio para maximizar el contraste, tipografía de alta legibilidad y una paleta de colores basada en el azul corporativo ("Tirgo Pharma"). La disposición de los elementos está optimizada para personas mayores, priorizando botones grandes y flujos lineales.
+La interfaz es una aplicación web (Flask) diseñada bajo criterios de diseño clínico: fondo blanco limpio para maximizar el contraste, tipografía de alta legibilidad y una paleta de colores basada en el azul corporativo ("TirGo Pharma"). La disposición de los elementos está optimizada para personas mayores, priorizando botones grandes y flujos lineales.
 
 #### 1\. Arquitectura de Interacción (Voz + Manual)
 
@@ -211,51 +279,134 @@ Se prevé la creación de un lanzador maestro (`tirgo_bringup.launch`) que orque
 
 El proyecto se gestiona mediante un Monorepositorio (Monorepo) que agrupa todos los paquetes ROS del sistema. Esta estrategia facilita la integración continua y el versionado atómico del código fuente.
 
-#### 1\. Árbol de Directorios del Workspace
+### **1.0 Árbol de Directorios del Proyecto**
 
-La organización interna sigue el estándar de un catkin workspace, donde se separan las definiciones de interfaces (`msgs`) de la lógica de aplicación (`ui`, `dispenser`).
+La estructura general del proyecto TirgoPharma sigue una separación clara entre:
+
+* **Código ROS** (dentro del workspace `ros_ws/`, ubicado en la carpeta compartida del host para integrarse con Docker y la Raspberry Pi).
+* **Infraestructura** (servicios de base de datos, inicialización y orquestación).
+* **Recursos pesados** (modelos de voz, mapas, logs u otros ficheros que no se versionan).
+* **Capa de contenedores** (Dockerfile y `docker-compose.yml` a nivel raíz).
+
+Este enfoque garantiza mantenibilidad, despliegues reproducibles y una clara separación de responsabilidades entre desarrollo, infraestructura y runtime.
+
+---
+
+#### **1.1 Árbol del Repositorio Principal `TirGo/`**
+
+El repositorio agrupa todo lo necesario para ejecutar TirgoPharma:
+infraestructura (MongoDB), contenedores, y una carpeta compartida utilizada por los servicios (incluyendo el workspace ROS).
+
+**Descripción breve**
+
+* **carpeta_compartida/**
+  Espacio accesible desde los contenedores (volumen). Contiene `ros_ws/` y los modelos de voz.
+* **infra/**
+  Infraestructura asociada al sistema: stack de MongoDB con inicialización automática.
+* **Dockerfile / docker-compose.yml**
+  Base para construir la imagen principal y definir los servicios del sistema.
+
+**Árbol**
+
+```text
+TirGo/
+├── carpeta_compartida/                 # Volumen compartido con los contenedores
+│   ├── ros_ws/                         # Workspace ROS (código principal)
+│   └── stt_models/                     # Modelos de voz Vosk y otros recursos pesados
+│
+├── infra/                              # Infraestructura del sistema
+│   └── tirgo_db_stack/
+│       ├── docker-compose.yml          # MongoDB + Mongo Express
+│       └── mongo-init/
+│           └── 001-init.js             # Inicialización de la base de datos
+│
+├── Dockerfile                          # Imagen principal (ROS + TirgoPharma)
+├── docker-compose.yml                  # Orquestación de contenedores
+└── .gitignore                          # Exclusiones (modelos, binarios, etc.)
+```
+
+---
+
+#### **1.2 Árbol del Workspace ROS (`ros_ws/`)**
+
+**Descripción breve**
+
+El workspace sigue el estándar **Catkin**, organizando cada funcionalidad en un paquete independiente:
+
+* **tirgo_msgs** → define las interfaces (acciones y servicios).
+* **tirgo_ui** → la interfaz web + lógica de negocio + puente con ROS.
+* **stt_vosk** → motor de reconocimiento de voz offline.
+* **tiago_pharma_dispenser** → nodo de control de servos en la Raspberry.
+* **tiago_pharma_bringup** → orquestación general del sistema.
+* **move** → mapas, RViz y herramientas de navegación.
+
+Esta separación modular evita dependencias circulares, facilita el testing y permite desplegar cada parte en el entorno adecuado (TIAGo, Raspberry Pi, servidor web).
+
+**Árbol**
 
 ```text
 ros_ws/
 ├── src/
-│   ├── tirgo_msgs/               # [N] Definición de Interfaces (evita dependencias circulares)
+│   ├── tirgo_msgs/                     # [N] Definición de Interfaces (evita dependencias circulares)
 │   │   ├── action/
-│   │   │   └── Mission.action    # Definición de la meta de dispensación
+│   │   │   └── Mission.action          # Definición de la meta de dispensación
 │   │   └── srv/
-│   │       └── SystemCheck.srv   # Servicio de verificación de salud
+│   │       └── SystemCheck.srv         # Servicio de verificación de salud
 │   │
-│   ├── tirgo_ui/                 # Nodo Híbrido Web + ROS
+│   ├── tirgo_ui/                       # Nodo híbrido Web + ROS
 │   │   ├── launch/
-│   │   │   └── web.launch        # Carga variables de entorno y lanza el servidor
+│   │   │   └── web.launch              # Carga variables de entorno y lanza el servidor
 │   │   ├── scripts/
-│   │   │   └── tirgo_web_server  # Ejecutable (Entrypoint)
-│   │   ├── src/tirgo_ui/         # Python Module
-│   │   │   ├── app.py            # Factory de Flask
-│   │   │   ├── rosio.py          # Hilo de comunicación ROS (Pubs/Subs)
-│   │   │   ├── storage_mongo.py  # Capa de acceso a Datos
-│   │   │   ├── routes/           # Blueprints (Modularización de vistas)
+│   │   │   └── tirgo_web_server        # Ejecutable (Entrypoint)
+│   │   ├── src/tirgo_ui/               # Python Module
+│   │   │   ├── app.py                  # Factory de Flask
+│   │   │   ├── rosio.py                # Hilo de comunicación ROS (Pubs/Subs)
+│   │   │   ├── storage_mongo.py        # Capa de acceso a Datos
+│   │   │   ├── routes/                 # Blueprints (Modularización de vistas)
 │   │   │   │   ├── main.py
-│   │   │   │   ├── leer.py       # Lógica de dispensación
+│   │   │   │   ├── leer.py             # Lógica de dispensación
 │   │   │   │   └── ...
 │   │   │   └── ...
-│   │   ├── templates/            # Frontend: HTML (Jinja2)
-│   │   └── static/               # Frontend: CSS, JS y Assets
+│   │   ├── templates/                  # Frontend: HTML (Jinja2)
+│   │   └── static/                     # Frontend: CSS, JS y Assets
 │   │
-│   ├── stt_vosk/                 # Motor de Voz
+│   ├── stt_vosk/                       # Motor de Voz
 │   │   ├── launch/
-│   │   └── model/                # (Ignorado en Git) Se descarga en construcción Docker
+│   │   └── model/                      # (Ignorado en Git) montado desde `carpeta_compartida/stt_models`
 │   │
-│   ├── tiago_pharma_dispenser/   # Control Hardware Raspberry Pi
+│   ├── tiago_pharma_dispenser/         # Control Hardware Raspberry Pi
 │   │   └── scripts/
-│   │       └── servo_node.py     # Generación PWM
+│   │       └── servo_node.py           # Generación PWM
 │   │
-│   └── tiago_pharma_bringup/     # Orquestación
-│       └── launch/
-│           └── tirgo_system.launch
+│   ├── tiago_pharma_bringup/           # Orquestación
+│   │   └── launch/
+│   │       └── tirgo_system.launch     # Arranque completo del sistema
+│   │
+│   └── move/                           # Paquete de navegación / visualización de mapas
+│       ├── configs/
+│       │   └── rviz_configs.rviz       # Configuración de RViz
+│       ├── launch/
+│       │   ├── README.md               # Notas de uso
+│       │   └── rviz.launch             # Lanzador de RViz con el mapa del aula
+│       ├── maps/                       # Mapas de navegación del aula
+│       │   ├── Mapa_aula.pgm
+│       │   ├── Mapa_aula.yaml
+│       │   ├── Mapa_aula_mod_1.0.pgm
+│       │   ├── Mapa_aula_mod_1.0.xcf   # Versión editable del mapa
+│       │   └── Mapa_aula_mod_1.0.yaml
+│       ├── scripts/
+│       │   ├── README.md               # Descripción de scripts auxiliares
+│       │   └── run_all.sh              # Script de arranque rápido (mapa + RViz, etc.)
+│       ├── src/
+│       │   └── move/                   # Código fuente del paquete
+│       ├── CMakeLists.txt              # Configuración de build Catkin
+│       ├── README.md                   # Descripción general del paquete move
+│       ├── notas.txt                   # Notas de desarrollo / pruebas
+│       └── package.xml                 # Metadatos del paquete ROS
 │
-├── Dockerfile                    # Definición del entorno reproductible
-└── .gitignore                    # Exclusión de binarios y modelos pesados
+└── CMakeLists.txt                      # Top-level de catkin (si aplica)
 ```
+
 
 #### 2\. Descripción de Paquetes Principales (Completo)
 
@@ -411,9 +562,9 @@ gantt
 
 ### 5.a) Plan Temporal
 
-El presente cronograma detalla la planificación de las actividades restantes del proyecto TIRGO PHARMA, abarcando un periodo de cuatro semanas hasta la entrega final. Se estructura en fases secuenciales que priorizan la estabilidad del hardware y la lógica de control, culminando en una fase intensiva de pruebas e integración.
+El presente cronograma detalla la planificación de las actividades restantes del proyecto TirGo Pharma, abarcando un periodo de cuatro semanas hasta la entrega final. Se estructura en fases secuenciales que priorizan la estabilidad del hardware y la lógica de control, culminando en una fase intensiva de pruebas e integración.
 
-*Figura 1: Cronograma de Desarrollo del Proyecto TIRGO PHARMA*
+*Figura 1: Cronograma de Desarrollo del Proyecto TirGo Pharma*
 
 **Fase 1: Hardening y Baja Carga (Semana 1)**
 Esta fase se centra en consolidar los componentes de bajo nivel y establecer las bases de la nueva arquitectura de control.
