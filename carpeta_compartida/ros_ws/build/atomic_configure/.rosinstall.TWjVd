@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/tirgopi/carpeta_compartida/ros_ws/devel/setup.sh

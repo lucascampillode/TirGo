@@ -1,6 +1,0 @@
-stt_vosk
-/home/TirGo/carpeta_compartida/ros_ws/devel/.private/stt_vosk/lib/stt_vosk/list_audio_devices.py /home/TirGo/carpeta_compartida/ros_ws/devel/lib/stt_vosk/list_audio_devices.py
-/home/TirGo/carpeta_compartida/ros_ws/devel/.private/stt_vosk/lib/stt_vosk/stt_vosk_node.py /home/TirGo/carpeta_compartida/ros_ws/devel/lib/stt_vosk/stt_vosk_node.py
-/home/TirGo/carpeta_compartida/ros_ws/devel/.private/stt_vosk/lib/pkgconfig/stt_vosk.pc /home/TirGo/carpeta_compartida/ros_ws/devel/lib/pkgconfig/stt_vosk.pc
-/home/TirGo/carpeta_compartida/ros_ws/devel/.private/stt_vosk/share/stt_vosk/cmake/stt_voskConfig.cmake /home/TirGo/carpeta_compartida/ros_ws/devel/share/stt_vosk/cmake/stt_voskConfig.cmake
-/home/TirGo/carpeta_compartida/ros_ws/devel/.private/stt_vosk/share/stt_vosk/cmake/stt_voskConfig-version.cmake /home/TirGo/carpeta_compartida/ros_ws/devel/share/stt_vosk/cmake/stt_voskConfig-version.cmake

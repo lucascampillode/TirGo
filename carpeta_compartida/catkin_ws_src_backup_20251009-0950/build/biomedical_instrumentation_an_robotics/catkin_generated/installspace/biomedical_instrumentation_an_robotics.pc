@@ -1,0 +1,8 @@
+prefix=/home/tirgopi/carpeta_compartida/catkin_ws_src_backup_20251009-0950/install
+
+Name: biomedical_instrumentation_an_robotics
+Description: Description of biomedical_instrumentation_an_robotics
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

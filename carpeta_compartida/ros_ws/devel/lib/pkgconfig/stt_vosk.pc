@@ -1,0 +1,8 @@
+prefix=/home/tirgopi/carpeta_compartida/ros_ws/devel
+
+Name: stt_vosk
+Description: Description of stt_vosk
+Version: 0.0.1
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

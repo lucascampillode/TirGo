@@ -1,0 +1,8 @@
+prefix=/home/tirgopi/carpeta_compartida/ros_ws/install
+
+Name: servo_dispenser
+Description: Description of servo_dispenser
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

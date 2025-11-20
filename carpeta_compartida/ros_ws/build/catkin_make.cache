@@ -1,0 +1,2 @@
+servo_dispenser:stt_vosk
+-DCATKIN_DEVEL_PREFIX=/home/tirgopi/carpeta_compartida/ros_ws/devel -DCMAKE_INSTALL_PREFIX=/home/tirgopi/carpeta_compartida/ros_ws/install -G Unix Makefiles

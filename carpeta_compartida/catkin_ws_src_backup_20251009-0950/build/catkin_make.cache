@@ -1,0 +1,2 @@
+biomedical_instrumentation_an_robotics
+-DCATKIN_DEVEL_PREFIX=/home/tirgopi/carpeta_compartida/catkin_ws_src_backup_20251009-0950/devel -DCMAKE_INSTALL_PREFIX=/home/tirgopi/carpeta_compartida/catkin_ws_src_backup_20251009-0950/install -G Unix Makefiles
