@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Pedido en curso · TirGoPharma{% endblock %}
+{% block content %}
+<section class="panel">
+  <h2>Pedido enviado</h2>
+  <p class="ok">He enviado la orden para «{{ med.nombre }}». En breve te lo entrego.</p>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('main.index') }}">Volver al menú</a>
+  </div>
+</section>
+{% endblock %}

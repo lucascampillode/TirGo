@@ -66,6 +66,35 @@
       <a class="btn primary" href="{{ url_for('diagnostico.diagnostico') }}">Entrar</a>
     </article>
   </section>
+
+  <!-- Navegación por voz: consultar / leer / diagnostico -->
+  <script>
+  (function(){
+    async function pollNav(){
+      try{
+        const r = await fetch('/voice_nav', {cache:'no-store'});
+        const j = await r.json();
+        const nav = (j.nav || '').toLowerCase();
+        if (nav){
+          if (nav === 'consultar') {
+            window.location.href = "{{ url_for('consultar.consultar') }}";
+            return;
+          }
+          if (nav === 'leer') {
+            window.location.href = "{{ url_for('leer.leer') }}";
+            return;
+          }
+          if (nav === 'diagnostico') {
+            window.location.href = "{{ url_for('diagnostico.diagnostico') }}";
+            return;
+          }
+        }
+      } catch(e){}
+      setTimeout(pollNav, 700);
+    }
+    pollNav();
+  })();
+  </script>
   {% endif %}
 
   {# --- CONSULTAR --- #}

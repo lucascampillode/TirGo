@@ -1,20 +1,34 @@
 {% extends "base.html" %}
 {% block title %}TirGoPharma · Estado{% endblock %}
+
 {% block content %}
 <section class="panel">
   <h2>Estado: {{ state }}</h2>
-  {% if msg %}<p class="muted">{{ msg }}</p>{% endif %}
+
+  {# — Mensaje principal: preferimos body_msg; mantenemos msg por compat — #}
+  {% set _text = body_msg or msg %}
+  {% if _text %}
+    <p class="muted">{{ _text }}</p>
+  {% endif %}
 
   {% if error %}
     <p class="pill danger">❌ Error</p>
     <div class="actions">
-      <a class="btn" href="{{ url_for('leer.leer') }}">Volver a pedir</a>
+      {# mostrar “Volver a pedir” solo si show_retry no es False explícito #}
+      {% if show_retry is not defined or show_retry %}
+        <a class="btn" href="{{ url_for('leer.leer') }}">Volver a pedir</a>
+      {% endif %}
       <a class="btn" href="{{ url_for('main.index') }}">Inicio</a>
     </div>
   {% else %}
-    <p class="pill success">⏳ Procesando</p>
+    {# estados “OK / en curso” #}
+    {% if state in ['DISPENSING', 'EN_CURSO', 'OK'] %}
+      <p class="pill success">⏳ Procesando</p>
+    {% else %}
+      <p class="pill">ℹ️</p>
+    {% endif %}
     <div class="actions">
-      <a class="btn" href="{{ url_for('main.index') }}">Volver al inicio</a>
+      <a class="btn" href="{{ url_for('main.index') }}">Inicio</a>
     </div>
   {% endif %}
 </section>
