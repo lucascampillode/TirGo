@@ -332,7 +332,7 @@ La selección de hardware prioriza la integración directa con TIAGo, la simplic
 | **Actuadores del dispensador**     | Servomotores **SG90** (x2) controlados mediante GPIO.                                                                                                                          | Cada servo controla un lado del dispensador. El control se realiza con PWM por software desde la Raspberry Pi, eliminando la necesidad de controladores externos adicionales. El comportamiento es en **lazo abierto**: se confía en el diseño mecánico. |
 | **Alimentación**                   | Alimentación principal desde la fuente de la Raspberry Pi (raíl de 5 V) para los servos y lógica.                                                                              | En este prototipo, los servos SG90 se alimentan directamente del raíl de 5 V de la RPi, aprovechando su bajo consumo en ciclos cortos de trabajo. Se asume **movimiento secuencial** (un servo cada vez) para minimizar picos de corriente.                                                            |
 | **Estructura del dispensador**     | Módulos impresos en 3D: tolvas, guías y rampa de salida.                                                                                                                       | La geometría impresa de la tolva y la rampa está pensada para que el bote caiga de forma repetible a la zona de recogida del TIAGo. No hay sensores de caída, por lo que la fiabilidad depende de la precisión mecánica y de la repetibilidad del diseño.                                              |
-| **Envases de medicamentos**        | Botes cilíndricos de geometría estandarizada.                                                                                                                                  | Facilitan el agarre por parte del gripper paralelo del TIAGo y el guiado dentro de la tolva. La elección de forma y tamaño se ha alineado con la capacidad del gripper y las dimensiones del dispensador.                                                                                              |
+| **Envases de medicamentos**        | Botes cilíndricos de geometría estandarizada.                                                                                                                                  | Facilitan el agarre por parte del gripper paralelo del TIAGo y el guiado dentro de la tolva. La elección de forma y tamaño se ha alineado con la capacidad del gripper y las dimensiones del dispensador.
 
 #### Sensórica e Instrumentación Implicada
 
@@ -343,6 +343,10 @@ Para garantizar la fiabilidad del lazo abierto y la interacción, el sistema ins
 
 * **Navegación:**
   Láser 2D (LIDAR) y encoders de rueda para odometría y localización AMCL.
+####Conexión Electrónica:
+
+La integración física se realiza mediante conexión directa a los pines GPIO de la Raspberry Pi. Los servomotores SG90 se alimentan desde el raíl de 5V y comparten la referencia de masa (GND) con la placa para cerrar el circuito de control. La señal PWM se genera por software a través de pines GPIO configurables, sin necesidad de shields intermedios gracias al bajo consumo de los actuadores seleccionados.|
+
 
 ---
 
