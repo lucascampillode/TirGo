@@ -12,21 +12,22 @@
 
 ## Índice de Contenidos
 
-* [1. Resumen del Problema Biomédico](#1-resumen-del-problema-biomédico)
-* [2. Arquitectura del Sistema](#2-arquitectura-del-sistema)
-    * [2.a) Diagrama General y Lógica de Control](#2a-diagrama-general-y-lógica-de-control)
-    * [2.b) Especificación de Componentes de Hardware](#2b-especificación-de-componentes-de-hardware)
-    * [2.c) Interfaz de Usuario (UI/UX) y Flujo de Interacción](#2c-interfaz-de-usuario-uiux-y-flujo-de-interacción)
-* [3. Diseño de Software y Comunicación](#3-diseño-de-software-y-comunicación)
-    * [3.a) Arquitectura de Nodos en ROS 1](#3a-arquitectura-de-nodos-en-ros-1)
-    * [3.b) Estructura del Repositorio y Gestión de Paquetes](#3b-estructura-del-repositorio-y-gestión-de-paquetes)
-    * [3.c) Descripción de Contenedores Docker y Dependencias](#3c-descripción-de-contenedores-docker-y-dependencias)
-* [4. Análisis de Viabilidad Técnica](#4-análisis-de-viabilidad-técnica)
-    * [4.a) Identificación de Limitaciones y Riesgos](#4a-identificación-de-limitaciones-y-riesgos)
-    * [4.b) Estrategia de Mitigación y Pruebas Iniciales](#4b-estrategia-de-mitigación-y-pruebas-iniciales)
-* [5. Cronograma de Desarrollo](#5-cronograma-de-desarrollo)
-    * [5.a) Plan Temporal](#5a-plan-temporal)
-    * [5.b) Reparto de Responsabilidades Actualizado](#5b-reparto-de-responsabilidades-actualizado)
+- [1. Resumen del Problema Biomédico](#1-resumen-del-problema-biomédico)
+- [2. Arquitectura del Sistema](#2-arquitectura-del-sistema)
+  - [2.a) Diagrama General y Lógica de Control](#2a-diagrama-general-y-lógica-de-control)
+  - [2.b) Especificación de Componentes de Hardware](#2b-especificación-de-componentes-de-hardware)
+  - [2.c) Interfaz de Usuario (UI/UX) y Flujo de Interacción](#2c-interfaz-de-usuario-uiux-y-flujo-de-interacción)
+- [3 Diseño de Software y Comunicación](#3-diseño-de-software-y-comunicación)
+  - [3.a) Arquitectura de Nodos en ROS 1](#3a-arquitectura-de-nodos-en-ros-1)
+  - [3.b) Estructura del Repositorio y Gestión de Paquetes](#3b-estructura-del-repositorio-y-gestión-de-paquetes)
+  - [3.c) Descripción de contenedores Docker y dependencias](#3c-descripción-de-contenedores-docker-y-dependencias)
+- [4. Análisis de Viabilidad Técnica](#4-análisis-de-viabilidad-técnica)
+  - [4.a) Identificación de Limitaciones y Riesgos](#4a-identificación-de-limitaciones-y-riesgos)
+  - [4.b) Estrategia de Mitigación y Pruebas Iniciales](#4b-estrategia-de-mitigación-y-pruebas-iniciales)
+- [5. Cronograma de Desarrollo](#5-cronograma-de-desarrollo)
+  - [5.a) Plan Temporal](#5a-plan-temporal)
+  - [5.b) Reparto de Responsabilidades Actualizado](#5b-reparto-de-responsabilidades-actualizado)
+
 
 -----
 
@@ -40,19 +41,30 @@ La interacción con el paciente se realiza a través de una interfaz conversacio
 
 ### Impacto esperado:
 
+
   * **Personal Sanitario:** Reducción significativa del tiempo dedicado a transporte y entrega, disminuyendo la carga operativa y el riesgo de error humano.
+
   * **Sistema Hospitalario:** Incremento de la eficiencia global y la trazabilidad del medicamento, optimizando el flujo de trabajo y la gestión de recursos.
+
   * **Paciente:** Mayor adherencia al tratamiento, mejor comprensión de las indicaciones médicas y una experiencia más cercana y personalizada.
 
 El entorno previsto de implementación es un hospital o centro de salud, limitándose al manejo de medicamentos previamente autorizados y cumpliendo con los requisitos de privacidad y seguridad de datos personales y clínicos.
 
 -----
 
-## 2\. Arquitectura del Sistema
+## 2. Arquitectura del Sistema
 
 ### 2.a) Diagrama General y Lógica de Control
 
-El sistema se despliega sobre la red local del robot TIAGo (ROS Master), integrando el ordenador externo (Interfaz/BD) y la Raspberry Pi del dispensador en un mismo espacio.
+El sistema se despliega sobre la red local del robot TIAGo (ROS Master), integrando el ordenador externo (Interfaz/BD) y la Raspberry Pi del dispensador en un mismo espacio.  
+Actualmente conviven dos niveles de diseño:
+
+- Una **arquitectura inicial basada en tópicos**, ya utilizada en pruebas de integración.
+- Una **arquitectura mejorada con Action Server de misión**, ya implementada a nivel de `tirgo_mission_server` y del cliente en `tirgo_ui`, que está en proceso de sustituir por completo a la lógica basada en flags.
+
+#### 2.a.1 Arquitectura Fase 1 – Basada en Tópicos
+
+Esta fue la arquitectura original: la web orquesta directamente la misión publicando comandos de alto nivel y escuchando flags de estado.
 
 ```mermaid
 ---
@@ -100,96 +112,214 @@ flowchart LR
     R_NODE -- /tirgo/mission/finish<br>(std_msgs/String) --> UINODE
     UINODE -- /tirgo/ui/state --> R_NODE
     UINODE -- /tirgo/ui/error --> R_NODE
+````
+
+En esta fase:
+
+* La **web (`tirgo_ui`)**:
+
+  * Publica `/tirgo/mission/start` y `/tirgo/dispense/request`.
+  * Escucha directamente los flags `/tirgo/tiago/arrived`, `/tirgo/dispense/ready`, `/tirgo/tiago/picked`.
+* El **estado de la misión** (en marcha, error, etc.) se reconstruye dentro de la propia UI a partir de esos flags.
+
+Esta arquitectura se ha usado para validar el flujo básico de **UI ↔ MongoDB ↔ ROS** y los primeros tests de integración con el robot y la Raspberry (publicando y leyendo tópicos simples).
+
+#### 2.a.2 Arquitectura Fase 2 – Con Action Server de Misión
+
+Sobre esa base, se ha introducido un **Action Server** dedicado a la misión de dispensación, con un paquete de mensajes propio (`tirgo_msgs/TirgoMission.action`) y el nodo `tirgo_mission_server`.
+La UI deja de coordinar los flags de bajo nivel y pasa a ser un **Action Client**.
+
+```mermaid
+---
+config:
+  look: classic
+  theme: neutral
+  layout: dagre
+---
+flowchart LR
+  %% === Actores humanos ===
+  subgraph USU["Paciente / Personal"]
+    PAC[("Paciente")]
+    PER[("Personal sanitario")]
+  end
+
+  %% === Capa UI / Web ===
+  subgraph UI["Paquete ROS: tirgo_ui (Flask + ROS · Action Client)"]
+    HTML[["Páginas HTML<br>templates + static"]]
+    UINODE(("Nodo ROS<br>tirgo_web_server"))
+  end
+
+  %% === Voz ===
+  subgraph VOZ["Entrada por voz"]
+    STT(("Nodo STT<br>/stt_vosk"))
+  end
+
+  %% === Datos ===
+  subgraph DATA["Backend / Datos"]
+    ME[["MongoExpress"]]
+    DB[("MongoDB<br>pacientes, recetas, stock,<br>registro dispensaciones")]
+  end
+
+  %% === Dispensador físico (RPi) ===
+  subgraph DISP["Paquete ROS: dispensador (Raspberry Pi 3B)"]
+    DISP_NODE(("Nodo dispensador<br>servo_node.py"))
+    ACT[["Servos SG90 / mecánica<br>tolvas + rampa salida"]]
+  end
+
+  %% === Robot TIAGo / Misión ===
+  subgraph ROBOT["Robot TIAGo (ROS Master)"]
+    MISSION(("Action Server<br>tirgo_mission_server"))
+    NAV(("Navegación / brazo<br>move_base + pick ciego"))
+  end
+
+  %% === Flujo UI / Humanos / Datos ===
+  PAC -- navegador web --> HTML
+  PER -- navegador web --> HTML
+
+  HTML --> UINODE
+  STT -- "/stt/text"<br>std_msgs/String --> UINODE
+
+  ME --> DB
+  PER -- gestiona datos --> ME
+  UINODE -. "MONGO_URI"<br>pymongo .-> DB
+
+  DISP_NODE --> ACT
+  PER -- carga física meds --x DISP
+
+  %% === Acción de misión TirgoMission.action ===
+  UINODE == "TirgoMissionAction<br>(goal)" ==> MISSION
+  MISSION == "feedback/result<br>TirgoMissionAction" ==> UINODE
+
+  %% === Coordinación interna misión → robot / dispensador ===
+  MISSION -- "/tirgo/mission/start"<br>std_msgs/String --> NAV
+  MISSION -- "/tirgo/dispense/request"<br>std_msgs/Int32 (bin_id) --> DISP_NODE
+
+  NAV -- "/tirgo/tiago/arrived"<br>std_msgs/Bool --> MISSION
+  DISP_NODE -- "/tirgo/dispense/ready"<br>std_msgs/Bool --> MISSION
 ```
 
-#### Topología de Red y Nodos
+En esta fase:
 
-Todos los dispositivos operan bajo la misma subred local mediante conexión Wi-Fi, compartiendo el `ROS_MASTER_URI` alojado en el TIAGo.
+* Se ha creado el paquete **`tirgo_msgs`** con la acción `TirgoMission.action`:
 
-  * **ROS Master (TIAGo):** Ejecuta el núcleo del sistema (`roscore`), el stack de navegación y los servidores de acción del brazo.
-  * **Nodo Cliente de Hardware (Raspberry Pi):** Se conecta como un nodo ROS esclavo. Su función es exponer el hardware del dispensador (servos) al ecosistema ROS mediante tópicos, sin ejecutar lógica de navegación.
-  * **Nodo Cliente de Interfaz (PC):** Ejecuta la aplicación web, se comunica con el dispensador y el robot y orquestra la interacción. Además, ejecuta el procesamiento de voz, enviando comandos de alto nivel al Master.
+  * Goal: `patient_id` (`string`), `med_id` (`int32`).
+  * Feedback: `state` (`string`), `progress` (`float32`).
+  * Result: `success` (`bool`), `error_code` (`string`), `error_message` (`string`).
+* Se ha implementado el nodo **`tirgo_mission_server`**, que:
 
-#### Estrategia de Navegación y Manipulación
+  * Expone el Action Server `/tirgo/mission`.
+  * Espera las señales internas `/tirgo/tiago/arrived` y `/tirgo/dispense/ready`.
+  * Publica feedback y devuelve un resultado con éxito o códigos de timeout (`TIMEOUT_ARRIVE`, `TIMEOUT_READY`, etc.).
+* En `tirgo_ui`:
 
-  * **Aproximación:** Se confía en la precisión del stack de navegación estándar (`move_base` + `amcl`). La localización en el mapa estático se considera suficiente para posicionar al robot frente al dispensador dentro del margen de tolerancia del brazo.
-  * **Manipulación Ciega (Open-Loop):** Al no utilizar reconocimiento visual activo para el agarre, la estrategia es determinista. El robot ejecuta una trayectoria pre-grabada (`play_motion`) asumiendo que, si la navegación fue exitosa, el bote de medicina se encuentra en las coordenadas $(x,y,z)$ fijas de la rampa de salida.
+  * `rosio.py` crea un `SimpleActionClient` a `/tirgo/mission` y una función `start_mission_async(patient_id, med_id)`.
+  * Los blueprints de `leer.py` llaman a `start_mission_async(...)` cuando se lanza una dispensación.
+  * Las callbacks de feedback y done actualizan el estado de la UI y los mensajes de progreso.
 
-#### Lógica de Control: Estado Actual vs. Evolución
+Los nodos de navegación y dispensador siguen en desarrollo, pero la **estructura de Actions ya está operativa** y ha sustituido, en el lado de la UI, al uso directo de los tópicos de misión.
 
-Actualmente, la orquestación reside en la capa de aplicación web (paradigma basado en Tópicos), con una migración planificada hacia Action Servers.
+#### 2.a.3 Topología de Red y Nodos
 
-**Fase 1 (Arquitectura Actual - Basada en Topics):**
-La web `tirgo_ui` actúa como orquestador central. Recibe la petición del usuario, consulta MongoDB (mediante `MONGO_URI`) para verificar stock y recetas, y registra la operación.
-Si la validación es correcta, publica mensajes de alto nivel a ROS a través del módulo puente `rosio.py`:
+Todos los dispositivos operan bajo la misma subred local mediante conexión Wi-Fi, compartiendo el `ROS_MASTER_URI` alojado en el TIAGo:
 
-  * `/tirgo/mission/start`: Inicia la secuencia.
-  * `/tirgo/dispense/request`: Envía el `bin_id` (cajetín) necesario.
+* **ROS Master (TIAGo)**
 
-Los nodos de hardware (TIAGo, Raspberry Pi) ejecutan las acciones y publican flags de estado (`/tirgo/tiago/arrived`, `/tirgo/dispense/ready`, `/tirgo/tiago/picked`). La web se limita a escuchar estos flags para actualizar la barra de progreso de la interfaz.
+  * Ejecuta `roscore`, el stack de navegación (`move_base`, `amcl`) y los servidores de acción propios del robot.
+  * Aloja el Action Server `/tirgo/mission` (`tirgo_mission_server`).
 
-**Fase 2 (Arquitectura Objetivo - Basada en Actions):**
-Se implementará una separación estricta mediante ROS Actions. La web dejará de gestionar la lógica de bajo nivel y actuará como un Action Client.
+* **Nodo Cliente de Hardware (Raspberry Pi 3B)**
 
-  * Enviará una única meta ("Goal") al servidor `/tirgo/dispense_mission` (Ej: "Dispensar Medicamento X a Paciente Z").
-  * Un nuevo nodo dedicado, `tirgo_mission_server`, implementará un `SimpleActionServer`. Este nodo gestionará la máquina de estados completa: coordinar la navegación, ordenar la apertura del dispensador, monitorizar los sensores y devolver feedback y resultado a la web. Esto encapsula la complejidad robótica dentro de ROS, dejando la UI solo para visualización.
+  * Se conecta como nodo ROS esclavo.
+  * Expone el **dispensador físico** (servos SG90 y mecánica de tolvas) a través de un nodo Python (`servo_node.py`), suscrito a la orden de dispensación.
 
-#### Módulos Funcionales Principales
+* **Nodo Cliente de Interfaz (PC / Contenedor Docker)**
 
-El sistema se estructura en módulos independientes para garantizar la escalabilidad y facilitar el mantenimiento. Se distingue claramente entre la capa de interacción (UI) y la capa de control robótico.
+  * Ejecuta la aplicación web Flask (`tirgo_ui`) dentro de un contenedor ROS 1 (`ros1_rob_tirgo`) con `network_mode: host`.
+  * Se comunica con MongoDB, con el robot TIAGo y con la Raspberry Pi.
+  * Actúa como **Action Client** de `/tirgo/mission` y como punto de entrada del usuario (web + voz).
 
-1.  **Módulo de Interfaz y Diálogo (UI Client):**
+#### 2.a.4 Estrategia de Navegación y Manipulación
 
-      * Nodo híbrido (`tirgo_ui`) que actúa como la cara visible del sistema.
-      * Gestiona la interacción con el usuario (web interactiva y voz).
-      * Integra el reconocimiento de voz (`stt_vosk`) para la activación mediante hotword.
-      * Función: Recopilar la intención del usuario y validarla. No contiene lógica de navegación ni control de servos.
+* **Navegación**
 
-2.  **Módulo de Orquestación de Misiones (Mission Server):**
+  * Se utiliza el stack estándar (`move_base` + `amcl`) sobre un mapa estático del entorno.
+  * El objetivo es posicionar al robot frente al dispensador dentro de un margen de tolerancia compatible con la maniobra de pick.
 
-      * Nodo dedicado (`tirgo_mission_server`) que encapsula la inteligencia del robot.
-      * Actúa como un Action Server que recibe metas de alto nivel de la UI.
-      * Función: Implementar la máquina de estados central: coordina la navegación hacia el dispensador, solicita la apertura del cajetín, espera la confirmación hardware y ordena el movimiento del brazo.
+* **Manipulación ciega (open-loop)**
 
-3.  **Módulo de Gestión de Datos (Backend):**
+  * No se emplea visión activa para el agarre.
+  * El robot ejecuta una trayectoria pregrabada (`play_motion`) suponiendo que, si la navegación ha sido correcta, el bote se encuentra en una posición fija de la rampa.
+  * La fiabilidad del pick depende por tanto de:
 
-      * Lógica de negocio conectada a MongoDB.
-      * Función: Verificar en tiempo real si el paciente tiene receta activa y si hay stock suficiente antes de autorizar cualquier movimiento físico.
+    * La precisión de localización.
+    * La repetibilidad mecánica del dispensador.
 
-4.  **Módulo Dispensador (Hardware):**
+#### 2.a.5 Lógica de Control: Estado Actual vs. Evolución
 
-      * Nodo ROS en la Raspberry Pi (`dispenser_node`).
-      * Función: Suscribirse a peticiones de dispensación, accionar los servomotores y publicar confirmación (ACK) una vez finalizada la caída del medicamento.
+La lógica de control puede verse como una transición progresiva entre dos paradigmas:
 
-5.  **Módulo Robótico (Ejecución):**
+**Fase 1 – Orquestación basada en Tópicos**
 
-      * **Navegación:** Stack `move_base` estándar para desplazarse de forma autónoma por el mapa del hospital.
-      * **Manipulación Ciega:** Estrategia de agarre basada en `play_motion`. Al llegar al punto de recogida, el robot asume que el bote está en una posición conocida (garantizada mecánicamente) y ejecuta una trayectoria pregrabada de Pick & Place sin necesidad de corrección visual activa ("Coger y ir").
+* La web (`tirgo_ui`) actúa como **orquestador central**:
+
+  * Valida paciente, receta y stock en MongoDB.
+  * Publica `/tirgo/mission/start` y `/tirgo/dispense/request`.
+  * Escucha directamente los flags `/tirgo/tiago/arrived`, `/tirgo/dispense/ready`, `/tirgo/tiago/picked`.
+* La máquina de estados de la misión está dispersada entre la UI y otros nodos, lo que complica la trazabilidad.
+
+**Fase 2 – Orquestación basada en Action Server (en curso, con núcleo ya implementado)**
+
+* La web pasa a ser un **Action Client**:
+
+  * Envía un único goal de alto nivel a `/tirgo/mission` (`TirgoMission.action`).
+  * Se alimenta de `feedback` y `result` para actualizar la UI.
+* El nodo `tirgo_mission_server`:
+
+  * Encapsula la máquina de estados de la misión (espera al robot, espera al dispensador, gestiona timeouts).
+  * Es el único que escucha los flags `/tirgo/tiago/arrived` y `/tirgo/dispense/ready`.
+* La UI deja de tener lógica de bajo nivel y se centra en:
+
+  * Validación de negocio (pacientes, recetas, stock).
+  * Registro en MongoDB.
+  * Presentación de estados y errores de forma comprensible para el usuario.
+
+El objetivo a corto plazo es completar la migración de todos los flujos de dispensación, manteniendo la primera como referencia y como punto de partida de las pruebas iniciales.
+
 
 ### 2.b) Especificación de Componentes de Hardware
 
-La selección de hardware prioriza la integración directa y la simplicidad de mantenimiento para este prototipo funcional.
+La selección de hardware prioriza la integración directa con TIAGo, la simplicidad de mantenimiento y la adecuación a un entorno clínico controlado.
 
 | Componente | Especificación Técnica | Justificación y Diseño Electrónico |
 | :--- | :--- | :--- |
-| **Robot Base** | TIAGo++ (PAL Robotics) | Plataforma móvil con brazo manipulador. Actúa como servidor de cómputo principal (ROS Master). |
-| **Controlador Dispensador** | Raspberry Pi 3b | **Interfaz GPIO Directa:** Se utiliza la librería RPi.GPIO para generar señales PWM por software directamente desde los pines de la placa, eliminando la necesidad de drivers externos y reduciendo la complejidad del cableado. |
-| **Actuadores** | Servomotores SG90 (x2 Unidades) | **Alimentación Compartida:** Los servos se alimentan directamente desde el raíl de 5V de la Raspberry Pi. Dado el bajo consumo de los SG90 en carga intermitente, esta configuración simplifica la fuente de alimentación a una única entrada (cargador USB-C de la RPi), optimizando el espacio. |
-| **Estructura Dispensador** | Impresión 3D | El dispensador opera en "lazo abierto". No dispone de sensores de caída (barrera IR). Se asume la fiabilidad mecánica del diseño de la tolva y el servo para garantizar la entrega del medicamento tras la orden de movimiento. |
-| **Envases** | Botes cilíndricos | Geometría estandarizada para facilitar el agarre ciego con el gripper paralelo. |
+| **Robot base** | **TIAGo++ (PAL Robotics)** con base móvil, computador interno y brazo manipulador con gripper paralelo. | Actúa como **plataforma robótica principal** y ROS Master. La base móvil se encarga de la navegación autónoma en el mapa del aula/hospital. El brazo con gripper paralelo permite la **manipulación ciega** del bote en la rampa del dispensador. |
+| **Sensores integrados en TIAGo** | Cabeza sensorizada con **cámara RGB** y **sensores de navegación** (láser/scan 2D y cámara de profundidad), además de **sensores de seguridad** (bumpers, E-stop de hardware). | La cámara RGB y la sensórica de navegación se utilizan para que el robot se desplace de forma segura por el entorno de pruebas. Los bumpers y el botón de parada de emergencia añaden una capa de seguridad física esencial en un entorno donde hay personas. |
+| **Actuadores integrados en TIAGo** | Motores de la base móvil, motores del brazo de 7 GDL, gripper paralelo y altavoz integrado. | Los motores de la base permiten posicionar al robot frente al dispensador y al paciente. El brazo y el gripper ejecutan trayectorias pregrabadas (`play_motion`) para recoger el bote en una posición fija. El altavoz puede utilizarse para ofrecer feedback de voz durante la entrega. |
+| **Controlador del dispensador** | **Raspberry Pi 3B** con sistema operativo Linux/Ubuntu y ROS 1. | Se utiliza como nodo ROS esclavo dedicado al dispensador. Expone el hardware del dispensador (servos) a través de tópicos y simplifica el cableado al concentrar toda la electrónica en una única placa. |
+| **Actuadores del dispensador** | Servomotores **SG90** (x2) controlados mediante GPIO. | Cada servo controla la compuerta de una cubeta del dispensador. El control se realiza con PWM por software desde la Raspberry Pi, eliminando la necesidad de controladores externos adicionales. El comportamiento es en **lazo abierto**: se confía en el diseño mecánico de la compuerta y la tolva. |
+| **Alimentación** | Alimentación principal desde la fuente de la Raspberry Pi (raíl de 5 V) para los servos y lógica. | En este prototipo, los servos SG90 se alimentan directamente del raíl de 5 V de la RPi, aprovechando su bajo consumo en ciclos cortos de trabajo. Se asume **movimiento secuencial** (un servo cada vez) para minimizar picos de corriente. |
+| **Estructura del dispensador** | Módulos impresos en 3D: tolvas, guías y rampa de salida. | La geometría impresa de la tolva y la rampa está pensada para que el bote caiga de forma repetible a la zona de recogida del TIAGo. No hay sensores de caída, por lo que la fiabilidad depende de la precisión mecánica y de la repetibilidad del diseño. |
+| **Envases de medicamentos** | Botes cilíndricos de geometría estandarizada. | Facilitan el agarre por parte del gripper paralelo del TIAGo y el guiado dentro de la tolva. La elección de forma y tamaño se ha alineado con la capacidad del gripper y las dimensiones del dispensador. |
+
+#### Sensórica e Instrumentación Implicada
+
+Para garantizar la fiabilidad del lazo abierto y la interacción, el sistema instrumenta los siguientes sensores:
+
+  * **Validación de Agarre:** Monitorización de la corriente eléctrica del gripper del TIAGo para confirmar contacto físico con el bote.
+  * **Navegación:** Láser 2D (LIDAR) y encoders de rueda para odometría y localización AMCL.
 
 ### 2.c) Interfaz de Usuario (UI/UX) y Flujo de Interacción
 
 La interfaz es una aplicación web (Flask) diseñada bajo criterios de diseño clínico: fondo blanco limpio para maximizar el contraste, tipografía de alta legibilidad y una paleta de colores basada en el azul corporativo ("TirGo Pharma"). La disposición de los elementos está optimizada para personas mayores, priorizando botones grandes y flujos lineales.
 
-#### 1\. Arquitectura de Interacción (Voz + Manual)
+#### 2.c.1 Arquitectura de Interacción (Voz + Manual)
 
 El sistema integra dos modalidades de entrada que coexisten para mejorar la accesibilidad y la higiene hospitalaria:
 
   * **Modo Manos Libres (Voz):** La pantalla de bloqueo muestra un micrófono animado escuchando continuamente. Al pronunciar la hotword "Hola Tirgo", el sistema desbloquea el acceso al menú principal sin necesidad de contacto físico.
   * **Modo Manual (Cards):** El menú principal se organiza en tres grandes tarjetas ("Consultar", "Leer", "Diagnóstico"), cada una con una descripción clara y gran tamaño, facilitando el uso a pacientes mayores o con movilidad reducida.
 
-#### 2\. Flujos de Usuario Detallados
+#### 2.c.2 Flujos de Usuario Detallados
 
 **A. Opción "Leer" (Catálogo Visual y Disponibilidad)**
 
@@ -217,7 +347,7 @@ El sistema integra dos modalidades de entrada que coexisten para mejorar la acce
       * **Consejo (Advice):** Pautas de autocuidado sin fármacos.
       * **Tratamiento (Med):** Recomendación de un fármaco específico disponible en el catálogo, con un botón para iniciar la dispensación inmediata.
 
-#### 3\. Ejecución Técnica y Feedback Visual
+#### 2.c.3 Ejecución Técnica y Feedback Visual
 
 Una vez confirmada una acción, la interfaz bloquea la entrada de datos y pasa a modo "Monitorización":
 
@@ -226,87 +356,166 @@ Una vez confirmada una acción, la interfaz bloquea la entrada de datos y pasa a
   * **Comunicación ROS:** Se publican los tópicos de misión (`/tirgo/mission/start`).
   * **Estado en Tiempo Real:** La web muestra notificaciones ("Robot en camino", "Dispensando...") que reaccionan a los mensajes de retorno del hardware (`/tirgo/tiago/picked`, `/tirgo/dispense/ready`).
 
+#### 2.c.4 Vista Preliminar de la Interfaz
+
+A continuación se muestran capturas reales del prototipo funcional implementado en `tirgo_ui`, evidenciando el diseño de alto contraste y la adaptación a pantallas táctiles.
+
+| Menú Principal | Catálogo de Medicamentos | Identificación de Paciente |
+| :---: | :---: | :---: |
+| <img width="893" height="445" alt="Captura desde 2025-11-03 19-56-24" src="https://github.com/user-attachments/assets/61ceed5f-ab44-46e1-8e72-275fce0e8170" /> | <img width="892" height="781" alt="Captura desde 2025-11-03 19-58-17" src="https://github.com/user-attachments/assets/ffec157a-3d37-4a87-b15e-c23ddc942154" />| <img width="903" height="389" alt="Captura desde 2025-11-06 22-12-56" src="https://github.com/user-attachments/assets/984975d9-1f0f-4cf9-93a5-5ca4f804327a" /> |
+| *Acceso mediante tarjetas grandes para facilitar la interacción.* | *Vista de stock con indicadores de receta (Rojo/Verde).* | *Formulario de validación de identidad previo a la dispensación.* |
+
 -----
 
-## 3\. Diseño de Software y Comunicación
+## 3 Diseño de Software y Comunicación
 
 ### 3.a) Arquitectura de Nodos en ROS 1
 
-El sistema se fundamenta en una arquitectura híbrida que desacopla la lógica de negocio (Web/Datos) de la ejecución robótica (ROS). El nodo principal de interacción es `tirgo_ui`, el cual actúa como un puente bidireccional.
+La figura del apartado 2.a muestra la vista global del sistema (UI, robot, dispensador y BD).  
+En este apartado se detalla **cómo se organiza esa arquitectura a nivel de nodos ROS**, diferenciando claramente dos etapas:
 
-#### 1\. Estrategia de Integración Flask-ROS (`tirgo_ui`)
+- **Fase 1:** orquestación basada en tópicos y flags.
+- **Fase 2:** orquestación basada en un **Action Server**.
 
-El nodo `tirgo_ui` no sigue el patrón estándar de ejecución cíclica, sino que integra un servidor web asíncrono.
+---
 
-  * **Patrón Gateway (`rosio.py`):** Se implementa el patrón de diseño Gateway para desacoplar el servidor web de la robótica. El núcleo de la aplicación (`app.py`) no importa librerías de ROS directamente, sino que interactúa con una API abstracta expuesta por `rosio`. Esto permite ejecutar la interfaz en entornos de desarrollo sin hardware (mediante Mocking automático).
+#### 3.a.1 Nodos principales y distribución
 
-  * **Gestión de Concurrencia:** `rosio.py` inicializa el nodo ROS en un hilo secundario (threading), manteniendo el hilo principal libre para el servidor asíncrono de Flask. La sincronización de estado (banderas como `arrived` o `ready`) se gestiona mediante variables atómicas thread-safe, evitando bloqueos en la telemetría de alta frecuencia.
+| Nodo ROS                      | Dónde se ejecuta                     | Rol general                                                                                  |
+|------------------------------|--------------------------------------|----------------------------------------------------------------------------------------------|
+| `tirgo_web_server`           | PC (Docker `ros1_rob_tirgo`)         | Nodo híbrido Flask + ROS. Atiende la web, consulta MongoDB y habla con el mundo ROS.        |
+| `stt_vosk`                   | PC / máquina de voz                  | Reconocimiento de voz. Publica el texto de entrada en un tópico para la UI.                 |
+| `tirgo_mission_server`       | TIAGo                                | Nodo dedicado a la misión de dispensación (Action Server `/tirgo/mission`).                 |
+| `dispenser_node`             | Raspberry Pi 3B                      | Nodo del dispensador físico (servos SG90 + mecánica de tolvas/rampa).                       |
+| `move_base`, `amcl`, etc.    | TIAGo                                | Navegación autónoma sobre mapa estático.                                                    |
+| Nodos de brazo / `play_motion` | TIAGo                              | Ejecución de la maniobra de pick “ciega” en la rampa.                                       |
+| `roscore` / Master           | TIAGo                                | ROS Master. Registra nodos, parámetros y conexiones.                                        |
 
+Estos nodos son los mismos en ambas fases; lo que cambia es **quién coordina la misión** y **qué interfaces ROS usa cada bloque**.
 
-#### 2\. Especificación de Interfaces ROS
+#### 3.a.2 Fase 1 – Orquestación basada en tópicos y flags
 
-El diseño conceptual del sistema para el Hito 2 define tres tipos de interfaces. Aunque la implementación actual se basa en Tópicos para la validación funcional, la arquitectura contempla la inclusión de Servicios y Acciones para robustecer el flujo.
+En la **arquitectura inicial**, la orquestación se hacía directamente desde `tirgo_web_server` usando tópicos simples:
 
-**(A) Tópicos (Implementados - Comunicación Asíncrona)**
-La comunicación es ligera; no se transmiten estructuras de datos complejas (JSON de pacientes) por la red ROS, solo comandos de ejecución y telemetría.
+- La UI validaba paciente, receta y stock en MongoDB.
+- Si todo era correcto, publicaba comandos de alto nivel:
+  - `/tirgo/mission/start` (`std_msgs/String`) → inicio de misión.
+  - `/tirgo/dispense/request` (`std_msgs/Int32`) → identificación de la cubeta (bin) a abrir.
+- A la vez, la UI se suscribía a los flags publicados por el robot y el dispensador:
+  - `/tirgo/tiago/arrived` (`std_msgs/Bool`) → TIAGo ha llegado al dispensador.
+  - `/tirgo/dispense/ready` (`std_msgs/Bool`) → el bote ha caído en la rampa.
+  - `/tirgo/tiago/picked` (`std_msgs/Bool`) → el robot ha cogido el bote.
+- Con esos flags, la propia UI reconstruía el “progreso de misión” y actualizaba los estados.
 
-| Dirección | Tópico | Tipo Mensaje | Payload (Ejemplo) | Descripción Técnica |
-| :--- | :--- | :--- | :--- | :--- |
-| Sub | `stt/text` | `std_msgs/String` | `"hola tirgo"` | Flujo de audio procesado externamente. Si coincide con la hotword, activa la UI. |
-| Pub | `/tirgo/mission/start` | `std_msgs/String` | `"go_pickup"` | **Trigger de Misión:** Comando simbólico. Indica al robot que inicie la secuencia de navegación hacia el dispensador. |
-| Pub | `/tirgo/dispense/request` | `std_msgs/Int32` | `2` | Envía únicamente el `bin_id` (entero) que la Raspberry Pi debe accionar. |
-| Pub | `/tirgo/ui/state` | `std_msgs/String` | `"WAITING_USER"` | Telemetría para herramientas de depuración externas. |
-| Sub | `/tirgo/dispense/ready` | `std_msgs/Bool` | `True` | Confirmación física de que el servo ha completado su recorrido. |
-| Sub | `/tirgo/tiago/arrived` | `std_msgs/Bool` | `True` | Confirmación de navegación completado. |
+**Papel de cada nodo en Fase 1:**
 
-**(B) Acciones (Diseño - Tareas de Larga Duración)**
-Se establece la transición de la lógica de navegación actual (basada en tópicos) a un Action Server:
+- `tirgo_web_server`  
+  - Publica `/tirgo/mission/start` y `/tirgo/dispense/request`.  
+  - Se suscribe a `/tirgo/tiago/arrived`, `/tirgo/dispense/ready`, `/tirgo/tiago/picked`.  
+  - Mapea los flags a mensajes de interfaz (“Robot en camino”, “Dispensando…”, etc.).
 
-  * `/tirgo/orchestrate_mission` (`tirgo_msgs/Mission.action`): Permitirá a la web enviar un objetivo y recibir feedback continuo y un estado final (SUCCEEDED / ABORTED), gestionando internamente los reintentos de navegación.
+- `dispenser_node`  
+  - Se suscribe a `/tirgo/dispense/request` y mueve los servos para abrir la cubeta correspondiente.  
+  - Publica `/tirgo/dispense/ready` cuando el ciclo mecánico termina.
 
-#### 3\. Configuración del Entorno de Despliegue (roslaunch)
+- Nodos de TIAGo (navegación / brazo)  
+  - Reciben la orden de comenzar la misión a través de `/tirgo/mission/start`.  
+  - Publican `/tirgo/tiago/arrived` y `/tirgo/tiago/picked` cuando alcanzan las posiciones clave.
 
-La arquitectura modular se refleja en la estrategia de arranque. Actualmente, el subsistema de interfaz se despliega de forma aislada mediante `web.launch`, que inyecta la configuración necesaria mediante variables de entorno, desacoplando el código de la infraestructura:
+En resumen, en Fase 1 la máquina de estados está repartida: parte en la UI, parte en los nodos del robot y el dispensador. Toda la lógica de cuándo pasa cada cosa vive principalmente en `tirgo_web_server`.
 
-  * `MONGO_URI`: Cadena de conexión segura a la base de datos (ej: `mongodb://tirgoAdmin:pass@localhost...`).
-  * `TIRGO_HOTWORD`: Palabra clave personalizable para la activación por voz.
-  * `TIRGO_STT_TOPIC`: Permite remapear el tópico de entrada de audio sin recompilar.
-  * `TIRGO_DEV`: Flag crítica que permite ejecutar la interfaz en modo "Mock", simulando respuestas del robot para desarrollo sin hardware.
+---
 
-Se prevé la creación de un lanzador maestro (`tirgo_bringup.launch`) que orqueste la carga simultánea de la navegación del TIAGo, el controlador de la Raspberry Pi y este servidor web.
+#### 3.a.3 Fase 2 – Orquestación basada en Action Server de misión
+
+En la **arquitectura actual**, se ha introducido un Action Server dedicado, que centraliza la lógica de la misión y simplifica el papel de la UI.
+
+1. Se define en `tirgo_msgs` la acción **`TirgoMission.action`** con:
+   - **Goal**
+     - `string patient_id`
+     - `int32 med_id`
+   - **Feedback**
+     - `string state`
+     - `float32 progress`
+   - **Result**
+     - `bool success`
+     - `string error_code`
+     - `string error_message`
+
+2. Se implementa el nodo **`tirgo_mission_server`** en el TIAGo:
+   - Expone el Action Server `/tirgo/mission`.
+   - Espera a:
+     - `/tirgo/tiago/arrived` (`std_msgs/Bool`) desde la navegación del robot.
+     - `/tirgo/dispense/ready` (`std_msgs/Bool`) desde el `dispenser_node`.
+   - Actualiza periódicamente `feedback.state` y `feedback.progress`.
+   - Finaliza la acción con:
+     - `success = true` si la secuencia llega a término.
+     - `success = false` y `error_code` tipo `TIMEOUT_ARRIVE`, `TIMEOUT_READY`, etc., si alguna señal no llega a tiempo.
+
+3. En `tirgo_ui` se introduce el cliente de acción:
+   - `rosio.py` crea un `SimpleActionClient` hacia `/tirgo/mission`.
+   - Expone una función `start_mission_async(patient_id, med_id)` que:
+     - Construye el goal.
+     - Lo envía de forma no bloqueante.
+     - Registra callbacks para feedback y resultado.
+   - Los blueprints de `leer.py` llaman a `start_mission_async(...)` en los distintos flujos (“Leer”, “Recoger”, etc.).
+
+**Papel de cada nodo en Fase 2:**
+
+- `tirgo_web_server`  
+  - Sigue validando paciente, receta y stock en MongoDB.  
+  - **Deja de suscribirse a `/tirgo/tiago/arrived` y `/tirgo/dispense/ready`**.  
+  - Lanza una única misión de alto nivel a `/tirgo/mission` y se limita a:
+    - Mostrar el `feedback.state` / `feedback.progress`.
+    - Mostrar el `result.error_code` / `result.error_message` si algo falla.
+
+- `tirgo_mission_server`  
+  - Pasa a ser el **único nodo** que escucha directamente los flags del TIAGo y del dispensador.  
+  - Encapsula la máquina de estados de la misión: decide si hay timeout, si puede seguir al siguiente paso, etc.
+
+- `dispenser_node` y nodos de TIAGo  
+  - Mantienen su interfaz de tópicos (`/tirgo/dispense/ready`, `/tirgo/tiago/arrived`, etc.), pero ahora sus mensajes se consumen en el Action Server, no en la UI.
+
+El resultado es una arquitectura más limpia:
+
+- La **UI** se centra en negocio (recetas, stock) y experiencia de usuario.
+- La **coordinación de dispensación** (cuándo se considera que la misión ha ido bien o mal) se concentra en un único nodo ROS (`tirgo_mission_server`) bien definido.
+
+---
+
+#### 3.a.4 Resumen comparativo (Fase 1 vs Fase 2)
+
+| Aspecto                    | Fase 1 – Solo tópicos/flags                                   | Fase 2 – Action Server `/tirgo/mission`                         |
+|---------------------------|---------------------------------------------------------------|------------------------------------------------------------------|
+| Orquestador principal     | `tirgo_web_server` (UI)                                       | `tirgo_mission_server` (TIAGo)                                  |
+| Comunicación UI ↔ robot   | `/tirgo/mission/start`, `/tirgo/dispense/request`            | Acción `TirgoMission.action`                                    |
+| Flags de hardware         | Leídos directamente por la UI                                | Leídos por el Action Server                                     |
+| Estado de la misión       | Reconstruido en la UI a partir de varios tópicos             | Encapsulado en la acción (goal, feedback, result)               |
+| Papel de la UI            | Valida datos + coordina robot/dispensador                    | Valida datos + muestra feedback/result de la misión             |
+| Trazabilidad de errores   | Dispersa (varios tópicos y logs)                             | Centralizada en `error_code` / `error_message` de la acción     |
+
+Esta transición mantiene los mismos nodos físicos (TIAGo, PC, Raspberry Pi), pero cambia dónde estáué tipo de interfaz ROS se usa entre la UI y la inteligencia de coordinación y qué tipo de interfaz ROS se usa entre la UI y el robot.
 
 ### 3.b) Estructura del Repositorio y Gestión de Paquetes
 
 El proyecto se gestiona mediante un Monorepositorio (Monorepo) que agrupa todos los paquetes ROS del sistema. Esta estrategia facilita la integración continua y el versionado atómico del código fuente.
 
-### **1.0 Árbol de Directorios del Proyecto**
+#### 3.b.1 Árbol de Directorios del Proyecto
 
 La estructura general del proyecto TirgoPharma sigue una separación clara entre:
 
-* **Código ROS** (dentro del workspace `ros_ws/`, ubicado en la carpeta compartida del host para integrarse con Docker y la Raspberry Pi).
-* **Infraestructura** (servicios de base de datos, inicialización y orquestación).
-* **Recursos pesados** (modelos de voz, mapas, logs u otros ficheros que no se versionan).
-* **Capa de contenedores** (Dockerfile y `docker-compose.yml` a nivel raíz).
+  * **Código ROS** (dentro del workspace `ros_ws/`, ubicado en la carpeta compartida del host para integrarse con Docker y la Raspberry Pi).
+  * **Infraestructura** (servicios de base de datos, inicialización y orquestación).
+  * **Recursos pesados** (modelos de voz, mapas, logs u otros ficheros que no se versionan).
+  * **Capa de contenedores** (Dockerfile y `docker-compose.yml` a nivel raíz).
 
 Este enfoque garantiza mantenibilidad, despliegues reproducibles y una clara separación de responsabilidades entre desarrollo, infraestructura y runtime.
 
----
 
-#### **1.1 Árbol del Repositorio Principal `TirGo/`**
 
-El repositorio agrupa todo lo necesario para ejecutar TirgoPharma:
-infraestructura (MongoDB), contenedores, y una carpeta compartida utilizada por los servicios (incluyendo el workspace ROS).
+**Árbol del Repositorio Principal `TirGo/`**
 
-**Descripción breve**
-
-* **carpeta_compartida/**
-  Espacio accesible desde los contenedores (volumen). Contiene `ros_ws/` y los modelos de voz.
-* **infra/**
-  Infraestructura asociada al sistema: stack de MongoDB con inicialización automática.
-* **Dockerfile / docker-compose.yml**
-  Base para construir la imagen principal y definir los servicios del sistema.
-
-**Árbol**
+El repositorio agrupa todo lo necesario para ejecutar TirgoPharma: infraestructura (MongoDB), contenedores, y una carpeta compartida utilizada por los servicios (incluyendo el workspace ROS).
 
 ```text
 TirGo/
@@ -325,24 +534,11 @@ TirGo/
 └── .gitignore                          # Exclusiones (modelos, binarios, etc.)
 ```
 
----
 
-#### **1.2 Árbol del Workspace ROS (`ros_ws/`)**
 
-**Descripción breve**
+**Árbol del Workspace ROS (`ros_ws/`)**
 
-El workspace sigue el estándar **Catkin**, organizando cada funcionalidad en un paquete independiente:
-
-* **tirgo_msgs** → define las interfaces (acciones y servicios).
-* **tirgo_ui** → la interfaz web + lógica de negocio + puente con ROS.
-* **stt_vosk** → motor de reconocimiento de voz offline.
-* **tiago_pharma_dispenser** → nodo de control de servos en la Raspberry.
-* **tiago_pharma_bringup** → orquestación general del sistema.
-* **move** → mapas, RViz y herramientas de navegación.
-
-Esta separación modular evita dependencias circulares, facilita el testing y permite desplegar cada parte en el entorno adecuado (TIAGo, Raspberry Pi, servidor web).
-
-**Árbol**
+El workspace sigue el estándar Catkin, organizando cada funcionalidad en un paquete independiente:
 
 ```text
 ros_ws/
@@ -406,54 +602,75 @@ ros_ws/
 │
 └── CMakeLists.txt                      # Top-level de catkin (si aplica)
 ```
+---
+
+#### 3.b.2 Descripción Funcional de Paquetes
+
+El repositorio está organizado en un monorepo con paquetes ROS que encapsulan las distintas capas funcionales del sistema (Interfaz, Lógica de Control, Hardware e Interfaces Comunes).
+Nota: La documentación técnica detallada de instalación, dependencias específicas y uso de cada paquete se encuentra disponible en los archivos README.md individuales dentro del repositorio.
+
+**Paquetes de Interfaz y Lógica**
+
+- **`tirgo_ui`**
+
+  - **Función:** Es el paquete más complejo del sistema, actuando como el nodo híbrido que aloja la interfaz de usuario (Flask) y el puente ROS.
+  - **Arquitectura:** Implementa una arquitectura modular que separa el **Frontend** (`templates/`, `static/`) de la **Lógica de Negocio** (`scripts/`, `routes/`, `storage_mongo.py`) y de la **capa de enlace ROS** (`rosio.py`).
+  - **Punto de entrada:** El script `tirgo_web_server` actúa como punto de entrada ROS, levantando el servidor Flask y el nodo ROS simultáneamente.
+
+- **`stt_vosk`**
+
+  - **Función:** Encapsula el motor de reconocimiento de voz offline (Vosk) necesario para la activación por *hotword* y la interacción conversacional.
+  - **Gestión de assets:** El modelo de lenguaje está excluido del repositorio mediante `.gitignore` para mantener el historial ligero. Su descarga y colocación se automatiza dentro del `Dockerfile` durante la construcción de la imagen.
+
+**Paquetes de Control y Ejecución**
+
+- **`move`**
+
+  - **Función:** Módulo que implementa el flujo de navegación básica y visualización del robot TIAGo. Es esencial para la fase de navegación del proyecto.
+  - **Lógica de navegación:** Contiene el nodo de lógica de navegación, un cliente Python encargado de enviar secuencias de coordenadas al sistema `move_base` y de monitorizar la posición actual (`/robot_pose`) para determinar si el robot ha iniciado el movimiento y ha llegado a su destino.
+  - **Visualización:** Incluye el lanzador `rviz.launch`, que inicializa la herramienta de visualización RViz cargando un perfil de configuración predefinido para ver el mapa, el robot y los datos de los sensores.
+  - **Orquestación rápida:** Dispone de un script orquestador `run_all.sh` para automatizar la carga secuencial de RViz, `map_server` y el nodo de lógica de navegación, gestionando los tiempos de espera entre procesos.
+
+- **`tiago_pharma_dispenser`**
+
+  - **Función:** Contiene el driver de bajo nivel y la lógica de control del hardware del dispensador (Raspberry Pi).
+  - **Control:** Aloja el script Python (por ejemplo `servo_node.py`) encargado de recibir las órdenes ROS y generar las señales PWM a través de los pines GPIO para accionar los servomotores de las cubetas de medicamentos.
 
 
-#### 2\. Descripción de Paquetes Principales (Completo)
+**Paquetes de Infraestructura y Orquestación**
 
-El repositorio está organizado en un Monorepo con paquetes ROS que encapsulan las distintas capas funcionales del sistema (Interfaz, Lógica de Control, Hardware e Interfaces Comunes).
+- **`tirgo_msgs`**
 
-1.  **Paquetes de Interfaz y Lógica**
+  - **Función:** Paquete de interfaces que contiene definiciones de mensajes, servicios y **acciones** compartidas por el resto del workspace.
+  - **Contenido relevante:** Incluye, entre otras, la acción `TirgoMission.action`, que modela la misión de dispensación (goal con `patient_id` y `med_id`, feedback con `state` y `progress`, result con `success` y `error_code`).
+  - **Justificación técnica:** Mantener las interfaces en un paquete independiente evita dependencias circulares y permite que paquetes dispares como `tirgo_ui` y `tirgo_mission_server` reutilicen las mismas definiciones sin necesidad de compilar todo el stack de la web en el robot.
 
-      * **`tirgo_ui`**:
-          * *Función:* Es el paquete más complejo del sistema, actuando como el nodo híbrido que aloja la interfaz de usuario (Flask) y el puente ROS.
-          * *Arquitectura:* Implementa una arquitectura modular que separa el Frontend (`templates`/`static`) de la Lógica de Negocio (`scripts/`, `routes/`, `storage_mongo.py`) y la Capa de Enlace ROS (`rosio.py`).
-          * *Punto de Entrada:* El script `tirgo_web_server` actúa como punto de entrada ROS, levantando el servidor Flask y el nodo ROS simultáneamente.
-      * **`stt_vosk`**:
-          * *Función:* Encapsula el motor de reconocimiento de voz offline (vosk) necesario para la activación por hotword y la interacción conversacional.
-          * *Gestión de Assets:* El modelo de lenguaje está excluido del repositorio mediante `.gitignore` para mantener el historial ligero. Su descarga y colocación se automatiza dentro del `Dockerfile` durante la construcción de la imagen.
+- **`tiago_pharma_bringup`** *(en fase de diseño / previsto)*
 
-2.  **Paquetes de Control y Ejecución**
+  - **Función:** Paquete reservado para agrupar los archivos de lanzamiento (launch) globales y maestros que arrancan el sistema completo (TIAGo + RPi + Web + STT) con un único comando.
+  - **Rol previsto:** Centralizar el arranque coordinado de `tirgo_ui`, `tirgo_mission_server`, `stt_vosk` y el nodo del dispensador, así como los parámetros comunes del sistema.
 
-      * **`move`**:
-          * *Función:* Módulo que implementa el flujo completo de navegación básica y visualización del robot TIAGo. Es esencial para la fase de navegación del proyecto.
-          * *Lógica de Navegación:* Contiene el nodo de lógica de navegación, que es un cliente Python encargado de enviar secuencias de coordenadas al sistema `move_base`. Este nodo se encarga de monitorear la posición actual (`/robot_pose`) para determinar si el robot ha iniciado el movimiento y ha llegado a su destino.
-          * *Visualización:* Incluye el lanzador `rviz.launch`, que inicializa la herramienta de visualización RViz cargando un perfil de configuración (`rviz_configs.rviz`) predefinido para ver el mapa, el robot y los datos de los sensores.
-          * *Orquestación Rápida:* Utiliza el script orquestador `run_all.sh` para automatizar la carga secuencial de RViz, map\_server y el nodo de lógica de navegación, gestionando los tiempos de espera entre procesos.
-      * **`tiago_pharma_dispenser`**:
-          * *Función:* Contiene el driver de bajo nivel y la lógica de control del hardware del dispensador (Raspberry Pi).
-          * *Control:* Aloja el script Python (`servo_node.py`) encargado de recibir las órdenes ROS y generar las señales PWM a través de los pines GPIO para accionar los servomotores de las cubetas de medicamentos.
+- **`tirgo_mission_server`**
 
-3.  **Paquetes de Infraestructura (Todavía no implementado)**
+  - **Función:** Encapsula la lógica de misión de TirGo Pharma, actuando como **Action Server** central del sistema.
+  - **Implementación:** Nodo Python que implementa un `SimpleActionServer` sobre la acción `tirgo_msgs/TirgoMission.action` en el nombre `/tirgo/mission`.  
+    Coordina la secuencia de misión esperando las señales internas (`/tirgo/tiago/arrived`, `/tirgo/dispense/ready`), publicando `feedback` y devolviendo un `result` con éxito o códigos de timeout.
+  - **Relación con la UI:** Es el punto de acoplamiento con `tirgo_ui`, que actúa como Action Client mediante `rosio.start_mission_async(...)`.
 
-      * **`tirgo_msgs`**:
-          * *Función:* Paquete de metapaquetes que contiene únicamente la definición de interfaces (`.msg`, `.srv`, y `.action`) para todo el workspace.
-          * *Justificación Técnica:* Crear este paquete independiente es una *Best Practice* que rompe las dependencias circulares. Permite que paquetes dispares como `tirgo_ui` (web) y `move` (navegación) importen definiciones como la futura `Mission.action` sin obligar a compilar todo el stack de la web en el robot.
-      * **`tiago_pharma_bringup`**:
-          * *Función:* Contiene los archivos de lanzamiento (`launch`) globales y maestros (`tirgo_system.launch`) que se encargarán de arrancar el sistema completo (TIAGo + RPi + Web + STT) con un único comando.
+Además de la organización por paquetes, el repositorio se gestiona con Git siguiendo una estrategia de ramas sencilla:
 
-#### 3\. Estrategia de Ramas (Branching Strategy)
+- `main` se mantiene como rama estable asociada a versiones entregables del sistema (hitos).
+- `develop` actúa como rama de integración, donde se validan conjuntamente los cambios de los distintos paquetes antes de pasar a `main`.
+- Las nuevas funcionalidades (por ejemplo, `tirgo_mission_server` o mejoras en `tirgo_ui`) se desarrollan en ramas `feature/*` creadas desde `develop`, que se integran mediante Pull Requests tras su revisión.
 
-Se ha adoptado una metodología basada en **Gitflow simplificado** para garantizar la estabilidad del código en un entorno colaborativo:
+Este esquema permite trabajar en paralelo sobre módulos distintos (UI, navegación, dispensador) sin comprometer la estabilidad del código final.
 
-  * **`main` (Protected):** Rama de producción. Contiene únicamente código validado y funcional. Cada merge a esta rama representa una versión desplegable ("Release Candidate").
-  * **`develop` (Protected):** Rama de integración continua. Aquí convergen los cambios de todos los desarrolladores. Es el punto de sincronización para probar la compatibilidad entre módulos (ej. UI con Dispensador) antes de pasar a producción.
-  * **`feature/*` (Efímeras):** Ramas de trabajo individual. Se crean desde `develop` y se integran mediante Pull Requests (PR) tras revisión de código.
 
-### 3.c) Descripción de Contenedores Docker y Dependencias
+### 3.c) Descripción de contenedores Docker y dependencias
 
 Para garantizar la reproducibilidad del entorno de desarrollo, el sistema se despliega mediante contenedores Docker orquestados. La infraestructura se divide en dos servicios lógicos diferenciados:
 
-#### 1\. Arquitectura de Contenedores
+#### 3.c.1 Arquitectura de Contenedores
 
 **A. Stack de Datos**
 Se despliegan servicios estándar para la gestión de información, desacoplados de la lógica del robot para facilitar actualizaciones independientes.
@@ -464,7 +681,7 @@ Se despliegan servicios estándar para la gestión de información, desacoplados
 **B. Stack Robótico y de Aplicación (Core)**
 Es un contenedor `ros1_rob_tirgo` con `network_mode: host`. Permite ejecutar el entorno Noetic completo en ordenadores de desarrollo, compartiendo red transparente con el robot y la BD local.
 
-#### 2\. Gestión de Dependencias del Entorno
+#### 3.c.2 Gestión de Dependencias del Entorno
 
 Todas las dependencias se definen explícitamente en el `Dockerfile` para asegurar que cualquier miembro del equipo pueda replicar el entorno exacto con un solo comando (`docker build`).
 
@@ -475,57 +692,124 @@ Todas las dependencias se definen explícitamente en el `Dockerfile` para asegur
       * Core Web: `Flask`, `Flask-Cors` (para la interfaz de usuario).
       * Datos: `pymongo` (driver oficial de MongoDB).
       * IA/Voz: `vosk` (motor de reconocimiento de voz offline) y `sounddevice`.
-      * Hardware: `RPi.GPIO` (solo se instala condicionalmente o se simula en entornos no-Raspberry mediante mocking).
 
 -----
 
 ## 4\. Análisis de Viabilidad Técnica
 
+El análisis de viabilidad se centra en dos aspectos:
+
+  - Riesgos globales del sistema (seguridad de datos, control mecánico, navegación).
+  - Riesgos específicos por módulo/paquete (UI, servidor de misión, dispensador, navegación), junto con las pruebas iniciales realizadas o planificadas.
+
 ### 4.a) Identificación de Limitaciones y Riesgos
 
-El siguiente análisis de riesgos evalúa los puntos críticos del diseño conceptual, enfocándose en las implicaciones de las decisiones de hardware (control en lazo abierto, alimentación directa) y software (seguridad de datos).
+#### 4.a.1 Riesgos y limitaciones globales
+
+El siguiente análisis de riesgos resume los puntos críticos del diseño conceptual, tal y como se ha planteado y probado hasta ahora.
 
 | Riesgo o Limitación | Impacto | Estrategia de Mitigación y Justificación |
 | :--- | :--- | :--- |
-| **Seguridad y Datos:** Acceso no autorizado a datos sensibles (DNI) o a la base de datos MongoDB. | Alto | **Hashing de DNI** para proteger la identidad del paciente en la BD. El acceso a la gestión de la base de datos (Mongo Express) está protegido por credenciales de administrador y el contenedor se mantiene apagado por defecto, encendiéndose solo para tareas específicas de mantenimiento. |
-| **Control Mecánico:** Fallos más críticos derivan de la caída descentrada del bote en la tolva, que provoca empujes fuera de eje y posibles bloqueos según su orientación y carga. Además, la deriva posicional de los pushers altera su fuerza y recorrido efectivo, comprometiendo la fiabilidad del ciclo de dispensación. | Alto | La centración del bote puede garantizarse mediante guías mecánicas e unha entrada que asegure su alineamiento en la tolva. Para evitar bloqueos, pueden integrarse sensores de presencia/atasco y superficies internas optimizadas que mejoren el deslizamiento. La deriva de los pushers se corrige mediante un anclaje mecánico más robusto y una calibración periódica que restaure su posición de referencia. |
-| **Manipulación (Lazo Abierto):** Falso Positivo: El bote no cae o el robot agarra aire (el dispensador no tiene sensores de confirmación de caída). | Alto | **Sistema de Validación del Gripper:** El robot utiliza sus sensores de fuerza (monitorización de corriente). El sistema solo avanza si se detecta la fuerza de agarre correcta, actuando como un sensor de contacto final. |
-| **Gestión de Potencia:** Inestabilidad eléctrica de la Raspberry Pi por picos de corriente del servo. | Bajo | **Control Secuencial (Diseño):** Los servomotores nunca se moverán de forma simultánea, ya que los botes se dispensan uno en cada petición, mitigando el riesgo de caídas de tensión por picos. |
-| **Navegación:** Desviación Posicional ubicacicion y error de motores. | Medio | **Precisión de Navegación:** Método de calibración al ejecutar el robot que lo ubica en el mapa y asegura una buena calibracion respecto a la sala. Además el robot trabaja con muchos decimales porloque con un filtro paso bajo se puede asegurar evitar ruido.|
+| **Seguridad y Datos:** Acceso no autorizado a datos sensibles (DNI) o a la base de datos MongoDB. | Alto | Se utiliza **hashing de DNI** para proteger la identidad del paciente en la BD. El acceso a Mongo Express se restringe a tareas de desarrollo/mantenimiento y no forma parte del flujo normal de paciente. En la memoria final se incluirán recomendaciones adicionales (VPN, firewall, segmentación de red) para un despliegue real en hospital. |
+| **Control mecánico del dispensador (lazo abierto):** Atascos por caída descentrada del bote, fricción excesiva en la tolva o deriva posicional de los pushers. | Alto | La centración del bote puede garantizarse mediante guías mecánicas y una entrada que asegure su alineamiento en la tolva. Para evitar bloqueos, pueden integrarse sensores de presencia/atasco y superficies internas optimizadas que mejoren el deslizamiento. La deriva de los pushers se corrige mediante un anclaje mecánico más robusto y una calibración periódica que restaure su posición de referencia. |
+| **Manipulación ciega (TIAGo):** El bote no cae, cae fuera de la zona de agarre o el robot agarra “aire”. | Alto | La recogida se basa en una trayectoria pregrabada (`play_motion`) que asume una posición fija de la rampa. Como mitigación clave, se utiliza la **monitorización de corriente del gripper** para validar que se ha realizado contacto físico con el objeto antes de continuar la misión. |
+| **Gestión de potencia en la Raspberry Pi:** Picos de corriente debidos a los servos SG90. | Bajo–Medio | El diseño del sistema establece que los servos trabajan de forma **secuencial** (no simultánea), reduciendo los picos de corriente. Se han realizado series de dispensaciones consecutivas para comprobar que la Raspberry Pi no sufre reinicios ni inestabilidades apreciables. |
+| **Navegación y localización:** Desviación posicional por errores de localización o por cambios en el entorno. | Medio | **Recuperación y Tolerancias:**<br>Se configuran tolerancias en el `move_base` de 5-10cm. Si el robot no alcanza la pose precisa, el *Action Server* aborta la misión. |
+| **Seguridad de la capa de tránsito (ROS 1):** Tráfico sin cifrado ni autenticación. | Medio | En el entorno actual se trabaja sobre una **red de laboratorio** cerrada. De cara a la memoria final, se documentará un plan de seguridad para un despliegue real. |
 
-#### Otros Riesgos y Limitaciones Clave
+#### 4.a.2 Riesgos específicos por módulo/paquete
 
-Adicionalmente, se identifican las siguientes limitaciones y riesgos que requieren consideración en la planificación y alcance futuro:
+A partir de la arquitectura descrita, se identifican los siguientes riesgos por subsistema.
 
-  * **Riesgo de seguridad en la capa de tránsito:** La comunicación en ROS 1 se realiza sin cifrado ni autenticación. En la memoria final se incluirán recomendaciones y consejos para mitigar este riesgo aún utilizando la arquitectura ROS 1.
-  * **Dependencia del personal sanitario para la carga:** El error humano en la carga de los medicamentos en el bin incorrecto es un riesgo inherente al punto de entrada del sistema.
-  * **Ausencia de trazabilidad en fallo de misión:** En la arquitectura actual basada en Tópicos, si la misión se interrumpe (ej. por fallo de red), no existe una capa persistente para registrar o reanudar el trabajo pendiente.
+**Módulo UI / Backend (`tirgo_ui` + MongoDB)**
+
+  - La UI se ejecuta en Flask e integra un módulo ROS (`rosio.py`) en un hilo separado.
+    Riesgo: si el acceso a ROS (publicación/espera de estados) no se aísla correctamente, podría afectar a la capacidad de respuesta de la web.
+  - La lógica de negocio depende de la disponibilidad de **MongoDB** para validar receta/stock y registrar dispensaciones.
+    Riesgo: si la BD no está disponible, el sistema no puede autorizar ni registrar operaciones, por lo que debe fallar de forma segura y visible para el usuario.
+
+**Módulo de Orquestación de Misiones (`tirgo_mission_server` + `tirgo_msgs`)**
+
+  - Se ha definido la acción `Mission.action` en el paquete `tirgo_msgs`.
+  - El nodo `tirgo_mission_server` implementa el Action Server en `/tirgo/mission`.
+    Riesgos identificados:
+      - Depende de la recepción de señales como `/tirgo/tiago/arrived` y `/tirgo/dispense/ready`. Si estos tópicos no llegan o llegan tarde, el servidor termina por timeout, devolviendo error.
+      - La máquina de estados de la misión debe contemplar correctamente todos los estados y transiciones para evitar que una misión se quede esperando infinitamente.
+  - El cliente de acción se encuentra en `rosio.py` (dentro de `tirgo_ui`) y ha sustituido a la lógica anterior basada en tópicos sueltos.
+    Riesgo: cualquier desacuerdo entre lo que la UI asume y lo que el servidor considera como `success`/`error` puede generar inconsistencias en el registro de la misión en MongoDB.
+
+**Módulo Dispensador (Raspberry Pi 3B + `tiago_pharma_dispenser`)**
+
+  - El nodo en la Raspberry Pi controla servos SG90 mediante PWM por software (GPIO).
+    Riesgos:
+      - Deriva mecánica con el uso.
+      - Ausencia de sensor de confirmación de caída (todo el control es en lazo abierto).
+  - Una inestabilidad eléctrica podría afectar a la RPi si la carga de los servos no se mantiene bajo control, aunque esta se ha mitigado limitando el accionamiento simultáneo.
+
+**Módulo de Navegación (TIAGo + paquete `move`)**
+
+  - El paquete `move` encapsula la lógica de navegación.
+    Riesgos:
+      - El sistema depende de que el mapa y la localización estén correctamente cargados; fallos en esta etapa afectan a todo el flujo.
+      - La detección de inicio y fin de movimiento se basa en la evolución de `/robot_pose`, lo que introduce sensibilidad al ruido en la localización.
 
 ### 4.b) Estrategia de Mitigación y Pruebas Iniciales
 
-La estrategia de mitigación y pruebas iniciales se centra en la validación empírica de los mecanismos de mitigación de lazo abierto y en la trazabilidad de las operaciones críticas de dispensación y seguridad.
+La estrategia de mitigación combina decisiones de diseño con pruebas prácticas sobre el prototipo.
 
-#### 1\. Pruebas de Ejecución y Mecánica
+#### 4.b.1 Pruebas de ejecución y mecánica (Dispensador + Navegación)
 
-El foco es validar la repetibilidad de los subsistemas, ya que el agarre ciego depende de la confiabilidad mecánica.
+En el subsistema de dispensación se han planteado pruebas centradas en la **repetibilidad**:
 
-| Riesgo a Mitigar | Estrategia de Prueba | Criterio de Éxito |
-| :--- | :--- | :--- |
-| **Atasco y Fricción (Control Mecánico)** | **Prueba de Estrés Secuencial:** 10 ciclos completos y consecutivos de dispensación para cada bin (sin fallos por interferencia entre servos). | El sistema debe superar 8 de 10 ciclos con dispensación y recogida exitosa ($80\%$ de repetibilidad). |
-| **Desviación Posicional (Navegación)** | **Calibración respecto al mapa:** Al comenzar el proceso el robot utiliza conductas de recuperación (girará un par de veces sobre sí mismo) buscando reanalizar la sala con sus sensores ubicandose en el mapa. | El error posicional se reduce en gran manera al estar calibrado. |
+  - **Prueba de Estrés Secuencial (Dispensador)**
 
-#### 2\. Validación de Potencia y Control
+      - Objetivo: evaluar atascos y fricción en las tolvas y comprobar que el control en lazo abierto es suficientemente fiable.
+      - Procedimiento: ejecutar **10 ciclos completos** de dispensación para cada cubeta sin intervención manual entre ellos.
+      - Criterio de éxito: el sistema debe superar al menos **8 de 10 ciclos** con dispensación y recogida exitosa (80 % de repetibilidad).
 
-  * **Prueba de Estabilidad Eléctrica:** El riesgo de inestabilidad eléctrica de la Raspberry Pi ha sido mitigado mediante el **Control Secuencial de Servos**. Este diseño se ha validado empíricamente realizando 20 dispensaciones consecutivas, con la RPi manteniendo una operación estable sin reinicios.
-  * **Control del Movimiento:** Para mitigar el riesgo de temblor por PWM de software, el servo está físicamente anclado dentro del dispensador impreso en 3D, lo que impide cualquier movimiento no deseado fuera de su eje de rotación.
+  - **Prueba de Estabilidad Eléctrica (Raspberry Pi)**
 
-#### 3\. Estrategia de Seguridad y Trazabilidad
+      - Objetivo: comprobar si la alimentación desde el raíl de 5 V de la Raspberry es suficiente para los servos SG90 en régimen de uso del sistema.
+      - Procedimiento: realizar **20 dispensaciones consecutivas**, monitorizando si la Raspberry sufre reinicios o errores por caída de tensión.
 
-  * **Software (Mocking):** Se mantendrá el uso de la variable de entorno `TIRGO_DEV=1` para simular respuestas del hardware y validar la lógica de la UI y la conexión a Mongo sin necesidad de robot físico, acelerando la depuración.
-  * **Seguridad de la Capa de Tránsito (ROS 1):** Para mitigar el riesgo de seguridad en la capa de tránsito ROS 1, la memoria final incluirá un plan de recomendaciones de seguridad de infraestructura, basándose en las medidas aprendidas en el curso de Ciberseguridad. Estas medidas incluyen:
-      * Uso de VPNs para cifrar y tunelizar el tráfico ROS.
-      * Implementación de reglas de Firewall en los dispositivos de host (TIAGo y RPi) para restringir el acceso a puertos ROS.
-      * Segregación de la red mediante Wi-Fi privada o VLANs para aislar el tráfico de control del robot.
+En el subsistema de navegación se ha diseñado una prueba centrada en la **calibración frente al mapa**:
+
+  - **Prueba de Calibración respecto al mapa (Navegación)**
+      - Objetivo: reducir el error posicional inicial de TIAGo antes de ejecutar maniobras sensibles.
+      - Procedimiento: ejecutar las **conductas de recuperación** (giros sobre sí mismo para reanalizar la sala) al inicio de la misión, de forma que la localización se actualice con los sensores del robot.
+      - Justificación: asegura que la posición del robot respecto al dispensador es coherente con la trayectoria pregrabada de `play_motion`.
+
+#### 4.b.2 Pruebas de software y comunicación (UI, Action Server, ROS)
+
+En la parte de software y comunicación, se han realizado y planificado pruebas específicas:
+
+  - **Validación de `tirgo_msgs` y generación de la acción**
+
+      - Se ha creado el paquete `tirgo_msgs` con la acción `Mission.action`.
+      - Se ha comprobado la correcta generación de mensajes tras compilar con `catkin_make`.
+
+  - **Pruebas del Action Server `tirgo_mission_server` en local**
+
+      - Se ha lanzado el nodo `tirgo_mission_server` con un ROS Master local y enviado goals de prueba, verificando el feedback y los cambios de estado (éxito/timeout).
+
+  - **Pruebas del Action Server con el TIAGo como ROS Master**
+
+      - Se ha configurado el entorno con **TIAGo como Master**, utilizando `gallium` y `setup_env.sh`.
+      - Desde la interfaz web (`/leer`), se ha solicitado la dispensación y verificado que `rosio.py` envía el goal y el servidor lo recibe correctamente.
+
+  - **Integración de `tirgo_ui` con Actions**
+
+      - Se ha sustituido la lógica basada en tópicos por el uso del Action Client, con callbacks de feedback y done que actualizan el estado interno de la UI.
+      - Las rutas de Flask en `leer.py` se han adaptado para llamar al Action Client y mantener la lógica de acceso a MongoDB.
+
+  - **Modo de desarrollo y pruebas sin hardware (`TIRGO_DEV`)**
+
+      - Se mantiene la posibilidad de ejecutar `tirgo_ui` en modo de desarrollo (`TIRGO_DEV=1`), simulando respuestas del robot y el dispensador para probar la lógica de negocio sin hardware.
+  - **Seguridad de la Capa de Tránsito (ROS 1)**
+      - Para mitigar el riesgo de seguridad en la capa de tránsito ROS 1, la memoria final incluirá un plan de recomendaciones de seguridad de infraestructura, basándose en las medidas aprendidas        en el curso de Ciberseguridad. Estas medidas incluyen:
+        - Uso de VPNs para cifrar y tunelizar el tráfico ROS.
+        - Implementación de reglas de Firewall en los dispositivos de host (TIAGo y RPi) para restringir el acceso a puertos ROS.
+        - Segregación de la red mediante Wi-Fi privada o VLANs para aislar el tráfico de control del robot.
 
 -----
 
