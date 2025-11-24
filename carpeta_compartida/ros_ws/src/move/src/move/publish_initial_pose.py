@@ -21,12 +21,7 @@ def make_msg(x, y, qz, qw):
     msg.pose.pose.orientation.w = qw
 
     # default small planar covariance: [x, y, yaw]
-    cov = [0.25, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.25, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 1e6, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 1e6, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 1e6, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.06853892326654787]
+    cov = [0.21065809247261713, 0.0015867823238011614, 0.0, 0.0, 0.0, 0.0, 0.0015867823238009393, 0.2165335154259953, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06603954552177965]
     return msg
 
 def publish_spin(duration=4.0, switch_interval=2.0, angular_speed=1.0, topic='/mobile_base_controller/cmd_vel', rate_hz=10.0):
@@ -45,7 +40,7 @@ def publish_spin(duration=4.0, switch_interval=2.0, angular_speed=1.0, topic='/m
     rate = rospy.Rate(rate_hz)
 
     for i in range(total_steps):
-        sign = -1 if ((i // steps_per_switch) % 2) == 0 else 1
+        sign = -1 if ((i // steps_per_switch) % 2) == 0 else 1  
         twist.angular.z = sign * float(angular_speed)
         pub.publish(twist)
         rate.sleep()
@@ -66,11 +61,11 @@ def main(x=0.47278890013694763, y=-1.169088363647461, qz=0.32774684904650947, qw
         msg.header.stamp = rospy.Time.now()
         pub.publish(msg)
         rate.sleep()
-    publish_spin(duration=4.0, switch_interval=2.0, angular_speed=1.0, topic='/mobile_base_controller/cmd_vel', rate_hz=10.0)
+    publish_spin(duration=8.0, switch_interval=4.0, angular_speed=1.0, topic='/mobile_base_controller/cmd_vel', rate_hz=10.0)
 
 
 if __name__ == '__main__':
     try:
-        main(x=0.47278890013694763, y=-1.169088363647461, qz=0.32774684904650947, qw=0.9447655809459214)
+        main(x=1.4998722751648397, y=-0.7247556435570256, qz=0.989510915323257, qw=0.14445812007682451)
     except:
         pass
