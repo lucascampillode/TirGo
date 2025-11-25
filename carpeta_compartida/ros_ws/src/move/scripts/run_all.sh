@@ -7,7 +7,7 @@ source /home/TirGo/carpeta_compartida/ros_ws/devel/setup.bash
 roslaunch move rviz.launch &
 RVIZ_PID=$!
 echo "[INFO] Lanzado rviz con PID $RVIZ_PID"
-
+    
 # Esperar un momento para que se abra rviz y le de tiempo antes de cargar el mapa
 sleep 4
 
