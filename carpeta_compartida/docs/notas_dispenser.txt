@@ -1,0 +1,4 @@
+buscar la rasp: sudo nmap -sn 10.172.209.0/24
+conectarse por ssh: ssh tirgopi@10.172.209.192
+	usuario: tirgopi
+	contraseña: tirgo

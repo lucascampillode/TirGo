@@ -3,6 +3,20 @@
   <!-- By default, we are not in debug mode -->
   <arg name="debug" default="false" />
 
+  <include file="$(find tiago_moveit_config)/launch/move_group.launch">
+    <arg name="load_robot_description" value="false"/>
+    <arg name="arm" value="true"/>
+    <arg name="end_effector" value="pal-hey5"/>
+    <arg name="ft_sensor" value="schunk-ft"/>
+    <arg name="laser_model" value="sick-571"/>
+    <arg name="camera_model" value="orbbec-astra"/>
+    <arg name="base_type" value="pmb2"/>
+    <arg name="allow_trajectory_execution" value="true"/>
+    <arg name="fake_execution" value="false"/>
+    <arg name="info" value="true"/>
+    <arg name="debug" value="false"/>
+  </include>
+
   <!-- Run Rviz and load the default config to see the state of the move_group node -->
   <include file="$(find tiago_moveit_config)/launch/moveit_rviz.launch">
     <arg name="config" value="true"/>
