@@ -1,5 +1,5 @@
 # src/tirgo_ui/rosio.py
-import os, socket, subprocess
+import os, socket, subprocess, threading
 from urllib.parse import urlparse
 from typing import Any, Dict
 from .config import STT_TOPIC_DEFAULT, TIRGO_HOTWORD
@@ -10,6 +10,8 @@ try:
     import rospy
     from std_msgs.msg import String, Bool, Int32
     import actionlib
+    from tirgo_msgs.msg import TirgoMissionAction, TirgoMissionGoal
+
     # Mensajes de TTS nativo de TIAGo
     from pal_interaction_msgs.msg import TtsAction, TtsGoal, TtsText
     ROS_AVAILABLE = True
@@ -17,30 +19,64 @@ except Exception:
     ROS_AVAILABLE = False
 
     class _DummyPub:
-        def publish(self, *_a, **_k): pass
+        def publish(self, *_a, **_k):
+            pass
 
     class _DummyRospy:
-        def init_node(self, *a, **k): pass
-        def loginfo(self, *a, **k): print(*a)
-        def signal_shutdown(self, *a, **k): pass
-        def get_param(self, *a, **k): return STT_TOPIC_DEFAULT
-        def Subscriber(self, *a, **k): return None
-        Publisher = staticmethod(lambda *a, **k: _DummyPub())
+        def init_node(self, *a, **k):
+            pass
 
-    rospy = _DummyRospy()     # type: ignore
-    String = str              # type: ignore
-    Bool   = bool             # type: ignore
-    Int32  = int              # type: ignore
-    actionlib = None          # type: ignore
+        def loginfo(self, *a, **k):
+            print(*a)
+
+        def signal_shutdown(self, *a, **k):
+            pass
+
+        def get_param(self, *a, **k):
+            return STT_TOPIC_DEFAULT
+
+        def Subscriber(self, *a, **k):
+            return None
+
+        Publisher = staticmethod(lambda *a, **_k: _DummyPub())
+
+    rospy = _DummyRospy()  # type: ignore
+    String = str           # type: ignore
+    Bool = bool            # type: ignore
+    Int32 = int            # type: ignore
+    actionlib = None       # type: ignore
     TtsAction = TtsGoal = TtsText = object  # type: ignore
 
 # publishers de estado
 _pub_state = _pub_status = _pub_error = None
 
-# Pub/sub para misión/dispensador
-pub_mission_start = None       # /tirgo/mission/start (String)
-pub_dispense_req  = None       # /tirgo/dispense/request (Int32)
-_last_flags = {"tiago_arrived": False, "dispense_ready": False, "tiago_picked": False}
+# --- Cliente de misión (ActionServer /tirgo/mission) ---
+_mission_client = None  # type: ignore
+
+# --- Estado de la misión (para la web) ---
+# running:    True mientras el Action está en curso
+# success:    None (en curso / no lanzada), True, False
+_mission_status: Dict[str, Any] = {
+    "running": False,
+    "state": "IDLE",
+    "progress": 0.0,
+    "success": None,
+    "error_code": "",
+    "error_message": "",
+}
+
+
+def _set_mission_status(**kwargs):
+    """Actualiza el diccionario interno de estado de misión."""
+    _mission_status.update(kwargs)
+
+
+def get_mission_status() -> Dict[str, Any]:
+    """
+    Devuelve una copia del estado de misión para usar desde Flask.
+    """
+    return dict(_mission_status)
+
 
 # --- Estado de conversación ---
 # idle          -> no ha pasado nada todavía
@@ -65,8 +101,9 @@ _last_voice_nav = None  # "consultar" | "leer" | "diagnostico" | None
 VOICE_INTENTS = {
     "consultar": ["consultar", "ver recetas", "recetas", "mis recetas", "consulta"],
     "leer": ["leer", "pedir", "pedir medicamento", "pedido", "solicitar"],
-    "diagnostico": ["diagnostico", "diagnóstico", "diagnosticar", "test", "diagnostico guiado", "diagnóstico guiado"]
+    "diagnostico": ["diagnostico", "diagnóstico", "diagnosticar", "test", "diagnostico guiado", "diagnóstico guiado"],
 }
+
 
 def _match_intent(text_norm: str):
     for intent, kws in VOICE_INTENTS.items():
@@ -75,6 +112,7 @@ def _match_intent(text_norm: str):
                 return intent
     return None
 
+
 def get_and_clear_voice_nav() -> str:
     """Consumido por la web para saber si hay navegación por voz pendiente."""
     global _last_voice_nav
@@ -82,8 +120,10 @@ def get_and_clear_voice_nav() -> str:
     _last_voice_nav = None
     return v or ""
 
+
 # --- Cliente TTS (action /tts) ---
 _tts_client = None  # type: ignore
+
 
 def master_up() -> bool:
     try:
@@ -98,25 +138,21 @@ def master_up() -> bool:
 
 def init():
     global _pub_state, _pub_status, _pub_error
-    global pub_mission_start, pub_dispense_req
+    global _mission_client
+
     if ROS_AVAILABLE and master_up():
         try:
-            rospy.init_node('tirgo_web_server_v2', anonymous=True, disable_signals=True)
+            rospy.init_node("tirgo_web_server_v2", anonymous=True, disable_signals=True)
         except Exception:
+            # Si ya hay nodo inicializado, seguimos igual
             pass
 
-        _pub_state  = rospy.Publisher('tirgo/ui/state',  String, queue_size=10)
-        _pub_status = rospy.Publisher('tirgo/ui/status', String, queue_size=10)
-        _pub_error  = rospy.Publisher('tirgo/ui/error',  String, queue_size=10)
-
-        pub_mission_start = rospy.Publisher('/tirgo/mission/start', String, queue_size=10)
-        pub_dispense_req  = rospy.Publisher('/tirgo/dispense/request', Int32,  queue_size=10)
+        _pub_state = rospy.Publisher("tirgo/ui/state", String, queue_size=10)
+        _pub_status = rospy.Publisher("tirgo/ui/status", String, queue_size=10)
+        _pub_error = rospy.Publisher("tirgo/ui/error", String, queue_size=10)
 
         stt_topic = rospy.get_param("~stt_topic", STT_TOPIC_DEFAULT)
         rospy.Subscriber(stt_topic, String, _stt_cb)
-        rospy.Subscriber('/tirgo/tiago/arrived', Bool,  lambda m: _set_flag("tiago_arrived", bool(getattr(m,'data',m))))
-        rospy.Subscriber('/tirgo/dispense/ready', Bool, lambda m: _set_flag("dispense_ready", bool(getattr(m,'data',m))))
-        rospy.Subscriber('/tirgo/tiago/picked', Bool,  lambda m: _set_flag("tiago_picked", bool(getattr(m,'data',m))))
 
         # Inicializa el cliente TTS si existe el action server /tts
         try:
@@ -124,13 +160,22 @@ def init():
         except Exception:
             pass
 
-        try: rospy.loginfo(f"[STT] suscrito a {stt_topic}")
-        except Exception: pass
+        # Inicializa el cliente de misión (/tirgo/mission)
+        try:
+            _init_mission_client()
+        except Exception:
+            pass
+
+        try:
+            rospy.loginfo(f"[STT] suscrito a {stt_topic}")
+        except Exception:
+            pass
     else:
         class DummyPub:
-            def publish(self, *_a, **_k): pass
+            def publish(self, *_a, **_k):
+                pass
+
         _pub_state = _pub_status = _pub_error = DummyPub()
-        pub_mission_start = pub_dispense_req = DummyPub()
 
 
 def _init_tts():
@@ -139,7 +184,7 @@ def _init_tts():
     if not ROS_AVAILABLE or actionlib is None:
         return
     try:
-        _tts_client = actionlib.SimpleActionClient('/tts', TtsAction)
+        _tts_client = actionlib.SimpleActionClient("/tts", TtsAction)
         ok = _tts_client.wait_for_server(rospy.Duration(2.0))
         if ok:
             rospy.loginfo("[TTS] /tts listo ✅")
@@ -151,14 +196,22 @@ def _init_tts():
         _tts_client = None
 
 
-def _set_flag(k: str, v: bool):
-    _last_flags[k] = v
-    try: rospy.loginfo(f"[FLAG] {k}={v}")
-    except Exception: pass
-
-
-def flags() -> Dict[str, bool]:
-    return dict(_last_flags)
+def _init_mission_client():
+    """Inicializa el cliente de la action /tirgo/mission."""
+    global _mission_client
+    if not ROS_AVAILABLE or actionlib is None:
+        return
+    try:
+        _mission_client = actionlib.SimpleActionClient("/tirgo/mission", TirgoMissionAction)
+        ok = _mission_client.wait_for_server(rospy.Duration(2.0))
+        if ok:
+            rospy.loginfo("[MISSION] /tirgo/mission listo ✅")
+        else:
+            rospy.loginfo("[MISSION] /tirgo/mission no responde (timeout)")
+            _mission_client = None
+    except Exception as e:
+        rospy.loginfo(f"[MISSION] no disponible: {e}")
+        _mission_client = None
 
 
 def _say_with_tiago(text: str, lang: str = "es_ES", wait_before: float = 0.0):
@@ -208,14 +261,17 @@ def _stt_cb(msg: Any):
     # 1) En idle: detectar saludo
     if _conv_state == "idle":
         if any(hw in text_norm for hw in HOTWORD_VARIANTS):
-            # phonético suave si tu TTS no tiene es_ES real
-            _say_with_tiago("Hola, soy Tiago, el robot de TEER-go FAR-mah. Estoy aquí para ah-yu-DAR-teh. ¿Quieres empezar?")
+            _say_with_tiago(
+                "Hola, soy Tiago, el robot de TirGo Pharma. "
+                "Estoy aquí para ayudarte. ¿Quieres comenzar la consulta?"
+            )
             _conv_state = "await_confirm"
             pub_state("tiago:greeted")
-            try: rospy.loginfo(f"[HOTWORD] saludo detectado en: {text_norm}")
-            except Exception: pass
+            try:
+                rospy.loginfo(f"[HOTWORD] saludo detectado en: {text_norm}")
+            except Exception:
+                pass
             return
-        # si no es saludo, ignoramos
 
     # 2) Esperando confirmación
     elif _conv_state == "await_confirm":
@@ -224,38 +280,40 @@ def _stt_cb(msg: Any):
                 session.start_session(op_name="voice_unlock")
             _conv_state = "session"
             pub_state("session:active")
-            try: rospy.loginfo(f"[CONV] confirmación recibida: {text_norm}")
-            except Exception: pass
+            try:
+                rospy.loginfo(f"[CONV] confirmación recibida: {text_norm}")
+            except Exception:
+                pass
             return
         else:
-            # Podríamos repreguntar o ignorar. De momento, log e ignorar.
-            try: rospy.loginfo(f"[CONV] no es confirmación válida: {text_norm}")
-            except Exception: pass
+            try:
+                rospy.loginfo(f"[CONV] no es confirmación válida: {text_norm}")
+            except Exception:
+                pass
             return
 
     # 3) Con sesión activa: detectar intents de navegación
     else:
-        try: rospy.loginfo(f"[STT] sesión activa, texto: {text_norm}")
-        except Exception: pass
+        try:
+            rospy.loginfo(f"[STT] sesión activa, texto: {text_norm}")
+        except Exception:
+            pass
 
         intent = _match_intent(text_norm)
         if intent:
-            # guarda para que el front lo lea y navegue
             global _last_voice_nav
             _last_voice_nav = intent
             pub_state(f"voice:navigate:{intent}")
-            # (opcional) confirma por voz
             try:
                 if intent == "consultar":
-                    _say_with_tiago("Entrando en Consultar.")
+                    _say_with_tiago("Accediendo al apartado de consulta de recetas.")
                 elif intent == "leer":
-                    _say_with_tiago("Entrando en Leer.")
+                    _say_with_tiago("Abriendo el módulo de petición de medicamentos.")
                 elif intent == "diagnostico":
-                    _say_with_tiago("Entrando en Diagnóstico.")
+                    _say_with_tiago("Iniciando el asistente de diagnóstico.")
             except Exception:
                 pass
             return
-        # si no hay intent, no hacemos nada especial
 
 
 def conv_state() -> str:
@@ -272,25 +330,155 @@ def reset_conv():
 
 def pub_state(s: str):
     try:
-        _pub_state.publish(String(data=s) if ROS_AVAILABLE and hasattr(String, 'data') else s)
-        if ROS_AVAILABLE: rospy.loginfo(f"[STATE] {s}")
+        _pub_state.publish(String(data=s) if ROS_AVAILABLE and hasattr(String, "data") else s)
+        if ROS_AVAILABLE:
+            rospy.loginfo(f"[STATE] {s}")
     except Exception as e:
-        print('[STATE publish error]', e)
+        print("[STATE publish error]", e)
 
 
 def pub_status(d: Dict[str, Any]):
     import json
     payload = json.dumps(d, ensure_ascii=False)
     try:
-        _pub_status.publish(String(data=payload) if ROS_AVAILABLE and hasattr(String, 'data') else payload)
-        if ROS_AVAILABLE: rospy.loginfo(f"[STATUS] {payload}")
+        _pub_status.publish(String(data=payload) if ROS_AVAILABLE and hasattr(String, "data") else payload)
+        if ROS_AVAILABLE:
+            rospy.loginfo(f"[STATUS] {payload}")
     except Exception as e:
-        print('[STATUS publish error]', e)
+        print("[STATUS publish error]", e)
 
 
 def pub_error(code: str, msg: str):
     try:
-        _pub_error.publish(String(data=code) if ROS_AVAILABLE and hasattr(String, 'data') else code)
-        if ROS_AVAILABLE: rospy.loginfo(f"[ERROR] {code}: {msg}")
+        _pub_error.publish(String(data=code) if ROS_AVAILABLE and hasattr(String, "data") else code)
+        if ROS_AVAILABLE:
+            rospy.loginfo(f"[ERROR] {code}: {msg}")
     except Exception:
         pass
+
+
+# === ACTION CLIENT: lanzar misión TirgoPharma ===
+def start_mission_async(patient_id: str, med_id: int):
+    """
+    Lanza una misión de dispensación mediante el ActionServer /tirgo/mission
+    sin bloquear el hilo de Flask.
+    """
+    if not ROS_AVAILABLE or _mission_client is None:
+        try:
+            rospy.loginfo("[MISSION] Cliente /tirgo/mission no disponible, no se lanza misión")
+        except Exception:
+            print("[MISSION] Cliente /tirgo/mission no disponible, no se lanza misión")
+        pub_error("MISSION_CLIENT_UNAVAILABLE", "El servidor de misión no está disponible")
+        _set_mission_status(
+            running=False,
+            state="ERROR",
+            success=False,
+            error_code="MISSION_CLIENT_UNAVAILABLE",
+            error_message="El servidor de misión no está disponible",
+        )
+        return
+
+    # Reset y estado inicial de la misión
+    _set_mission_status(
+        running=True,
+        state="GOING_TO_DISPENSER",
+        progress=0.0,
+        success=None,
+        error_code="",
+        error_message="",
+    )
+
+    goal = TirgoMissionGoal()
+    goal.patient_id = patient_id
+    goal.med_id = med_id
+
+    def _run():
+        try:
+            rospy.loginfo(f"[MISSION] Enviando goal: patient_id={patient_id}, med_id={med_id}")
+            pub_state("DISPENSING")
+            pub_status({"state": "STARTED", "progress": 0.0})
+            _mission_client.send_goal(
+                goal,
+                done_cb=_mission_done_cb,
+                feedback_cb=_mission_feedback_cb,
+            )
+            _mission_client.wait_for_result()
+        except Exception as e:
+            try:
+                rospy.logerr(f"[MISSION] Error en start_mission_async: {e}")
+            except Exception:
+                print("[MISSION] Error en start_mission_async:", e)
+            pub_error("MISSION_CLIENT_FAIL", str(e))
+            pub_state("ERROR")
+            _set_mission_status(
+                running=False,
+                state="ERROR",
+                success=False,
+                error_code="MISSION_CLIENT_FAIL",
+                error_message=str(e),
+            )
+
+    threading.Thread(target=_run, daemon=True).start()
+
+
+def _mission_feedback_cb(feedback):
+    """
+    Callback de feedback de TirgoMissionAction.
+    """
+    try:
+        rospy.loginfo(f"[MISSION FEEDBACK] state={feedback.state} progress={feedback.progress}")
+    except Exception:
+        pass
+
+    _set_mission_status(
+        running=True,
+        state=feedback.state,
+        progress=float(getattr(feedback, "progress", 0.0)),
+    )
+
+    pub_status(
+        {
+            "state": feedback.state,
+            "progress": feedback.progress,
+        }
+    )
+    # Propagamos el estado tal cual; la web ya decide cómo pintarlo
+    pub_state(feedback.state)
+
+
+def _mission_done_cb(state, result):
+    """
+    Callback de finalización de TirgoMissionAction.
+    """
+    if not result.success:
+        msg = result.error_message or "Misión fallida"
+        code = result.error_code or "MISSION_FAIL"
+        try:
+            rospy.logwarn(f"[MISSION DONE] FAIL {code}: {msg}")
+        except Exception:
+            print("[MISSION DONE] FAIL", code, msg)
+        pub_error(code, msg)
+        pub_state("ERROR")
+        _set_mission_status(
+            running=False,
+            success=False,
+            state="ERROR",
+            error_code=code,
+            error_message=msg,
+            progress=0.0,
+        )
+    else:
+        try:
+            rospy.loginfo("[MISSION DONE] success ✅")
+        except Exception:
+            print("[MISSION DONE] success")
+        pub_status({"state": "DONE", "progress": 1.0})
+        pub_state("IDLE")
+        _set_mission_status(
+            running=False,
+            success=True,
+            state="DONE",
+            error_code="",
+            error_message="",
+            progress=1.0,
+        )

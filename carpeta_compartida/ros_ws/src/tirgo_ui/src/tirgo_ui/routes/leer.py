@@ -1,5 +1,5 @@
 # src/tirgo_ui/routes/leer.py
-from flask import Blueprint, request, render_template, redirect, url_for, abort, flash, current_app
+from flask import Blueprint, request, render_template, redirect, url_for, abort, flash, current_app, jsonify
 from ..storage_mongo import (
     meds_disponibles,
     lookup_medicamento_by_id,
@@ -109,14 +109,15 @@ def leer_post():
                     error=True,
                     show_retry=False
                 )
-            try:
-                if rosio.pub_mission_start:
-                    rosio.pub_mission_start.publish('go_pickup')
-                if rosio.pub_dispense_req:
-                    rosio.pub_dispense_req.publish(int(med['bin_id']))
-            except Exception:
-                pass
 
+            # Lanzar misión vía Action Server (sin paciente explícito)
+            try:
+                bin_id = int(med['bin_id'])
+            except Exception:
+                bin_id = med_id  # fallback suave
+            rosio.start_mission_async("", bin_id)
+
+            # Mantener lógica física/BD que ya tuvieras
             threading.Thread(target=dispense_physical, args=(med, None), daemon=True).start()
             session.end_session()
             return render_template('status.html', state='DISPENSING', body_msg='Preparando tu producto')
@@ -163,15 +164,18 @@ def recoger(med_id: int):
             show_retry=False
         )
 
+    # Informar a la UI y lanzar misión vía Action Server
     try:
-        rosio.pub_status({'msg': 'Orden enviada a TIAGO y dispensador',
-                          'bin_id': int(med['bin_id']), 'med': med['nombre']})
-        if rosio.pub_mission_start:
-            rosio.pub_mission_start.publish('go_pickup')
-        if rosio.pub_dispense_req:
-            rosio.pub_dispense_req.publish(int(med['bin_id']))
+        rosio.pub_status({
+            'msg': 'Orden enviada a TIAGO y dispensador',
+            'bin_id': int(med['bin_id']),
+            'med': med['nombre'],
+        })
+        bin_id = int(med['bin_id'])
     except Exception:
-        pass
+        bin_id = med_id
+
+    rosio.start_mission_async("", bin_id)
 
     threading.Thread(target=dispense_physical, args=(med, None), daemon=True).start()
     session.end_session()
@@ -240,13 +244,12 @@ def leer_ident():
                     show_retry=False
                 )
 
+            # Lanzar misión con ID de paciente (ObjectId en string)
             try:
-                if rosio.pub_mission_start:
-                    rosio.pub_mission_start.publish('go_pickup')
-                if rosio.pub_dispense_req:
-                    rosio.pub_dispense_req.publish(int(med['bin_id']))
+                bin_id = int(med['bin_id'])
             except Exception:
-                pass
+                bin_id = med_id
+            rosio.start_mission_async(str(pid), bin_id)
 
             threading.Thread(target=dispense_physical, args=(med, None), daemon=True).start()
 
@@ -307,14 +310,22 @@ def leer_ident():
             show_retry=False
         )
 
+    # Lanzar misión con hash de paciente
     try:
-        if rosio.pub_mission_start:
-            rosio.pub_mission_start.publish('go_pickup')
-        if rosio.pub_dispense_req:
-            rosio.pub_dispense_req.publish(int(med['bin_id']))
+        bin_id = int(med['bin_id'])
     except Exception:
-        pass
+        bin_id = med_id
+    patient_hash = h_dni(dni)
+    rosio.start_mission_async(patient_hash, bin_id)
 
-    threading.Thread(target=dispense_physical, args=(med, h_dni(dni)), daemon=True).start()
+    threading.Thread(target=dispense_physical, args=(med, patient_hash), daemon=True).start()
     session.end_session()
     return render_template('status.html', state='DISPENSING', body_msg='Preparando tu producto')
+
+
+# --- API para estado de misión (polling desde la web) ---
+
+@bp.route("/leer/mission_status", methods=["GET"])
+def leer_mission_status():
+    """Devuelve el estado actual de la misión para el polling de la UI."""
+    return jsonify(rosio.get_mission_status())

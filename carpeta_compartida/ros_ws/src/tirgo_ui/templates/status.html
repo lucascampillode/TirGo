@@ -1,35 +1,296 @@
 {% extends "base.html" %}
-{% block title %}TirGoPharma · Estado{% endblock %}
+{% block title %}TirGoPharma · Estado de la dispensación{% endblock %}
 
 {% block content %}
-<section class="panel">
-  <h2>Estado: {{ state }}</h2>
+<section class="panel"
+         id="mission-panel"
+         data-error="{{ '1' if error else '0' }}">
+  <h2 id="mission-title">Proceso de dispensación</h2>
 
-  {# — Mensaje principal: preferimos body_msg; mantenemos msg por compat — #}
+  <p class="muted">
+    Fase actual:
+    <span id="mission-state-label">
+      {{ state }}
+    </span>
+  </p>
+
+  {# — Mensaje detallado; preferimos body_msg si viene desde el backend — #}
   {% set _text = body_msg or msg %}
   {% if _text %}
-    <p class="muted">{{ _text }}</p>
+    <p class="muted" id="mission-msg">{{ _text }}</p>
+  {% else %}
+    <p class="muted" id="mission-msg"></p>
   {% endif %}
 
+  {# Timeline de la misión #}
+  <ol class="mission-timeline" id="mission-timeline">
+    <li class="mission-step" data-step="1">
+      <span class="step-label">Desplazamiento al dispensador</span>
+      <span class="step-desc">El robot se dirige al módulo de dispensación.</span>
+    </li>
+    <li class="mission-step" data-step="2">
+      <span class="step-label">Dispensación del medicamento</span>
+      <span class="step-desc">El sistema prepara y libera el envase con la medicación.</span>
+    </li>
+    <li class="mission-step" data-step="3">
+      <span class="step-label">Recogida del envase</span>
+      <span class="step-desc">El robot recoge de forma segura el envase dispensado.</span>
+    </li>
+    <li class="mission-step" data-step="4">
+      <span class="step-label">Regreso al paciente</span>
+      <span class="step-desc">El robot se desplaza de nuevo hacia la ubicación del paciente.</span>
+    </li>
+    <li class="mission-step" data-step="5">
+      <span class="step-label">Entrega al paciente</span>
+      <span class="step-desc">El robot entrega el medicamento al paciente.</span>
+    </li>
+    <li class="mission-step" data-step="6">
+      <span class="step-label">Cierre de la interacción</span>
+      <span class="step-desc">Se confirma la entrega y el robot se despide.</span>
+    </li>
+  </ol>
+
   {% if error %}
-    <p class="pill danger">❌ Error</p>
+    <p class="pill danger" id="mission-pill">Error en la dispensación</p>
     <div class="actions">
-      {# mostrar “Volver a pedir” solo si show_retry no es False explícito #}
       {% if show_retry is not defined or show_retry %}
         <a class="btn" href="{{ url_for('leer.leer') }}">Volver a pedir</a>
       {% endif %}
       <a class="btn" href="{{ url_for('main.index') }}">Inicio</a>
     </div>
   {% else %}
-    {# estados “OK / en curso” #}
-    {% if state in ['DISPENSING', 'EN_CURSO', 'OK'] %}
-      <p class="pill success">⏳ Procesando</p>
-    {% else %}
-      <p class="pill">ℹ️</p>
-    {% endif %}
+    <p class="pill success" id="mission-pill">En curso</p>
     <div class="actions">
       <a class="btn" href="{{ url_for('main.index') }}">Inicio</a>
     </div>
   {% endif %}
 </section>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+
+<style>
+  .mission-timeline {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0 1rem 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.2rem 2rem;
+  }
+
+  .mission-step {
+    position: relative;
+    padding-left: 1.4rem;
+    font-size: 0.9rem;
+    opacity: 0.4;
+  }
+
+  .mission-step::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.4rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 999px;
+    border: 2px solid #cbd5e1;
+    background: #f8fafc;
+  }
+
+  .mission-step.active {
+    opacity: 1;
+  }
+
+  .mission-step.active::before {
+    background: #22c55e;
+    border-color: #16a34a;
+  }
+
+  .step-label {
+    display: block;
+    font-weight: 600;
+  }
+
+  .step-desc {
+    display: block;
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+
+  @media (max-width: 768px) {
+    .mission-timeline {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    const panel    = document.getElementById("mission-panel");
+    const stateLbl = document.getElementById("mission-state-label");
+    const msgEl    = document.getElementById("mission-msg");
+    const pillEl   = document.getElementById("mission-pill");
+    const steps    = Array.from(document.querySelectorAll(".mission-step"));
+
+    const isErrorTemplate = panel && panel.dataset.error === "1";
+    if (isErrorTemplate) {
+      return;
+    }
+
+    // Mapeo de estados ROS -> texto corto (fase actual)
+    function prettyStateLabel(data) {
+      const s = (data.state || "").toUpperCase();
+
+      if (s === "GOING_TO_DISPENSER") {
+        return "Desplazamiento al dispensador";
+      }
+      if (s === "AT_DISPENSER" || s === "WAITING_DISPENSE" || s === "DISPENSING") {
+        return "Dispensación del medicamento";
+      }
+      if (s === "DISPENSED" || s === "PICKING_UP") {
+        return "Recogida del envase";
+      }
+      if (s === "GOING_TO_PATIENT") {
+        return "Regreso al paciente";
+      }
+      if (s === "AT_PATIENT" || s === "DELIVERED") {
+        return "Entrega al paciente";
+      }
+      if (s === "FAREWELL" || s === "DONE") {
+        return "Cierre de la interacción";
+      }
+      if (s === "DISPENSING") {
+        return "Preparando el medicamento";
+      }
+      if (s === "ERROR") {
+        return "Error en la dispensación";
+      }
+      return "Procesando";
+    }
+
+    // Texto detallado según la fase
+    function prettyMessage(data) {
+      const s = (data.state || "").toUpperCase();
+
+      if (s === "GOING_TO_DISPENSER") {
+        return "El robot se está desplazando al módulo de dispensación para preparar tu medicación.";
+      }
+      if (s === "AT_DISPENSER" || s === "WAITING_DISPENSE" || s === "DISPENSING") {
+        return "El robot ha llegado al dispensador y el sistema está liberando el envase con tu medicación.";
+      }
+      if (s === "DISPENSED" || s === "PICKING_UP") {
+        return "La medicación ha sido dispensada. El robot está asegurando el envase antes de desplazarse hacia ti.";
+      }
+      if (s === "GOING_TO_PATIENT") {
+        return "El robot se dirige de vuelta hacia tu ubicación con el medicamento.";
+      }
+      if (s === "AT_PATIENT" || s === "DELIVERED") {
+        return "El robot ha llegado junto al paciente y está realizando la entrega del medicamento.";
+      }
+      if (s === "FAREWELL" || (s === "DONE" && data.success === true)) {
+        return "La entrega se ha completado correctamente. El robot finaliza la interacción y se despide.";
+      }
+      if (s === "ERROR" || data.success === false) {
+        return data.error_message || "Se ha producido una incidencia durante la dispensación del medicamento.";
+      }
+      if (s === "DISPENSING") {
+        return "El sistema está preparando tu medicamento.";
+      }
+      return "El sistema está procesando tu solicitud de dispensación.";
+    }
+
+    // Estado de la pastilla
+    function prettyPill(data) {
+      const s = (data.state || "").toUpperCase();
+
+      if (data.success === false || s === "ERROR") {
+        return { text: "Error en la misión", cls: "danger" };
+      }
+      if (!data.running && data.success === true) {
+        return { text: "Misión completada", cls: "success" };
+      }
+      return { text: "En curso", cls: "success" };
+    }
+
+    // Qué paso del timeline está activo
+    function activeStepForState(state) {
+      const s = (state || "").toUpperCase();
+
+      if (s === "GOING_TO_DISPENSER") {
+        return 1;
+      }
+      if (s === "AT_DISPENSER" || s === "WAITING_DISPENSE" || s === "DISPENSING") {
+        return 2;
+      }
+      if (s === "DISPENSED" || s === "PICKING_UP") {
+        return 3;
+      }
+      if (s === "GOING_TO_PATIENT") {
+        return 4;
+      }
+      if (s === "AT_PATIENT" || s === "DELIVERED") {
+        return 5;
+      }
+      if (s === "FAREWELL" || s === "DONE") {
+        return 6;
+      }
+      return 0;
+    }
+
+    function updateTimeline(state) {
+      const step = activeStepForState(state);
+      steps.forEach(li => {
+        const n = parseInt(li.dataset.step || "0", 10);
+        li.classList.toggle("active", step > 0 && n <= step);
+      });
+    }
+
+    async function pollMission() {
+      try {
+        const res = await fetch("{{ url_for('leer.leer_mission_status') }}");
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        // 1) Fase actual (label bajo el título)
+        if (stateLbl) {
+          stateLbl.textContent = prettyStateLabel(data);
+        }
+
+        // 2) Mensaje descriptivo
+        if (msgEl) {
+          msgEl.textContent = prettyMessage(data);
+        }
+
+        // 3) Pastilla
+        if (pillEl) {
+          const pill = prettyPill(data);
+          pillEl.textContent = pill.text;
+          pillEl.classList.remove("success", "danger");
+          if (pill.cls) {
+            pillEl.classList.add(pill.cls);
+          }
+        }
+
+        // 4) Timeline
+        updateTimeline(data.state);
+
+        // 5) Redirección cuando todo ha terminado bien
+        if (!data.running && data.success === true) {
+          setTimeout(function () {
+            window.location.href = "{{ url_for('main.index') }}";
+          }, 2000);
+        }
+
+      } catch (e) {
+        console.error("Error en pollMission", e);
+      }
+    }
+
+    // Polling cada 1.5 segundos mientras estemos en esta vista
+    setInterval(pollMission, 1500);
+  })();
+</script>
 {% endblock %}
