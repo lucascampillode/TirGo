@@ -18,7 +18,6 @@ Asegúrate de cumplir con lo siguiente antes de ejecutar el sistema:
 
 - **Sistema Operativo:** Ubuntu 20.04  
 - **ROS:** Noetic  
-- **Servicios:** `roscore` en ejecución  
 - **Contenedorización (Opcional, Recomendado):** Docker  
 - **Lenguaje de Programación:** Python 3.8+
 
