@@ -50,8 +50,7 @@ class TirgoMissionServer:
             auto_start=False,
         )
 
-        # Publishers de alto nivel:
-        # OJO: estos los consumen los nodos de Ángel/Lucas, tú solo los emites.
+        # Publishers de alto nivel (los usan otros nodos)
         self.pub_mission_start = rospy.Publisher(
             "/tirgo/mission/start", String, queue_size=1
         )
@@ -60,12 +59,12 @@ class TirgoMissionServer:
         )
 
         # Flags que vendrán de otros nodos (tú solo te suscribes)
-        self.arrived_flag   = False
-        self.ready_flag     = False
-        self.picked_flag    = False
-        self.at_patient_flag = False
-        self.delivered_flag = False
-        self.farewell_flag  = False
+        self.arrived_flag     = False
+        self.ready_flag       = False
+        self.picked_flag      = False
+        self.at_patient_flag  = False
+        self.delivered_flag   = False
+        self.farewell_flag    = False
 
         self.sub_arrived = rospy.Subscriber(
             "/tirgo/tiago/arrived", Bool, self.cb_arrived
@@ -138,20 +137,23 @@ class TirgoMissionServer:
         fb = TirgoMissionFeedback()
         res = TirgoMissionResult()
 
-        # Reset flags
-        self.arrived_flag    = False
-        self.ready_flag      = False
-        self.picked_flag     = False
-        self.at_patient_flag = False
-        self.delivered_flag  = False
-        self.farewell_flag   = False
+        # Reset completo de flags al inicio de cada misión
+        self.arrived_flag     = False
+        self.ready_flag       = False
+        self.picked_flag      = False
+        self.at_patient_flag  = False
+        self.delivered_flag   = False
+        self.farewell_flag    = False
 
         # ----- Paso 1: lanzar misión hacia el dispensador -----
         fb.state = "GOING_TO_DISPENSER"
         fb.progress = 0.1
         self._as.publish_feedback(fb)
 
+        # IMPORTANTE: reseteamos la flag justo antes de esperar
+        self.arrived_flag = False
         self.pub_mission_start.publish(String(data="start"))
+        rospy.loginfo("[TMS] GOING_TO_DISPENSER -> esperando arrived_flag...")
 
         if not self.wait_for_arrive():
             res.success = False
@@ -167,6 +169,7 @@ class TirgoMissionServer:
 
         self.ready_flag = False
         self.pub_dispense_req.publish(Int32(data=goal.med_id))
+        rospy.loginfo("[TMS] WAITING_DISPENSE -> esperando ready_flag...")
 
         if not self.wait_for_ready():
             res.success = False
@@ -180,6 +183,9 @@ class TirgoMissionServer:
         fb.progress = 0.5
         self._as.publish_feedback(fb)
 
+        self.picked_flag = False
+        rospy.loginfo("[TMS] PICKING_UP -> esperando picked_flag...")
+
         if not self.wait_for_picked():
             res.success = False
             res.error_code = "TIMEOUT_PICK"
@@ -191,6 +197,9 @@ class TirgoMissionServer:
         fb.state = "GOING_TO_PATIENT"
         fb.progress = 0.7
         self._as.publish_feedback(fb)
+
+        self.at_patient_flag = False
+        rospy.loginfo("[TMS] GOING_TO_PATIENT -> esperando at_patient_flag...")
 
         if not self.wait_for_at_patient():
             res.success = False
@@ -204,6 +213,9 @@ class TirgoMissionServer:
         fb.progress = 0.85
         self._as.publish_feedback(fb)
 
+        self.delivered_flag = False
+        rospy.loginfo("[TMS] AT_PATIENT -> esperando delivered_flag...")
+
         if not self.wait_for_delivered():
             res.success = False
             res.error_code = "TIMEOUT_DELIVER"
@@ -215,6 +227,9 @@ class TirgoMissionServer:
         fb.state = "FAREWELL"
         fb.progress = 0.95
         self._as.publish_feedback(fb)
+
+        self.farewell_flag = False
+        rospy.loginfo("[TMS] FAREWELL -> esperando farewell_flag...")
 
         if not self.wait_for_farewell():
             res.success = False
@@ -257,17 +272,19 @@ class TirgoMissionServer:
         start = rospy.Time.now()
         rate = rospy.Rate(10)
 
+        rospy.loginfo(f"[TMS] Esperando flag '{label}' (timeout={timeout}s)...")
+
         while not rospy.is_shutdown():
             if self.check_preempt():
                 return False
 
             if getattr(self, attr_name):
-                rospy.loginfo(f"[TMS] {label}=True recibido")
+                rospy.loginfo(f"[TMS] Flag '{label}' = True recibido")
                 return True
 
             elapsed = (rospy.Time.now() - start).to_sec()
             if elapsed > timeout:
-                rospy.logwarn(f"[TMS] TIMEOUT {label} tras {elapsed:.1f}s")
+                rospy.logwarn(f"[TMS] TIMEOUT en flag '{label}' tras {elapsed:.1f}s")
                 return False
 
             rate.sleep()

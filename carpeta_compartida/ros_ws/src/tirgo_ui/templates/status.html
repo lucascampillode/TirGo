@@ -65,6 +65,21 @@
     </div>
   {% endif %}
 </section>
+
+{# Panel de cámara en tiempo real #}
+<section class="panel panel-secondary robot-view">
+  <h3>Vista en tiempo real del robot</h3>
+  <p class="muted">
+    Imagen en directo de la cámara frontal mientras se realiza la dispensación.
+  </p>
+  <div class="robot-view-frame">
+    <img
+      id="robot-camera"
+      src="http://{{ request.host.split(':')[0] }}:8080/stream?topic=/xtion/rgb/image_rect_color&quality=80"
+      alt="Cámara de TIAGo"
+    >
+  </div>
+</section>
 {% endblock %}
 
 {% block scripts %}
@@ -85,6 +100,7 @@
     padding-left: 1.4rem;
     font-size: 0.9rem;
     opacity: 0.4;
+    color: #94a3b8; /* gris por defecto */
   }
 
   .mission-step::before {
@@ -99,13 +115,32 @@
     background: #f8fafc;
   }
 
-  .mission-step.active {
+  /* Paso completado (verde) */
+  .mission-step.step-done {
     opacity: 1;
+    color: #0f172a; /* casi negro */
   }
 
-  .mission-step.active::before {
+  .mission-step.step-done::before {
     background: #22c55e;
     border-color: #16a34a;
+  }
+
+  /* Paso actual (naranja) */
+  .mission-step.step-current {
+    opacity: 1;
+    color: #0f172a;
+  }
+
+  .mission-step.step-current::before {
+    background: #f97316;
+    border-color: #ea580c;
+  }
+
+  /* Paso pendiente (gris apagado) */
+  .mission-step.step-pending {
+    opacity: 0.4;
+    color: #94a3b8;
   }
 
   .step-label {
@@ -123,6 +158,26 @@
     .mission-timeline {
       grid-template-columns: 1fr;
     }
+  }
+
+  /* Panel de cámara */
+  .robot-view {
+    margin-top: 1.5rem;
+  }
+
+  .robot-view-frame {
+    margin-top: 0.5rem;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    background: #000;
+    max-width: 640px;
+  }
+
+  #robot-camera {
+    display: block;
+    width: 100%;
+    height: auto;
   }
 </style>
 
@@ -214,7 +269,7 @@
       return { text: "En curso", cls: "success" };
     }
 
-    // Qué paso del timeline está activo
+    // Qué paso del timeline está activo (1..6)
     function activeStepForState(state) {
       const s = (state || "").toUpperCase();
 
@@ -239,11 +294,38 @@
       return 0;
     }
 
-    function updateTimeline(state) {
-      const step = activeStepForState(state);
+    function updateTimeline(state, running, success) {
+      const currentStep = activeStepForState(state);
+      let maxStep = currentStep;
+
+      // Si ya ha terminado en éxito, marcamos todos como completados
+      if (!running && success === true) {
+        maxStep = 6;
+      }
+
       steps.forEach(li => {
         const n = parseInt(li.dataset.step || "0", 10);
-        li.classList.toggle("active", step > 0 && n <= step);
+        li.classList.remove("step-pending", "step-current", "step-done");
+
+        if (currentStep === 0) {
+          // misión aún sin arrancar: todo pendiente
+          li.classList.add("step-pending");
+          return;
+        }
+
+        if (n < currentStep) {
+          // pasos anteriores a la fase actual -> completados
+          li.classList.add("step-done");
+        } else if (n === currentStep && running) {
+          // paso actual mientras la misión está corriendo
+          li.classList.add("step-current");
+        } else if (n <= maxStep && !running && success === true) {
+          // misión terminada con éxito -> todos hasta maxStep completados
+          li.classList.add("step-done");
+        } else {
+          // todavía no hemos llegado a este
+          li.classList.add("step-pending");
+        }
       });
     }
 
@@ -274,8 +356,8 @@
           }
         }
 
-        // 4) Timeline
-        updateTimeline(data.state);
+        // 4) Timeline con colores (gris / naranja / verde)
+        updateTimeline(data.state, data.running, data.success);
 
         // 5) Redirección cuando todo ha terminado bien
         if (!data.running && data.success === true) {
