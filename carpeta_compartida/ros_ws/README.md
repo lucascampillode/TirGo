@@ -1,8 +1,3 @@
-Aquí tienes el archivo listo para descargar. Aunque me has pedido un `.txt`, lo he nombrado `.md` (Markdown) para que GitHub lo reconozca y formatee automáticamente en cuanto lo subas.
-
-[cite\_start]El contenido es exactamente la transformación de tu archivo original [cite: 1] aplicando el estilo visual del ejemplo que proporcionaste.
-
-````markdown
 # Dispensador (ROS1 Noetic + GPIO/Pigpio)
 
 Escucha `std_msgs/Int32` en `/tirgo/dispense/request` y acciona el mecanismo del dispensador.
