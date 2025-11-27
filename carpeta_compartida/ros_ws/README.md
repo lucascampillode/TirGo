@@ -31,6 +31,10 @@ En una terminal (si el `roscore` está en la Raspberry):
 
 ```bash
 roscore
+
+Para que pigpio funcione correctamente en la Raspberry Pi, solo necesitas lanzar este servicio:
+
+sudo systemctl start pigpiod
 ```
 
 En otra terminal:
