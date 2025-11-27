@@ -62,7 +62,4 @@ Verificar que el nodo recibe las peticiones:
 rostopic echo /tirgo/dispense/request
 ```
 
-```
 
-¿Necesitas ayuda para subir esto a tu repositorio?
-```
