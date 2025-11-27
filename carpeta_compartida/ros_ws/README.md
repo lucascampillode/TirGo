@@ -31,10 +31,15 @@ En una terminal (si el `roscore` está en la Raspberry):
 
 ```bash
 roscore
+
+```
+En otra terminal:
+
+```bash
 sudo systemctl start pigpiod
 ```
 
-En otra terminal:
+En la ultima terminal:
 
 ```bash
 source /opt/ros/noetic/setup.bash
