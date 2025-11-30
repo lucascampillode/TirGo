@@ -1,4 +1,5 @@
-from flask import Blueprint, request, render_template, redirect, url_for, abort, flash
+# src/tirgo_ui/routes/leer.py
+from flask import Blueprint, request, render_template, redirect, url_for, abort, flash, current_app, jsonify
 from ..storage_mongo import (
     meds_disponibles,
     lookup_medicamento_by_id,
@@ -15,7 +16,7 @@ from bson import ObjectId
 
 bp = Blueprint('leer', __name__)
 
-# --- Utilidad para acceder a la DB cuando necesitemos toquetear recetas ----
+# --- Utilidad: obtener handler de DB por si hace falta tocar recetas ---
 def _get_db_from_storage():
     from .. import storage_mongo as store
     for name in ("db", "mongo", "database", "mongo_db", "_db", "_mongo"):
@@ -31,63 +32,110 @@ def _get_db_from_storage():
     return None
 
 
+# ----------------------------- RUTAS -----------------------------
+
 @bp.route('/leer', methods=['GET'], endpoint='leer')
 def leer_get():
-    if not session.is_active():
-        return redirect(url_for('main.index'))
-    rosio.pub_state('MODE_SELECTED')
-    meds = meds_disponibles()
-    return render_template('leer.html', meds=meds)
+    """Vista de selección de medicamento (libre o con receta)."""
+    try:
+        if not session.is_active():
+            return redirect(url_for('main.index'))
+        rosio.pub_state('MODE_SELECTED')
+
+        try:
+            meds = meds_disponibles()
+        except Exception:
+            current_app.logger.exception("meds_disponibles() falló")
+            meds = []
+            flash("No puedo listar medicamentos ahora mismo.", "error")
+
+        return render_template('leer.html', meds=meds), 200
+
+    except Exception as e:
+        current_app.logger.exception("leer_get explotó")
+        rosio.pub_error("LEER_GET_ERR", str(e))
+        flash("Ha ocurrido un error cargando la vista de pedido.", "error")
+        # Fallback básico (sin tumbar la app)
+        return render_template('leer.html', meds=[]), 200
 
 
 @bp.route('/leer', methods=['POST'], endpoint='leer_post')
 def leer_post():
-    if not session.is_active():
-        return redirect(url_for('main.index'))
-
-    med_id = request.form.get('med_id')
+    """Procesa la petición de leer (desde Diagnóstico o desde la propia vista)."""
     try:
-        med_id = int(med_id)
-    except (TypeError, ValueError):
-        rosio.pub_error('BAD_REQ', 'Selección inválida')
-        return redirect(url_for('leer.leer_get'))
+        if not session.is_active():
+            return redirect(url_for('main.index'))
 
-    med = lookup_medicamento_by_id(med_id)
-    if not med:
-        rosio.pub_error('NOT_FOUND', 'Medicamento no existe')
-        return redirect(url_for('leer.leer_get'))
-
-    # ✅ Normaliza el tipo para evitar sorpresas de espacios/minúsculas
-    tipo = (med.get('tipo') or '').strip().upper()
-
-    # Log de diagnóstico
-    try:
-        print(f"[leer_post] med_id={med_id} -> nombre={med.get('nombre')} tipo={tipo} bin={med.get('bin_id')}")
-    except Exception:
-        pass
-
-    # LIBRE: dispensa directa
-    if tipo != 'R':
-        if get_stock(med['id']) <= 0:
-            rosio.pub_error('NO_STOCK', 'Sin stock')
-            flash('Sin stock', 'error')
-            return redirect(url_for('leer.leer_get'))
+        med_id = request.form.get('med_id')
         try:
-            if rosio.pub_mission_start: rosio.pub_mission_start.publish('go_pickup')
-            if rosio.pub_dispense_req:  rosio.pub_dispense_req.publish(int(med['bin_id']))
+            med_id = int(med_id)
+        except (TypeError, ValueError):
+            rosio.pub_error('BAD_REQ', 'Selección inválida')
+            flash('Selección inválida.', 'error')
+            return redirect(url_for('leer.leer'))
+
+        med = lookup_medicamento_by_id(med_id)
+        if not med:
+            rosio.pub_error('NOT_FOUND', 'Medicamento no existe')
+            flash('No he encontrado ese medicamento.', 'error')
+            return redirect(url_for('leer.leer'))
+
+        tipo = (med.get('tipo') or '').strip().upper()
+
+        try:
+            current_app.logger.info(
+                f"[leer_post] med_id={med_id} -> nombre={med.get('nombre')} tipo={tipo} bin={med.get('bin_id')}"
+            )
         except Exception:
             pass
-        threading.Thread(target=dispense_physical, args=(med, None), daemon=True).start()
-        session.end_session()
-        return render_template('status.html', state='DISPENSING', msg='Preparando tu producto')
 
-    # RESTRINGIDO: identificar
-    rosio.pub_state('IDENTIFYING')
-    return render_template('leer_ident.html', med=med)
+        # --- LIBRE: dispensa directa ---
+        if tipo != 'R':
+            try:
+                stock_val = int(get_stock(med['id']))
+            except Exception:
+                stock_val = 0
+            if stock_val <= 0:
+                rosio.pub_error('NO_STOCK', f"Sin stock de {med['nombre']}")
+                msg = (
+                    f"No queda stock de «{med['nombre']}». "
+                    "Estará disponible aproximadamente en 3 días. "
+                    "Si las molestias son importantes o empeoran, acude a tu médico."
+                )
+                return render_template(
+                    'status.html',
+                    state='NO_STOCK',
+                    body_msg=msg,
+                    error=True,
+                    show_retry=False
+                )
+
+            # Lanzar misión vía Action Server (sin paciente explícito)
+            try:
+                bin_id = int(med['bin_id'])
+            except Exception:
+                bin_id = med_id  # fallback suave
+            rosio.start_mission_async("", bin_id)
+
+            # Mantener lógica física/BD que ya tuvieras
+            threading.Thread(target=dispense_physical, args=(med, None), daemon=True).start()
+            session.end_session()
+            return render_template('status.html', state='DISPENSING', body_msg='Preparando tu producto')
+
+        # --- RESTRINGIDO: pasar a identificación ---
+        rosio.pub_state('IDENTIFYING')
+        return render_template('leer_ident.html', med=med)
+
+    except Exception as e:
+        current_app.logger.exception("leer_post explotó")
+        rosio.pub_error("LEER_POST_ERR", str(e))
+        flash("Ha ocurrido un error procesando tu petición.", "error")
+        return redirect(url_for('leer.leer'))
 
 
 @bp.route('/recoger/<int:med_id>')
 def recoger(med_id: int):
+    """Dispensa directa cuando venimos de 'Consultar' (permitidos) para no-R."""
     if not session.is_active():
         return redirect(url_for('main.index'))
 
@@ -96,43 +144,66 @@ def recoger(med_id: int):
         rosio.pub_error('NOT_FOUND', 'Medicamento no existe')
         abort(404)
 
-    if get_stock(med_id) <= 0:
-        rosio.pub_error('NO_STOCK', 'Sin stock')
-        return render_template('status.html', state='ERROR', msg='Sin stock', error=True)
-
     try:
-        rosio.pub_status({'msg':'Orden enviada a TIAGO y dispensador',
-                          'bin_id': int(med['bin_id']), 'med': med['nombre']})
-        if rosio.pub_mission_start: rosio.pub_mission_start.publish('go_pickup')
-        if rosio.pub_dispense_req:  rosio.pub_dispense_req.publish(int(med['bin_id']))
+        stock_val = int(get_stock(med_id))
     except Exception:
-        pass
+        stock_val = 0
+
+    if stock_val <= 0:
+        rosio.pub_error('NO_STOCK', f"Sin stock de {med.get('nombre','')}")
+        msg = (
+            f"No queda stock de «{med.get('nombre','este medicamento')}». "
+            "Estará disponible aproximadamente en 3 días. "
+            "Si las molestias son importantes o empeoran, acude a tu médico."
+        )
+        return render_template(
+            'status.html',
+            state='NO_STOCK',
+            body_msg=msg,
+            error=True,
+            show_retry=False
+        )
+
+    # Informar a la UI y lanzar misión vía Action Server
+    try:
+        rosio.pub_status({
+            'msg': 'Orden enviada a TIAGO y dispensador',
+            'bin_id': int(med['bin_id']),
+            'med': med['nombre'],
+        })
+        bin_id = int(med['bin_id'])
+    except Exception:
+        bin_id = med_id
+
+    rosio.start_mission_async("", bin_id)
 
     threading.Thread(target=dispense_physical, args=(med, None), daemon=True).start()
     session.end_session()
-    return render_template('status.html', state='DISPENSING', msg='Preparando tu producto')
+    return render_template('status.html', state='DISPENSING', body_msg='Preparando tu producto')
 
 
 @bp.route('/leer/ident', methods=['POST'])
 def leer_ident():
+    """Identificación para tipo R o cuando venimos del flujo 'Consultar'."""
     if not session.is_active():
         return redirect(url_for('main.index'))
 
     med_id_raw = request.form.get('med_id')
     if not med_id_raw:
-        return redirect(url_for('leer.leer_get'))
+        return redirect(url_for('leer.leer'))
     med_id = int(med_id_raw)
 
-    # 👇 vienen cuando se pide desde consultar
+    # Si venimos de 'Consultar' con paciente/receta ya decididos:
     skip_ident    = request.form.get('skip_ident')
     paciente_id_s = request.form.get('paciente_id')
     receta_id_s   = request.form.get('receta_id')
 
     med = lookup_medicamento_by_id(med_id)
     if not med:
-        rosio.pub_error('NOT_FOUND', 'Medicamento no existe'); abort(404)
+        rosio.pub_error('NOT_FOUND', 'Medicamento no existe')
+        abort(404)
 
-    # ---------- CAMINO NUEVO: venimos de consultar ----------
+    # ---- Camino 'Consultar' (sin pedir datos otra vez) ----
     if skip_ident == "1" and paciente_id_s:
         try:
             pid = ObjectId(paciente_id_s)
@@ -145,39 +216,57 @@ def leer_ident():
 
             if (med.get('tipo') or '').strip().upper() == 'R' and not (tiene_receta or necesita):
                 rosio.pub_error('RESTRICTED', 'No autorizado para este R')
-                return render_template('status.html', state='ERROR',
-                                       msg='Este medicamento requiere receta válida. Visita a tu médico.',
-                                       error=True)
+                return render_template(
+                    'status.html',
+                    state='ERROR',
+                    body_msg='Este medicamento requiere receta válida. Visita a tu médico.',
+                    error=True,
+                    show_retry=False
+                )
 
-            if get_stock(med_id) <= 0:
-                rosio.pub_error('NO_STOCK', 'Sin stock')
-                return render_template('status.html', state='ERROR', msg='Sin stock', error=True)
-
-            # DISPENSAR
             try:
-                if rosio.pub_mission_start: rosio.pub_mission_start.publish('go_pickup')
-                if rosio.pub_dispense_req:  rosio.pub_dispense_req.publish(int(med['bin_id']))
+                stock_val = int(get_stock(med_id))
             except Exception:
-                pass
+                stock_val = 0
+
+            if stock_val <= 0:
+                rosio.pub_error('NO_STOCK', f"Sin stock de {med.get('nombre','')}")
+                msg = (
+                    f"No queda stock de «{med.get('nombre','este medicamento')}». "
+                    "Estará disponible aproximadamente en 3 días. "
+                    "Si las molestias son importantes o empeoran, acude a tu médico."
+                )
+                return render_template(
+                    'status.html',
+                    state='NO_STOCK',
+                    body_msg=msg,
+                    error=True,
+                    show_retry=False
+                )
+
+            # Lanzar misión con ID de paciente (ObjectId en string)
+            try:
+                bin_id = int(med['bin_id'])
+            except Exception:
+                bin_id = med_id
+            rosio.start_mission_async(str(pid), bin_id)
 
             threading.Thread(target=dispense_physical, args=(med, None), daemon=True).start()
 
-            # 👇 DESACTIVAR LA RECETA USADA (si venía)
+            # Desactivar la receta usada (si venía)
             if receta_id_s:
                 db = _get_db_from_storage()
                 if db is not None:
                     try:
-                        db.recetas.update_one(
-                            {"_id": ObjectId(receta_id_s)},
-                            {"$set": {"activa": False}}
-                        )
+                        db.recetas.update_one({"_id": ObjectId(receta_id_s)},
+                                              {"$set": {"activa": False}})
                     except Exception as e:
-                        print("[leer] no se pudo desactivar la receta:", e)
+                        current_app.logger.warning("[leer] no se pudo desactivar la receta: %s", e)
 
             session.end_session()
-            return render_template('status.html', state='DISPENSING', msg='Preparando tu producto')
+            return render_template('status.html', state='DISPENSING', body_msg='Preparando tu producto')
 
-    # ---------- CAMINO ANTIGUO: formulario de identificación ----------
+    # ---- Camino clásico: formulario de identificación ----
     nombre    = (request.form.get('nombre') or '').strip()
     apellidos = (request.form.get('apellidos') or '').strip()
     dni       = (request.form.get('dni') or '').strip()
@@ -193,20 +282,50 @@ def leer_ident():
 
     if (med.get('tipo') or '').strip().upper() == 'R' and not (tiene_receta or necesita):
         rosio.pub_error('RESTRICTED', 'No autorizado para este R')
-        return render_template('status.html', state='ERROR',
-                               msg='Este medicamento requiere receta válida. Visita a tu médico.',
-                               error=True)
-
-    if get_stock(med_id) <= 0:
-        rosio.pub_error('NO_STOCK', 'Sin stock')
-        return render_template('status.html', state='ERROR', msg='Sin stock', error=True)
+        return render_template(
+            'status.html',
+            state='ERROR',
+            body_msg='Este medicamento requiere receta válida. Visita a tu médico.',
+            error=True,
+            show_retry=False
+        )
 
     try:
-        if rosio.pub_mission_start: rosio.pub_mission_start.publish('go_pickup')
-        if rosio.pub_dispense_req:  rosio.pub_dispense_req.publish(int(med['bin_id']))
+        stock_val = int(get_stock(med_id))
     except Exception:
-        pass
+        stock_val = 0
 
-    threading.Thread(target=dispense_physical, args=(med, h_dni(dni)), daemon=True).start()
+    if stock_val <= 0:
+        rosio.pub_error('NO_STOCK', f"Sin stock de {med.get('nombre','')}")
+        msg = (
+            f"No queda stock de «{med.get('nombre','este medicamento')}». "
+            "Estará disponible aproximadamente en 3 días. "
+            "Si las molestias son importantes o empeoran, acude a tu médico."
+        )
+        return render_template(
+            'status.html',
+            state='NO_STOCK',
+            body_msg=msg,
+            error=True,
+            show_retry=False
+        )
+
+    # Lanzar misión con hash de paciente
+    try:
+        bin_id = int(med['bin_id'])
+    except Exception:
+        bin_id = med_id
+    patient_hash = h_dni(dni)
+    rosio.start_mission_async(patient_hash, bin_id)
+
+    threading.Thread(target=dispense_physical, args=(med, patient_hash), daemon=True).start()
     session.end_session()
-    return render_template('status.html', state='DISPENSING', msg='Preparando tu producto')
+    return render_template('status.html', state='DISPENSING', body_msg='Preparando tu producto')
+
+
+# --- API para estado de misión (polling desde la web) ---
+
+@bp.route("/leer/mission_status", methods=["GET"])
+def leer_mission_status():
+    """Devuelve el estado actual de la misión para el polling de la UI."""
+    return jsonify(rosio.get_mission_status())

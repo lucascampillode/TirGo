@@ -11,7 +11,7 @@ STATIC_DIR   = os.path.join(PROJECT_ROOT, "static")
 
 # Web
 PORT  = int(os.environ.get("PORT", "9001"))
-DEBUG = os.environ.get("FLASK_DEBUG", "0") == "1"
+DEBUG = os.environ.get("FLASK_DEBUG", "1") == "1"
 
 # Hotword / STT
 TIRGO_HOTWORD     = os.environ.get("TIRGO_HOTWORD", "hola")

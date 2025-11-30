@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 {% block title %}TirGoPharma · Diagnóstico{% endblock %}
+
 {% block content %}
 <section class="panel">
-  <h2>Diagnóstico guiado</h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <h2 style="margin:0;">Diagnóstico guiado</h2>
+    <a class="btn" href="{{ url_for('main.index') }}" title="Volver al menú">⬅ Volver</a>
+  </div>
   <p class="muted">Responde a las preguntas y te recomendaré la opción más segura.</p>
 
   <div class="progress"><div id="prog"></div></div>
@@ -90,28 +94,33 @@
       <div class="muted small" id="stepTxt">Paso 1 / 8</div>
       <button class="btn primary" type="button" id="next">Siguiente ➡</button>
     </div>
+
   </form>
 
   <div id="result" class="result card" style="display:none;">
     <h3 id="rTitle">Resultado</h3>
     <p id="rMsg" class="muted"></p>
 
-    {# cuando hay medicamento --> mandamos med_id #}
+    <!-- cuando hay medicamento -->
     <form id="rForm" method="post" action="{{ url_for('leer.leer') }}" style="display:none;">
       <input type="hidden" name="med_id" id="rMed" />
       <button class="btn success" type="submit">Pedir este</button>
-      <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Volver a empezar</a>
+      <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Reiniciar test</a>
+      <a class="btn" href="{{ url_for('main.index') }}">⬅ Volver al menú</a>
     </form>
 
-    {# cuando es médico / receta #}
+    <!-- cuando es médico / receta -->
     <div id="rDoctor" style="display:none;">
       <p class="warn"><b>Recomendación: visita a tu médico</b></p>
-      <a class="btn" href="{{ url_for('main.index') }}">Volver al inicio</a>
+      <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Reiniciar test</a>
+      <a class="btn" href="{{ url_for('main.index') }}">⬅ Volver al menú</a>
     </div>
 
-    {# cuando es consejo sin medicación #}
+    <!-- cuando es consejo sin medicación -->
     <div id="rAdvice" style="display:none;">
-      <a class="btn" href="{{ url_for('main.index') }}">Volver al inicio</a>
+      <p class="muted">Cuídate y observa la evolución. Si empeora, consulta.</p>
+      <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Reiniciar test</a>
+      <a class="btn" href="{{ url_for('main.index') }}">⬅ Volver al menú</a>
     </div>
   </div>
 </section>
@@ -129,7 +138,7 @@
   const btnNext = document.getElementById('next');
   let idx = 0;
 
-  // ⚠️ Mapea tus nombres a los IDs reales de tu tabla
+  // Mapa ejemplo → sustituye por tus IDs reales
   const MED_ID_MAP = {
     "Paracetamol 1g": "101",
     "Ibuprofeno 400 mg": "202",
@@ -140,7 +149,7 @@
   const show = i => {
     idx = Math.max(0, Math.min(total-1, i));
     steps.forEach((el,k)=> el.style.display = (k===idx?'block':'none'));
-    const pct = Math.round(((idx)/ (total)) * 100);
+    const pct = Math.round(((idx + 1) / total) * 100); // 100% en el paso 8
     if (prog) prog.style.width = Math.max(6, pct) + '%';
     stepTxt.textContent = `Paso ${idx+1} / ${total}`;
     btnPrev.disabled = idx===0;
@@ -153,81 +162,44 @@
     return true;
   };
 
-  // lógica adaptada a tus 4 medicamentos + consejo + derivación
   const computeRecommendation = () => {
     const data = Object.fromEntries(new FormData(form).entries());
 
-    // 1) casos que deben ir a médico sí o sí
     if (data.dur === 'cronico' || data.hep === 'si') {
-      return {
-        kind: 'DOCTOR',
-        med: null,
-        reason: 'Tus síntomas requieren valoración médica presencial.'
-      };
+      return { kind: 'DOCTOR', med: null,
+        reason: 'Tus síntomas requieren valoración médica presencial.' };
     }
-
-    // 2) infección → amoxi, pero con receta
     if (data.sx === 'infeccion') {
-      return {
-        kind: 'RX',
-        med: 'Amoxicilina 500 mg',
-        reason: 'Parece un proceso infeccioso. La amoxicilina 500 mg requiere receta y debe pautarla un médico.'
-      };
+      return { kind: 'RX', med: 'Amoxicilina 500 mg',
+        reason: 'Posible proceso infeccioso. La amoxicilina requiere receta.' };
     }
-
-    // 3) problemas gástricos → omeprazol
     if (data.gastric === 'si') {
-      return {
-        kind: 'MED',
-        med: 'Omeprazol 20 mg',
-        reason: 'Refieres molestias gástricas. Se puede usar Omeprazol 20 mg de forma puntual. Si empeora, acude a tu médico.'
-      };
+      return { kind: 'MED', med: 'Omeprazol 20 mg',
+        reason: 'Molestias gástricas: Omeprazol 20 mg puntual.' };
     }
-
-    // 4) dolor o fiebre → ibuprofeno si puede, si no paracetamol
     if (data.sx === 'dolor' || data.sx === 'fiebre') {
-      const aine_risk = (data.aine === 'si') || (data.aco === 'si') || (data.preg === 'si');
+      const aine_risk = (data.aine==='si') || (data.aco==='si') || (data.preg==='si');
       if (aine_risk) {
-        return {
-          kind: 'MED',
-          med: 'Paracetamol 1g',
-          reason: 'Dolor/fiebre con factores de riesgo para AINEs: Paracetamol 1g es la opción más segura.'
-        };
+        return { kind: 'MED', med: 'Paracetamol 1g',
+          reason: 'Riesgo con AINEs: mejor Paracetamol 1g.' };
       } else {
-        return {
-          kind: 'MED',
-          med: 'Ibuprofeno 400 mg',
-          reason: 'Dolor/fiebre en persona sin contraindicaciones: Ibuprofeno 400 mg.'
-        };
+        return { kind: 'MED', med: 'Ibuprofeno 400 mg',
+          reason: 'Sin contraindicaciones: Ibuprofeno 400 mg.' };
       }
     }
-
-    // 5) resfriado/tos leve y agudo → consejo sin medicación
     if ((data.sx === 'resfriado' || data.sx === 'tos') && data.dur === 'agudo') {
-      return {
-        kind: 'ADVICE',
-        med: null,
-        reason: 'Parece un cuadro leve. Descansa, hidrátate bien, puedes tomar vitaminas o miel/limón. Si empeora o dura más de 3–5 días, consulta.'
-      };
+      return { kind: 'ADVICE', med: null,
+        reason: 'Cuadro leve: descanso, hidratación y observación 3–5 días.' };
     }
-
-    // 6) por defecto → paracetamol
-    return {
-      kind: 'MED',
-      med: 'Paracetamol 1g',
-      reason: 'Opción segura por defecto.'
-    };
+    return { kind: 'MED', med: 'Paracetamol 1g',
+      reason: 'Opción segura por defecto.' };
   };
 
   btnPrev.addEventListener('click', ()=> show(idx-1));
   btnNext.addEventListener('click', ()=>{
     if (!validateStep()) return;
-    if (idx < total-1){
-      show(idx+1);
-      return;
-    }
+    if (idx < total-1){ show(idx+1); return; }
 
-    // último paso → calcular
     const res = computeRecommendation();
     const box = document.getElementById('result');
     const rTitle = document.getElementById('rTitle');
@@ -255,16 +227,20 @@
       rMsg.textContent = res.reason;
       rAdvice.style.display = 'block';
     } else {
-      // MED → aquí sí mandamos al /leer con med_id
       rTitle.textContent = 'Recomendación disponible';
       rMsg.textContent = res.reason;
-
       const medId = MED_ID_MAP[res.med] || '';
-      rMed.value = medId;   // <input name="med_id" ...>
+      rMed.value = medId;
       rForm.style.display = 'block';
     }
-
     window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+  });
+
+  // extra: tecla ESC vuelve al menú
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      window.location.href = "{{ url_for('main.index') }}";
+    }
   });
 
   show(0);

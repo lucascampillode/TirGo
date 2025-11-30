@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>tirgo_mission_server</name>
+  <version>0.0.0</version>
+  <description>Servidor de acciones para las misiones TIAGo + dispensador de TirGoPharma</description>
+
+  <maintainer email="tirgo@example.com">TirGo</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>rospy</depend>
+  <depend>actionlib</depend>
+  <depend>tirgo_msgs</depend>
+  <depend>std_msgs</depend>
+  <test_depend>rostest</test_depend>
+  <test_depend>rosunit</test_depend>
+
+  <export/>
+</package>
