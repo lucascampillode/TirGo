@@ -1,3 +1,14 @@
+"""
+[LEGACY] Módulo auxiliar para gestionar la hotword en memoria local.
+
+Esta versión se usó en prototipos iniciales de la interfaz.
+En la versión actual de TirGoPharma:
+- La detección de hotword y la conversación se gestionan desde `rosio.py`,
+  usando el texto proveniente del nodo de STT y `TIRGO_HOTWORD`.
+
+Este módulo NO se usa en el flujo principal y se mantiene solo como referencia.
+"""
+
 import time, unicodedata, re
 from typing import Dict
 from .config import HOTWORD, WINDOW_SECS

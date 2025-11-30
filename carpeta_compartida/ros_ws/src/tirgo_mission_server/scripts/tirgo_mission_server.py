@@ -5,6 +5,19 @@ import actionlib
 from std_msgs.msg import Bool, Int32, String
 from tirgo_msgs.msg import TirgoMissionAction, TirgoMissionFeedback, TirgoMissionResult
 
+# Stock / logging de tirgo_ui
+try:
+    from tirgo_ui.storage_mongo import (
+        lookup_medicamento_by_id,
+        dec_stock_if_available,
+        log_dispense,
+    )
+except ImportError:
+    lookup_medicamento_by_id = None
+    dec_stock_if_available = None
+    log_dispense = None
+    rospy.logwarn("[TMS] No se pudo importar tirgo_ui.storage_mongo; no habrá actualización de stock/log")
+
 
 class TirgoMissionServer:
     """
@@ -238,6 +251,9 @@ class TirgoMissionServer:
             self._as.set_aborted(res)
             return
 
+        # ----- Paso 7: actualizar stock y registrar dispensación -----
+        self.finalize_stock_and_log(goal)
+
         # ----- Fin: éxito -----
         fb.state = "DONE"
         fb.progress = 1.0
@@ -252,6 +268,56 @@ class TirgoMissionServer:
     # ==========================
     # Helpers
     # ==========================
+    def finalize_stock_and_log(self, goal):
+        """
+        Llamado solo cuando la misión ha terminado correctamente (FAREWELL OK).
+        Aquí se descuenta 1 de stock en Mongo y se escribe el log de dispensación.
+        """
+        if lookup_medicamento_by_id is None or dec_stock_if_available is None:
+            rospy.logwarn("[TMS] Stock/log no disponibles (tirgo_ui.storage_mongo no importado)")
+            return
+
+        try:
+            med = lookup_medicamento_by_id(int(goal.med_id))
+        except Exception as e:
+            rospy.logwarn(f"[TMS] Error buscando medicamento med_id={goal.med_id}: {e}")
+            return
+
+        if not med:
+            rospy.logwarn(f"[TMS] No se encontró medicamento med_id={goal.med_id} para actualizar stock")
+            return
+
+        try:
+            med_id = int(med.get("id", goal.med_id))
+        except Exception:
+            med_id = int(goal.med_id)
+
+        # Intentar descontar una unidad al final de la misión
+        try:
+            ok = dec_stock_if_available(med_id, 1)
+        except Exception as e:
+            rospy.logwarn(f"[TMS] Error al decrementar stock de med_id={med_id}: {e}")
+            ok = False
+
+        dni_or_hash = goal.patient_id or None
+        if not ok:
+            # Sin stock en BD al final: lo registramos como error lógico
+            if log_dispense is not None:
+                try:
+                    log_dispense(med, dni_or_hash, ok=False, error="NO_STOCK_AT_END")
+                except Exception as e:
+                    rospy.logwarn(f"[TMS] Error en log_dispense (NO_STOCK_AT_END): {e}")
+            rospy.logwarn(f"[TMS] NO_STOCK_AT_END para med_id={med_id}")
+            return
+
+        # Log OK de dispensación
+        if log_dispense is not None:
+            meta = {"med_id": med_id}
+            try:
+                log_dispense(med, dni_or_hash, ok=True, meta=meta)
+            except Exception as e:
+                rospy.logwarn(f"[TMS] Error en log_dispense (OK): {e}")
+
     def check_preempt(self) -> bool:
         """Comprueba si el cliente ha cancelado la misión."""
         if self._as.is_preempt_requested():

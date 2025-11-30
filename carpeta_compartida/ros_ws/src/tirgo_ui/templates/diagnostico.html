@@ -9,8 +9,10 @@
   </div>
   <p class="muted">Responde a las preguntas y te recomendaré la opción más segura.</p>
 
+  <!-- Barra de progreso -->
   <div class="progress"><div id="prog"></div></div>
 
+  <!-- Wizard solo en el cliente: NO hace submit; el submit sólo es del resultado a /leer -->
   <form id="wiz" class="form">
     <div class="step" data-step="1">
       <h4>1) Síntoma principal</h4>
@@ -94,14 +96,14 @@
       <div class="muted small" id="stepTxt">Paso 1 / 8</div>
       <button class="btn primary" type="button" id="next">Siguiente ➡</button>
     </div>
-
   </form>
 
+  <!-- Resultado del wizard (todo calculado en JS) -->
   <div id="result" class="result card" style="display:none;">
     <h3 id="rTitle">Resultado</h3>
     <p id="rMsg" class="muted"></p>
 
-    <!-- cuando hay medicamento -->
+    <!-- cuando hay medicamento: se envía a /leer, que comprueba stock y muestra NO_STOCK si toca -->
     <form id="rForm" method="post" action="{{ url_for('leer.leer') }}" style="display:none;">
       <input type="hidden" name="med_id" id="rMed" />
       <button class="btn success" type="submit">Pedir este</button>
@@ -118,7 +120,9 @@
 
     <!-- cuando es consejo sin medicación -->
     <div id="rAdvice" style="display:none;">
-      <p class="muted">Cuídate y observa la evolución. Si empeora, consulta.</p>
+      <p id="rAdviceMsg" class="muted">
+        Cuídate y observa la evolución. Si empeora, consulta.
+      </p>
       <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Reiniciar test</a>
       <a class="btn" href="{{ url_for('main.index') }}">⬅ Volver al menú</a>
     </div>
@@ -138,7 +142,7 @@
   const btnNext = document.getElementById('next');
   let idx = 0;
 
-  // Mapa ejemplo → sustituye por tus IDs reales
+  // ⚠ Cambia estos IDs para que coincidan con tu BD
   const MED_ID_MAP = {
     "Paracetamol 1g": "101",
     "Ibuprofeno 400 mg": "202",
@@ -158,7 +162,12 @@
 
   const validateStep = () => {
     const req = steps[idx].querySelectorAll('select[required], input[required]');
-    for (const r of req){ if(!r.value){ r.focus(); return false; } }
+    for (const r of req){
+      if(!r.value){
+        r.focus();
+        return false;
+      }
+    }
     return true;
   };
 
@@ -184,7 +193,7 @@
           reason: 'Riesgo con AINEs: mejor Paracetamol 1g.' };
       } else {
         return { kind: 'MED', med: 'Ibuprofeno 400 mg',
-          reason: 'Sin contraindicaciones: Ibuprofeno 400 mg.' };
+          reason: 'Sin contraindicaciones aparentes para AINEs: Ibuprofeno 400 mg puede ser adecuado de forma puntual.' };
       }
     }
     if ((data.sx === 'resfriado' || data.sx === 'tos') && data.dur === 'agudo') {
@@ -196,18 +205,25 @@
   };
 
   btnPrev.addEventListener('click', ()=> show(idx-1));
+
   btnNext.addEventListener('click', ()=>{
     if (!validateStep()) return;
-    if (idx < total-1){ show(idx+1); return; }
 
+    if (idx < total-1){
+      show(idx+1);
+      return;
+    }
+
+    // Último paso -> mostramos resultado (NO se recarga la página)
     const res = computeRecommendation();
-    const box = document.getElementById('result');
-    const rTitle = document.getElementById('rTitle');
-    const rMsg = document.getElementById('rMsg');
-    const rForm = document.getElementById('rForm');
-    const rMed  = document.getElementById('rMed');
-    const rDoc  = document.getElementById('rDoctor');
-    const rAdvice = document.getElementById('rAdvice');
+    const box      = document.getElementById('result');
+    const rTitle   = document.getElementById('rTitle');
+    const rMsg     = document.getElementById('rMsg');
+    const rForm    = document.getElementById('rForm');
+    const rMed     = document.getElementById('rMed');
+    const rDoc     = document.getElementById('rDoctor');
+    const rAdvice  = document.getElementById('rAdvice');
+    const rAdviceMsg = document.getElementById('rAdviceMsg');
 
     box.style.display = 'block';
     rForm.style.display = 'none';
@@ -225,6 +241,7 @@
     } else if (res.kind === 'ADVICE') {
       rTitle.textContent = 'Recomendación sin medicación';
       rMsg.textContent = res.reason;
+      rAdviceMsg.textContent = 'Cuídate y observa la evolución. Si empeora, consulta.';
       rAdvice.style.display = 'block';
     } else {
       rTitle.textContent = 'Recomendación disponible';
@@ -233,10 +250,11 @@
       rMed.value = medId;
       rForm.style.display = 'block';
     }
+
     window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
   });
 
-  // extra: tecla ESC vuelve al menú
+  // extra: ESC vuelve al menú
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       window.location.href = "{{ url_for('main.index') }}";

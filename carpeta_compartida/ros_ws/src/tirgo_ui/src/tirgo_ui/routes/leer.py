@@ -1,5 +1,7 @@
 # src/tirgo_ui/routes/leer.py
 from flask import Blueprint, request, render_template, redirect, url_for, abort, flash, current_app, jsonify
+from bson import ObjectId
+
 from ..storage_mongo import (
     meds_disponibles,
     lookup_medicamento_by_id,
@@ -9,12 +11,13 @@ from ..storage_mongo import (
     paciente_necesita_restringido,
     tiene_receta_activa,
 )
-from ..services import dispense_physical
 from .. import session, rosio
-import threading
-from bson import ObjectId
+
+# Reutilizamos la validación de DNI / nombre de consultar.py
+from .consultar import _normalize_dni, _is_valid_dni, _is_valid_name
 
 bp = Blueprint('leer', __name__)
+
 
 # --- Utilidad: obtener handler de DB por si hace falta tocar recetas ---
 def _get_db_from_storage():
@@ -30,6 +33,47 @@ def _get_db_from_storage():
             except Exception:
                 pass
     return None
+
+
+def _check_stock_and_render_if_empty(med: dict, med_id: int):
+    """
+    Comprueba el stock con get_stock(med_id).
+    - Si no hay stock, devuelve directamente un render_template('status.html', ... NO_STOCK ...)
+    - Si hay stock, devuelve None y la ruta continúa.
+    Nota: el descuento real de stock se realiza al final de la misión en tirgo_mission_server.
+    """
+    try:
+        stock_val = int(get_stock(med_id))
+    except Exception:
+        stock_val = 0
+
+    if stock_val <= 0:
+        med_name = med.get('nombre', 'este medicamento')
+        rosio.pub_error('NO_STOCK', f"Sin stock de {med_name}")
+        msg = (
+            f"No queda stock de «{med_name}». "
+            "Estará disponible aproximadamente en 3 días. "
+            "Si las molestias son importantes o empeoran, acude a tu médico."
+        )
+        return render_template(
+            'status.html',
+            state='NO_STOCK',
+            body_msg=msg,
+            error=True,
+            show_retry=False
+        )
+    return None
+
+
+def _resolve_bin_id(med: dict, fallback_med_id: int) -> int:
+    """
+    Obtiene el bin_id que usará la misión.
+    Intenta extraerlo de med['bin_id'], y si falla, usa el med_id como fallback.
+    """
+    try:
+        return int(med.get('bin_id'))
+    except Exception:
+        return int(fallback_med_id)
 
 
 # ----------------------------- RUTAS -----------------------------
@@ -66,9 +110,9 @@ def leer_post():
         if not session.is_active():
             return redirect(url_for('main.index'))
 
-        med_id = request.form.get('med_id')
+        med_id_raw = request.form.get('med_id')
         try:
-            med_id = int(med_id)
+            med_id = int(med_id_raw)
         except (TypeError, ValueError):
             rosio.pub_error('BAD_REQ', 'Selección inválida')
             flash('Selección inválida.', 'error')
@@ -91,34 +135,16 @@ def leer_post():
 
         # --- LIBRE: dispensa directa ---
         if tipo != 'R':
-            try:
-                stock_val = int(get_stock(med['id']))
-            except Exception:
-                stock_val = 0
-            if stock_val <= 0:
-                rosio.pub_error('NO_STOCK', f"Sin stock de {med['nombre']}")
-                msg = (
-                    f"No queda stock de «{med['nombre']}». "
-                    "Estará disponible aproximadamente en 3 días. "
-                    "Si las molestias son importantes o empeoran, acude a tu médico."
-                )
-                return render_template(
-                    'status.html',
-                    state='NO_STOCK',
-                    body_msg=msg,
-                    error=True,
-                    show_retry=False
-                )
+            # Pre-check de stock (no descuenta, solo evita lanzar misión sin stock)
+            no_stock_resp = _check_stock_and_render_if_empty(med, med_id)
+            if no_stock_resp is not None:
+                return no_stock_resp
 
             # Lanzar misión vía Action Server (sin paciente explícito)
-            try:
-                bin_id = int(med['bin_id'])
-            except Exception:
-                bin_id = med_id  # fallback suave
+            bin_id = _resolve_bin_id(med, med_id)
             rosio.start_mission_async("", bin_id)
+            rosio.pub_state('DISPENSING')
 
-            # Mantener lógica física/BD que ya tuvieras
-            threading.Thread(target=dispense_physical, args=(med, None), daemon=True).start()
             session.end_session()
             return render_template('status.html', state='DISPENSING', body_msg='Preparando tu producto')
 
@@ -144,40 +170,25 @@ def recoger(med_id: int):
         rosio.pub_error('NOT_FOUND', 'Medicamento no existe')
         abort(404)
 
-    try:
-        stock_val = int(get_stock(med_id))
-    except Exception:
-        stock_val = 0
-
-    if stock_val <= 0:
-        rosio.pub_error('NO_STOCK', f"Sin stock de {med.get('nombre','')}")
-        msg = (
-            f"No queda stock de «{med.get('nombre','este medicamento')}». "
-            "Estará disponible aproximadamente en 3 días. "
-            "Si las molestias son importantes o empeoran, acude a tu médico."
-        )
-        return render_template(
-            'status.html',
-            state='NO_STOCK',
-            body_msg=msg,
-            error=True,
-            show_retry=False
-        )
+    # Pre-check de stock
+    no_stock_resp = _check_stock_and_render_if_empty(med, med_id)
+    if no_stock_resp is not None:
+        return no_stock_resp
 
     # Informar a la UI y lanzar misión vía Action Server
+    bin_id = _resolve_bin_id(med, med_id)
     try:
         rosio.pub_status({
             'msg': 'Orden enviada a TIAGO y dispensador',
-            'bin_id': int(med['bin_id']),
-            'med': med['nombre'],
+            'bin_id': bin_id,
+            'med': med.get('nombre'),
         })
-        bin_id = int(med['bin_id'])
     except Exception:
-        bin_id = med_id
+        pass
 
     rosio.start_mission_async("", bin_id)
+    rosio.pub_state('DISPENSING')
 
-    threading.Thread(target=dispense_physical, args=(med, None), daemon=True).start()
     session.end_session()
     return render_template('status.html', state='DISPENSING', body_msg='Preparando tu producto')
 
@@ -190,8 +201,16 @@ def leer_ident():
 
     med_id_raw = request.form.get('med_id')
     if not med_id_raw:
+        rosio.pub_error('BAD_REQ', 'Falta med_id')
         return redirect(url_for('leer.leer'))
-    med_id = int(med_id_raw)
+
+    # Validar med_id igual que en leer_post
+    try:
+        med_id = int(med_id_raw)
+    except (TypeError, ValueError):
+        rosio.pub_error('BAD_REQ', 'Selección inválida')
+        flash('Selección inválida.', 'error')
+        return redirect(url_for('leer.leer'))
 
     # Si venimos de 'Consultar' con paciente/receta ya decididos:
     skip_ident    = request.form.get('skip_ident')
@@ -224,34 +243,15 @@ def leer_ident():
                     show_retry=False
                 )
 
-            try:
-                stock_val = int(get_stock(med_id))
-            except Exception:
-                stock_val = 0
-
-            if stock_val <= 0:
-                rosio.pub_error('NO_STOCK', f"Sin stock de {med.get('nombre','')}")
-                msg = (
-                    f"No queda stock de «{med.get('nombre','este medicamento')}». "
-                    "Estará disponible aproximadamente en 3 días. "
-                    "Si las molestias son importantes o empeoran, acude a tu médico."
-                )
-                return render_template(
-                    'status.html',
-                    state='NO_STOCK',
-                    body_msg=msg,
-                    error=True,
-                    show_retry=False
-                )
+            # Pre-check de stock
+            no_stock_resp = _check_stock_and_render_if_empty(med, med_id)
+            if no_stock_resp is not None:
+                return no_stock_resp
 
             # Lanzar misión con ID de paciente (ObjectId en string)
-            try:
-                bin_id = int(med['bin_id'])
-            except Exception:
-                bin_id = med_id
+            bin_id = _resolve_bin_id(med, med_id)
             rosio.start_mission_async(str(pid), bin_id)
-
-            threading.Thread(target=dispense_physical, args=(med, None), daemon=True).start()
+            rosio.pub_state('DISPENSING')
 
             # Desactivar la receta usada (si venía)
             if receta_id_s:
@@ -269,9 +269,29 @@ def leer_ident():
     # ---- Camino clásico: formulario de identificación ----
     nombre    = (request.form.get('nombre') or '').strip()
     apellidos = (request.form.get('apellidos') or '').strip()
-    dni       = (request.form.get('dni') or '').strip()
+    dni_raw   = (request.form.get('dni') or '').strip()
+    dni       = _normalize_dni(dni_raw)
 
-    pac = create_paciente_if_allowed(nombre, apellidos, dni)
+    # Validar nombre, apellidos y DNI como en consultar.py
+    if not _is_valid_name(nombre):
+        rosio.pub_error('ID_FAIL', 'Nombre no válido')
+        return render_template('leer_ident.html', med=med, msg='Nombre no válido.', error=True)
+
+    if not _is_valid_name(apellidos):
+        rosio.pub_error('ID_FAIL', 'Apellidos no válidos')
+        return render_template('leer_ident.html', med=med, msg='Los apellidos no son válidos.', error=True)
+
+    if not dni or not _is_valid_dni(dni):
+        rosio.pub_error('ID_FAIL', 'DNI no válido')
+        return render_template('leer_ident.html', med=med, msg='DNI no válido.', error=True)
+
+    try:
+        pac = create_paciente_if_allowed(nombre, apellidos, dni)
+    except ValueError as e:
+        # Por ejemplo, duplicado por DNI o por nombre+apellidos
+        rosio.pub_error('ID_FAIL', 'No se pudo crear/validar paciente')
+        return render_template('leer_ident.html', med=med, msg=str(e), error=True)
+
     pid = pac["_id"] if pac else None
     if not pid:
         rosio.pub_error('ID_FAIL', 'Datos incompletos')
@@ -290,35 +310,17 @@ def leer_ident():
             show_retry=False
         )
 
-    try:
-        stock_val = int(get_stock(med_id))
-    except Exception:
-        stock_val = 0
+    # Pre-check de stock
+    no_stock_resp = _check_stock_and_render_if_empty(med, med_id)
+    if no_stock_resp is not None:
+        return no_stock_resp
 
-    if stock_val <= 0:
-        rosio.pub_error('NO_STOCK', f"Sin stock de {med.get('nombre','')}")
-        msg = (
-            f"No queda stock de «{med.get('nombre','este medicamento')}». "
-            "Estará disponible aproximadamente en 3 días. "
-            "Si las molestias son importantes o empeoran, acude a tu médico."
-        )
-        return render_template(
-            'status.html',
-            state='NO_STOCK',
-            body_msg=msg,
-            error=True,
-            show_retry=False
-        )
-
-    # Lanzar misión con hash de paciente
-    try:
-        bin_id = int(med['bin_id'])
-    except Exception:
-        bin_id = med_id
+    # Lanzar misión con hash de paciente (no mandamos el DNI en claro)
+    bin_id = _resolve_bin_id(med, med_id)
     patient_hash = h_dni(dni)
     rosio.start_mission_async(patient_hash, bin_id)
+    rosio.pub_state('DISPENSING')
 
-    threading.Thread(target=dispense_physical, args=(med, patient_hash), daemon=True).start()
     session.end_session()
     return render_template('status.html', state='DISPENSING', body_msg='Preparando tu producto')
 

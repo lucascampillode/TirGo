@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-TirGoPharma – Web Server v2 con hotword
-- Oculta opciones hasta que el usuario diga "hola" (por STT en /stt/text, configurable).
-- Si no hay ROS master, la web funciona y puedes simular el hotword con /simulate_hola (quítalo si no quieres).
-Estructura:
-tirgo_ui/
-├─ scripts/web_server_v2.py
-├─ templates/index_v2.html
-└─ static/style_v2.css
+[LEGACY] Variante experimental del servidor web (v2).
+
+Fue un paso intermedio antes de la versión final basada en:
+- `tirgo_web_server` como entry point
+- `tirgo_ui.app` como aplicación Flask principal
+- `rosio.py` para integración con ROS y STT
+
+No se utiliza en el flujo actual y se conserva únicamente
+como referencia histórica para el desarrollo del TFG.
 """
+
 import os, sqlite3, threading, time, hashlib, socket, re, unicodedata
 from urllib.parse import urlparse
 from typing import Optional, Dict, Any, List

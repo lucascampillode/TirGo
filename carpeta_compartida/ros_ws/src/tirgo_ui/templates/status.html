@@ -56,12 +56,12 @@
       {% if show_retry is not defined or show_retry %}
         <a class="btn" href="{{ url_for('leer.leer') }}">Volver a pedir</a>
       {% endif %}
-      <a class="btn" href="{{ url_for('main.index') }}">Inicio</a>
+      <a class="btn" href="{{ url_for('main.index') }}">Cancelar</a>
     </div>
   {% else %}
     <p class="pill success" id="mission-pill">En curso</p>
     <div class="actions">
-      <a class="btn" href="{{ url_for('main.index') }}">Inicio</a>
+      <a class="btn" href="{{ url_for('main.index') }}">Cancelar</a>
     </div>
   {% endif %}
 </section>

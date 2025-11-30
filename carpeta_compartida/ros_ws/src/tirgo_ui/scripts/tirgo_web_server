@@ -1,3 +1,15 @@
+"""
+Entry point principal de la interfaz web de TirGoPharma.
+
+Responsabilidades:
+- Configurar variables de entorno por defecto (PORT, TIRGO_HOTWORD, etc.)
+- Asegurar que el paquete `tirgo_ui` es importable desde el workspace
+- Lanzar la aplicación Flask definida en `tirgo_ui.app`
+
+Este script es el que se usa desde:
+  roslaunch tirgo_ui web.launch
+"""
+
 #!/usr/bin/env python3
 import os, runpy, sys
 os.environ.setdefault('PYTHONDONTWRITEBYTECODE','1')
