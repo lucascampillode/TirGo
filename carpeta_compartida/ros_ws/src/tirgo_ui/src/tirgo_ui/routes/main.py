@@ -7,29 +7,42 @@ from .. import rosio   # para saber en qué estado está la conversación
 
 bp = Blueprint("main", __name__)
 
+
 @bp.get("/")
 def index():
+    # ¿estamos en modo desarrollo?
+    dev_mode = os.environ.get("TIRGO_DEV", "1") == "1"
+
     # si no hay sesión activa -> mostrar pantalla de hotword / conversación
     if not session.is_active():
         conv_state = rosio.conv_state()
         try:
-            # le pasamos el estado para que la plantilla pueda decir:
-            # "Tiago: ¿quieres empezar?"
-            return render_template("await_hotword.html", conv_state=conv_state)
+            # plantilla de espera de hotword
+            return render_template(
+                "await_hotword.html",
+                conv_state=conv_state,
+                dev_mode=dev_mode,
+            )
         except TemplateNotFound:
             try:
                 # fallback al index_v2 pero con view explícita
                 if conv_state == "await_confirm":
                     # estamos en la parte de "te he hablado, dime que sí"
-                    return render_template("index_v2.html",
-                                            view="await_hotword",
-                                            msg="Tiago: estoy aquí para ayudarte, dime 'sí' o 'adelante' para empezar.",
-                                            error=False,
-                                            window_secs=10)
+                    return render_template(
+                        "index_v2.html",
+                        view="await_hotword",
+                        msg="Tiago: estoy aquí para ayudarte, dime 'sí' o 'adelante' para empezar.",
+                        error=False,
+                        window_secs=10,
+                        dev_mode=dev_mode,
+                    )
                 else:
-                    return render_template("index_v2.html",
-                                            view="await_hotword",
-                                            window_secs=10)
+                    return render_template(
+                        "index_v2.html",
+                        view="await_hotword",
+                        window_secs=10,
+                        dev_mode=dev_mode,
+                    )
             except TemplateNotFound:
                 # último fallback super básico
                 if conv_state == "await_confirm":
@@ -39,9 +52,11 @@ def index():
     # si hay sesión activa -> mostrar menú
     return render_template("menu.html")
 
+
 @bp.get("/session_status")
 def session_status():
     return jsonify({"active": session.is_active()})
+
 
 @bp.get("/voice_nav")
 def voice_nav():
@@ -50,18 +65,29 @@ def voice_nav():
     nav = rosio.get_and_clear_voice_nav()
     return jsonify({"nav": nav})
 
+
 @bp.post("/simulate_hola")
 def simulate_hola():
+    """
+    Botón "Simular 'hola' (demo)":
+    - SOLO funciona si TIRGO_DEV=1
+    - Arranca sesión y redirige directamente al menú (sin JSON feo)
+    """
     if os.environ.get("TIRGO_DEV") != "1":
         return ("", 404)
+
     session.start_session(op_name="dev_sim")
-    return jsonify({"ok": True, "active": True})
+    # opcional: avisar a ROS del nuevo estado
+    # rosio.pub_state("MENU")
+    return redirect(url_for("main.index"))
+
 
 @bp.post("/cancelar")
 def cancelar_operacion():
     session.end_session()
     rosio.reset_conv()   # volvemos al estado idle también
     return redirect(url_for("main.index"))
+
 
 # ✨ para poder volver desde el logo
 @bp.get("/reset_hotword")

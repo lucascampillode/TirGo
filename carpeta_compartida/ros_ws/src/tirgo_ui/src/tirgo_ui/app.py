@@ -2,7 +2,16 @@ import os
 import logging
 from flask import Flask, jsonify
 
-from .config import TEMPLATE_DIR, STATIC_DIR, PORT, DEBUG
+from .config import (
+    TEMPLATE_DIR,
+    STATIC_DIR,
+    PORT,
+    DEBUG,
+    TIRGO_DEV,
+    MONGO_URI,
+    HOTWORD,
+    STT_TOPIC,
+)
 from .storage_mongo import init_db_if_needed
 from .routes import all_blueprints
 from . import rosio
@@ -14,7 +23,14 @@ if not logging.getLogger().hasHandlers():
 
 
 APP: Flask = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
-APP.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret")  # cambia "dev-secret" en prod
+
+# Config Flask / Tirgo
+APP.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret")  # cambia en prod
+APP.config["DEBUG"] = DEBUG
+APP.config["TIRGO_DEV"] = TIRGO_DEV
+APP.config["MONGO_URI"] = MONGO_URI
+APP.config["TIRGO_HOTWORD"] = HOTWORD
+APP.config["TIRGO_STT_TOPIC"] = STT_TOPIC
 
 
 def _check_security_settings() -> None:
@@ -95,5 +111,7 @@ _register()
 
 
 if __name__ == '__main__':
+    # Estado inicial del nodo ROS al levantar la web "a pelo"
     rosio.pub_state('IDLE')
+    # IMPORTANTE: aquí usamos DEBUG que ya viene de config (FLASK_DEBUG / TIRGO_DEV)
     APP.run(host='0.0.0.0', port=PORT, debug=DEBUG, use_reloader=False)

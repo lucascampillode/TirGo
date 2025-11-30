@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}TirGoPharma{% endblock %}</title>
+
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style_v2.css') }}" />
@@ -11,8 +12,18 @@
 </head>
 <body>
   <header class="appbar">
-    <!-- volvemos al “esperar hola” -->
-    <a class="brand" href="{{ url_for('main.reset_hotword') }}">TirGoPharma</a>
+    <!-- Logo clicable: vuelve a la pantalla de hotword -->
+    <a class="brand" href="{{ url_for('main.reset_hotword') }}">
+      <div class="brand-logo-wrap">
+        <img
+          src="{{ url_for('static', filename='logo.png') }}"
+          alt="Logo TirGoPharma"
+          class="brand-logo"
+        />
+        <!-- “Párpado” para el guiño -->
+        <span class="logo-eye-lid"></span>
+      </div>
+    </a>
   </header>
 
   {% if msg %}<p class="{{ 'err' if error else 'ok' }} toast">{{ msg }}</p>{% endif %}
