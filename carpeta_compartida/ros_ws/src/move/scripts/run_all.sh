@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Cargar mi ws
+source /home/TirGo/carpeta_compartida/ros_ws/devel/setup.bash
+
+# Lanzar rviz
+roslaunch move rviz.launch &
+RVIZ_PID=$!
+echo "[INFO] Lanzado rviz con PID $RVIZ_PID"
+
+# Esperar un momento para que se abra rviz y le de tiempo antes de cargar el mapa
+sleep 4
+
+# Cargar entorno de ROS
+source /opt/ros/noetic/setup.bash
+
+# Lanzar el map_server
+rosrun map_server map_server /home/TirGo/carpeta_compartida/ros_ws/src/move/maps/Mapa_aula_mod_1.0.yaml &
+MAP_PID=$!
+echo "[INFO] Lanzado map_server con PID $MAP_PID"
+
+# Esperar un momento para asegurarse de que el mapa esta bien lanzado
+sleep 5 
+
+# Cargar mi ws
+source /home/TirGo/carpeta_compartida/ros_ws/devel/setup.bash
+
+# Lanzar los demas nodos
+rosrun move checkpointfollower.py &
+CHECKPOINT_PID=$!
+echo "[INFO] Lanzado checkpointfollower con PID $CHECKPOINT_PID"
+
+# Esperar a que terminen todos los procesos lanzados
+wait

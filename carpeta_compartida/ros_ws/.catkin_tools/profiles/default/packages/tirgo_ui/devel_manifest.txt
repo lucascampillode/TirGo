@@ -1,0 +1,6 @@
+tirgo_ui
+/home/TirGo/carpeta_compartida/ros_ws/devel/.private/tirgo_ui/lib/tirgo_ui/tirgo_web_server /home/TirGo/carpeta_compartida/ros_ws/devel/lib/tirgo_ui/tirgo_web_server
+/home/TirGo/carpeta_compartida/ros_ws/devel/.private/tirgo_ui/lib/python3/dist-packages/tirgo_ui/__init__.py /home/TirGo/carpeta_compartida/ros_ws/devel/lib/python3/dist-packages/tirgo_ui/__init__.py
+/home/TirGo/carpeta_compartida/ros_ws/devel/.private/tirgo_ui/lib/pkgconfig/tirgo_ui.pc /home/TirGo/carpeta_compartida/ros_ws/devel/lib/pkgconfig/tirgo_ui.pc
+/home/TirGo/carpeta_compartida/ros_ws/devel/.private/tirgo_ui/share/tirgo_ui/cmake/tirgo_uiConfig-version.cmake /home/TirGo/carpeta_compartida/ros_ws/devel/share/tirgo_ui/cmake/tirgo_uiConfig-version.cmake
+/home/TirGo/carpeta_compartida/ros_ws/devel/.private/tirgo_ui/share/tirgo_ui/cmake/tirgo_uiConfig.cmake /home/TirGo/carpeta_compartida/ros_ws/devel/share/tirgo_ui/cmake/tirgo_uiConfig.cmake
