@@ -7,7 +7,7 @@ source /home/TirGo/carpeta_compartida/ros_ws/devel/setup.bash
 roslaunch move rviz.launch &
 RVIZ_PID=$!
 echo "[INFO] Lanzado rviz con PID $RVIZ_PID"
-    
+
 # Esperar un momento para que se abra rviz y le de tiempo antes de cargar el mapa
 sleep 4
 
@@ -32,9 +32,9 @@ rosrun move publish_initial_pose.py
 sleep 10
 
 # Lanzar los demas nodos
-rosrun move checkpointfollower.py &
+rosrun move test_comunicaciones.py &
 CHECKPOINT_PID=$!
-echo "[INFO] Lanzado checkpointfollower con PID $CHECKPOINT_PID"
+echo "[INFO] Lanzado test_comunicaciones con PID $CHECKPOINT_PID"
 
 # Esperar a que terminen todos los procesos lanzados
 wait $CHECKPOINT_PID
