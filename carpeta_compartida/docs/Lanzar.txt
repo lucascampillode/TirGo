@@ -44,10 +44,47 @@ export TIRGO_DEV="1"                      # activa /simulate_hola
 export PORT="9001"
 
 
-
+pruebaa
 cd ~/carpeta_compartida/ros_ws
 catkin_make
 source devel/setup.bash
 
 
 rosrun tirgo_ui tirgo_web_server
+
+
+
+LANZAR ACTIONS
+
+cd ~/carpeta_compartida/ros_ws
+
+source /opt/ros/noetic/setup.bash          # ROS base
+source ~/carpeta_compartida/gallium/setup.bash  # stack de PAL
+source ~/carpeta_compartida/setup_env.sh   # MASTER_URI, ROS_IP del TIAGo
+source devel/setup.bash                    # tu workspace (tirgo_ui, tirgo_msgs, tirgo_mission_server...)
+
+
+
+# 1) Arranque
+roscore
+rosrun tirgo_mission_server tirgo_mission_server.py
+roslaunch tirgo_ui web.launch
+# Abres la web, haces un pedido → comienza GOING_TO_DISPENSER
+
+# 2) Llegada al dispensador
+rostopic pub /tirgo/tiago/arrived std_msgs/Bool "data: true"
+
+# 3) Dispensador listo
+rostopic pub /tirgo/dispense/ready std_msgs/Bool "data: true"
+
+# 4) Robot ha cogido el envase
+rostopic pub /tirgo/tiago/picked std_msgs/Bool "data: true"
+
+# 5) Robot ha llegado al paciente
+rostopic pub /tirgo/tiago/at_patient std_msgs/Bool "data: true"
+
+# 6) Robot ha entregado el envase
+rostopic pub /tirgo/tiago/delivered std_msgs/Bool "data: true"
+
+# 7) Robot ha terminado su despedida
+rostopic pub /tirgo/tiago/farewell_done std_msgs/Bool "data: true"

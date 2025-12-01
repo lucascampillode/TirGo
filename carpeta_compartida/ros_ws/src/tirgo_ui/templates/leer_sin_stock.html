@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Sin stock · TirGoPharma{% endblock %}
+{% block content %}
+<section class="panel">
+  <h2>Sin stock</h2>
+  <p class="muted">«{{ med.nombre }}» no está disponible ahora mismo.</p>
+
+  {% if alternativas %}
+  <h3>Alternativas disponibles</h3>
+  <div class="grid">
+    {% for a in alternativas %}
+      <article class="card">
+        <h4>{{ a.nombre }}</h4>
+        <p class="muted small">Stock: {{ a.stock }}</p>
+        <form method="post" action="{{ url_for('leer.leer') }}">
+          <input type="hidden" name="med_id" value="{{ a.id }}">
+          <button class="btn primary" type="submit">Pedir este</button>
+        </form>
+      </article>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="actions">
+    <a class="btn" href="{{ url_for('main.index') }}">Volver al menú</a>
+  </div>
+</section>
+{% endblock %}

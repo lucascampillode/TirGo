@@ -1,0 +1,20 @@
+<launch>
+  <!-- Lanzamos el Action Server con timeouts pequeños para los tests -->
+  <node pkg="tirgo_mission_server"
+        type="tirgo_mission_server.py"
+        name="tirgo_mission_server"
+        output="screen">
+    <param name="timeout_arrive"   value="5.0" />
+    <param name="timeout_ready"    value="5.0" />
+    <param name="timeout_pick"     value="5.0" />
+    <param name="timeout_patient"  value="5.0" />
+    <param name="timeout_deliver"  value="5.0" />
+    <param name="timeout_farewell" value="5.0" />
+  </node>
+
+  <!-- Nodo de test (rostest + unittest) -->
+  <test test-name="test_mission_flow"
+        pkg="tirgo_mission_server"
+        type="test_mission_flow.py"
+        time-limit="120" />
+</launch>

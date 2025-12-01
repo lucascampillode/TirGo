@@ -20,5 +20,19 @@
   <env name="MONGO_URI"           value="$(arg mongo_uri)" />
 
   <!-- ===== Lanza el servidor web ===== -->
-  <node pkg="tirgo_ui" type="tirgo_web_server" name="tirgo_web" output="screen" />
-</launch>
+  <node pkg="tirgo_ui"
+          type="tirgo_web_server"
+          name="tirgo_web_server"
+          output="screen">
+      <!-- Si usas variables de entorno/params, van aquí -->
+    </node>
+
+    <!-- Servidor de vídeo para ver la cámara del TIAGo en el navegador -->
+    <node pkg="web_video_server"
+          type="web_video_server"
+          name="web_video_server"
+          output="screen">
+      <!-- puerto opcional, por defecto 8080 -->
+      <param name="port" value="8080" />
+    </node>
+  </launch>
