@@ -5,7 +5,7 @@ from bson import ObjectId
 from ..storage_mongo import (
     meds_disponibles,
     lookup_medicamento_by_id,
-    get_stock,
+    dec_stock_if_available,
     h_dni,
     create_paciente_if_allowed,
     paciente_necesita_restringido,
@@ -37,17 +37,21 @@ def _get_db_from_storage():
 
 def _check_stock_and_render_if_empty(med: dict, med_id: int):
     """
-    Comprueba el stock con get_stock(med_id).
-    - Si no hay stock, devuelve directamente un render_template('status.html', ... NO_STOCK ...)
-    - Si hay stock, devuelve None y la ruta continúa.
-    Nota: el descuento real de stock se realiza al final de la misión en tirgo_mission_server.
+    Comprueba el stock intentando descontar 1 unidad con dec_stock_if_available.
+
+    - Si NO se puede descontar (no hay stock suficiente), devuelve directamente
+      un render_template('status.html', ... NO_STOCK ...).
+    - Si SÍ se descuenta, devuelve None y la ruta continúa (el stock ya ha bajado).
+
+    Es decir: en cuanto el usuario confirma el pedido (Pedir / Recoger / Ident),
+    se quita 1 de stock aquí.
     """
     try:
-        stock_val = int(get_stock(med_id))
+        ok = dec_stock_if_available(med_id, 1)
     except Exception:
-        stock_val = 0
+        ok = False
 
-    if stock_val <= 0:
+    if not ok:
         med_name = med.get('nombre', 'este medicamento')
         rosio.pub_error('NO_STOCK', f"Sin stock de {med_name}")
         msg = (
@@ -135,7 +139,7 @@ def leer_post():
 
         # --- LIBRE: dispensa directa ---
         if tipo != 'R':
-            # Pre-check de stock (no descuenta, solo evita lanzar misión sin stock)
+            # Aquí ya intentamos descontar 1 de stock.
             no_stock_resp = _check_stock_and_render_if_empty(med, med_id)
             if no_stock_resp is not None:
                 return no_stock_resp
@@ -170,7 +174,7 @@ def recoger(med_id: int):
         rosio.pub_error('NOT_FOUND', 'Medicamento no existe')
         abort(404)
 
-    # Pre-check de stock
+    # Aquí ya intentamos descontar 1 de stock.
     no_stock_resp = _check_stock_and_render_if_empty(med, med_id)
     if no_stock_resp is not None:
         return no_stock_resp
@@ -243,7 +247,7 @@ def leer_ident():
                     show_retry=False
                 )
 
-            # Pre-check de stock
+            # Aquí ya intentamos descontar 1 de stock.
             no_stock_resp = _check_stock_and_render_if_empty(med, med_id)
             if no_stock_resp is not None:
                 return no_stock_resp
@@ -288,7 +292,6 @@ def leer_ident():
     try:
         pac = create_paciente_if_allowed(nombre, apellidos, dni)
     except ValueError as e:
-        # Por ejemplo, duplicado por DNI o por nombre+apellidos
         rosio.pub_error('ID_FAIL', 'No se pudo crear/validar paciente')
         return render_template('leer_ident.html', med=med, msg=str(e), error=True)
 
@@ -310,14 +313,16 @@ def leer_ident():
             show_retry=False
         )
 
-    # Pre-check de stock
+    # Hash del DNI para la misión (no mandamos el DNI en claro)
+    patient_hash = h_dni(dni)
+
+    # Aquí ya intentamos descontar 1 de stock.
     no_stock_resp = _check_stock_and_render_if_empty(med, med_id)
     if no_stock_resp is not None:
         return no_stock_resp
 
-    # Lanzar misión con hash de paciente (no mandamos el DNI en claro)
+    # Lanzar misión con hash de paciente
     bin_id = _resolve_bin_id(med, med_id)
-    patient_hash = h_dni(dni)
     rosio.start_mission_async(patient_hash, bin_id)
     rosio.pub_state('DISPENSING')
 

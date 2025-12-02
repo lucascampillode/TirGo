@@ -55,7 +55,24 @@ def index():
 
 @bp.get("/session_status")
 def session_status():
+    """Endpoint genérico para saber si hay sesión activa."""
     return jsonify({"active": session.is_active()})
+
+
+@bp.get("/hotword_status")
+def hotword_status():
+    """
+    Endpoint específico para la pantalla de hotword.
+
+    La idea es que await_hotword.html haga polling aquí.
+    En cuanto 'ready' sea True, el front puede redirigir a redirect_url.
+    """
+    active = session.is_active()
+    return jsonify({
+        "ready": bool(active),
+        # cuando hay sesión activa, index() ya devuelve el menú
+        "redirect_url": url_for("main.index") if active else None,
+    })
 
 
 @bp.get("/voice_nav")
@@ -84,6 +101,7 @@ def simulate_hola():
 
 @bp.post("/cancelar")
 def cancelar_operacion():
+    """Botón de cancelar / volver atrás desde el flujo principal."""
     session.end_session()
     rosio.reset_conv()   # volvemos al estado idle también
     return redirect(url_for("main.index"))
@@ -92,6 +110,10 @@ def cancelar_operacion():
 # ✨ para poder volver desde el logo
 @bp.get("/reset_hotword")
 def reset_hotword():
+    """
+    Cierra la sesión actual (si la hay), resetea la conversación en ROS
+    y vuelve al index, que ya enseñará await_hotword.
+    """
     # cerramos la sesión actual (si la hay)
     session.end_session()
     rosio.reset_conv()   # reseteamos la conversación

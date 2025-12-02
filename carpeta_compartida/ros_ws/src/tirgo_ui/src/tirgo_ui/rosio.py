@@ -12,8 +12,7 @@ try:
     import actionlib
     from tirgo_msgs.msg import TirgoMissionAction, TirgoMissionGoal
 
-    # Mensajes de TTS nativo de TIAGo
-    from pal_interaction_msgs.msg import TtsAction, TtsGoal, TtsText
+    # (Antes se usaba TtsAction/TtsGoal/TtsText; ahora delegamos en /tirgo/say)
     ROS_AVAILABLE = True
 except Exception:
     ROS_AVAILABLE = False
@@ -45,10 +44,12 @@ except Exception:
     Bool = bool            # type: ignore
     Int32 = int            # type: ignore
     actionlib = None       # type: ignore
-    TtsAction = TtsGoal = TtsText = object  # type: ignore
 
 # publishers de estado
 _pub_state = _pub_status = _pub_error = None
+
+# Publisher de texto de voz de alto nivel (/tirgo/say)
+_pub_say = None
 
 # --- Cliente de misión (ActionServer /tirgo/mission) ---
 _mission_client = None  # type: ignore
@@ -121,10 +122,6 @@ def get_and_clear_voice_nav() -> str:
     return v or ""
 
 
-# --- Cliente TTS (action /tts) ---
-_tts_client = None  # type: ignore
-
-
 def master_up() -> bool:
     try:
         uri = os.environ.get("ROS_MASTER_URI", "http://localhost:11311")
@@ -137,7 +134,7 @@ def master_up() -> bool:
 
 
 def init():
-    global _pub_state, _pub_status, _pub_error
+    global _pub_state, _pub_status, _pub_error, _pub_say
     global _mission_client
 
     if ROS_AVAILABLE and master_up():
@@ -151,14 +148,11 @@ def init():
         _pub_status = rospy.Publisher("tirgo/ui/status", String, queue_size=10)
         _pub_error = rospy.Publisher("tirgo/ui/error", String, queue_size=10)
 
+        # Nuevo: publisher de alto nivel para texto a decir
+        _pub_say = rospy.Publisher("/tirgo/say", String, queue_size=10)
+
         stt_topic = rospy.get_param("~stt_topic", STT_TOPIC_DEFAULT)
         rospy.Subscriber(stt_topic, String, _stt_cb)
-
-        # Inicializa el cliente TTS si existe el action server /tts
-        try:
-            _init_tts()
-        except Exception:
-            pass
 
         # Inicializa el cliente de misión (/tirgo/mission)
         try:
@@ -176,24 +170,7 @@ def init():
                 pass
 
         _pub_state = _pub_status = _pub_error = DummyPub()
-
-
-def _init_tts():
-    """Inicializa el cliente de la action /tts (TIAGo TTS)."""
-    global _tts_client
-    if not ROS_AVAILABLE or actionlib is None:
-        return
-    try:
-        _tts_client = actionlib.SimpleActionClient("/tts", TtsAction)
-        ok = _tts_client.wait_for_server(rospy.Duration(2.0))
-        if ok:
-            rospy.loginfo("[TTS] /tts listo ✅")
-        else:
-            rospy.loginfo("[TTS] /tts no responde (timeout). Fallback a sound_play si está disponible.")
-            _tts_client = None
-    except Exception as e:
-        rospy.loginfo(f"[TTS] no disponible: {e}")
-        _tts_client = None
+        _pub_say = DummyPub()
 
 
 def _init_mission_client():
@@ -214,31 +191,34 @@ def _init_mission_client():
         _mission_client = None
 
 
-def _say_with_tiago(text: str, lang: str = "es_ES", wait_before: float = 0.0):
+def _say_with_tiago(text: str):
     """
-    Dice 'text' con el TTS nativo de TIAGo (/tts). Si no está, intenta fallback a sound_play.
+    En vez de hablar directamente con /tts, publicamos en /tirgo/say
+    y dejamos que tirgo_speech_node se encargue del TTS real.
     """
-    # Primero: action /tts
-    if ROS_AVAILABLE and _tts_client is not None:
-        try:
-            goal = TtsGoal()
-            goal.rawtext = TtsText(text=text, lang_id=lang)
-            goal.speakerName = ""  # por defecto
-            goal.wait_before_speaking = wait_before
-            _tts_client.send_goal(goal)
-            rospy.loginfo(f"[TTS] diciendo: {text}")
-            return
-        except Exception as e:
-            rospy.loginfo(f"[TTS] error con /tts: {e} -> probando sound_play")
+    global _pub_say
 
-    # Segundo: fallback a sound_play (si está instalado en este host)
+    text = (text or "").strip()
+    if not text:
+        return
+
+    # Si no hay ROS o no hay publisher, logueamos solo
+    if not ROS_AVAILABLE or _pub_say is None:
+        try:
+            rospy.loginfo(f"[ROSIO] (sin /tirgo/say) diría: {text}")
+        except Exception:
+            print("[ROSIO] (sin /tirgo/say) diría:", text)
+        return
+
     try:
-        subprocess.Popen(["rosrun", "sound_play", "say.py", text])
-        if ROS_AVAILABLE:
-            rospy.loginfo(f"[TTS] (fallback sound_play) diciendo: {text}")
+        # Aquí String es std_msgs.msg.String cuando ROS_AVAILABLE es True
+        _pub_say.publish(String(data=text))
+        rospy.loginfo(f"[ROSIO] Enviado a /tirgo/say: {text}")
     except Exception as e:
-        if ROS_AVAILABLE:
-            rospy.loginfo(f"[TTS] fallback sound_play falló: {e}")
+        try:
+            rospy.loginfo(f"[ROSIO] Error publicando en /tirgo/say: {e}")
+        except Exception:
+            print("[ROSIO] Error publicando en /tirgo/say:", e)
 
 
 def _stt_cb(msg: Any):
@@ -330,6 +310,7 @@ def reset_conv():
 
 def pub_state(s: str):
     try:
+        # Ojo: este hasattr no es perfecto, pero lo dejamos como estaba para no romper nada
         _pub_state.publish(String(data=s) if ROS_AVAILABLE and hasattr(String, "data") else s)
         if ROS_AVAILABLE:
             rospy.loginfo(f"[STATE] {s}")

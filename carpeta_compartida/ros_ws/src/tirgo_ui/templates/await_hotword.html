@@ -140,7 +140,7 @@
     <!-- Lado derecho: texto y botones -->
     <div class="hotword-right">
       <h1 class="hotword-right-title">
-        Di <span>“hola, Tirgo”</span>
+        Di <span>“hola, Tiago”</span>
       </h1>
 
       <p class="hotword-subtitle">
@@ -166,4 +166,41 @@
     </div>
   </section>
 </div>
+
+<script>
+  // Endpoint que ya tienes definido en main.py
+  const SESSION_STATUS_URL = "{{ url_for('main.session_status') }}";
+  const REDIRECT_URL = "{{ url_for('main.index') }}";
+
+  async function checkSessionAndRedirect() {
+    try {
+      const res = await fetch(SESSION_STATUS_URL, {
+        cache: 'no-cache',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!res.ok) {
+        console.warn('Error HTTP en /session_status:', res.status);
+        return;
+      }
+
+      const data = await res.json();
+
+      // Si la sesión está activa, redirigimos al índice (que ya muestra el menú)
+      if (data.active) {
+        window.location.href = REDIRECT_URL;
+      }
+    } catch (err) {
+      console.error('Error comprobando /session_status:', err);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Polling cada 1.5 segundos
+    setInterval(checkSessionAndRedirect, 1500);
+  });
+</script>
+
 {% endblock %}
