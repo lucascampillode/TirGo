@@ -158,6 +158,6 @@ include_directories(
  catkin_install_python(PROGRAMS
    src/move/checkpointfollower.py
    src/move/publish_initial_pose.py
-   src/move/test_comunicaciones.py
+   src/move/comunicacion_test.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
