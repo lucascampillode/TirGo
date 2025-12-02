@@ -418,10 +418,14 @@ textarea:focus {
   }
 }
 
+/* ===============================
+   Appbar / logo TirGoPharma
+   =============================== */
+
 .appbar {
   width: min(1100px, 100%);
   margin: 0 auto;
-  padding: 0.75rem 1.25rem 0.2rem;
+  padding: 1.1rem 1.8rem 0.9rem;   /* MÁS ALTO Y MÁS ANCHO */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -429,17 +433,48 @@ textarea:focus {
 
 .appbar .brand {
   text-decoration: none;
-  font-size: 1.35rem;
-  font-weight: 750;
-  letter-spacing: -0.03em;
-  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;                     /* más separación logo-texto */
   transition: opacity .12s ease, transform .12s ease;
 }
 
+.brand-logo {
+  height: 100px;                    /* ANTES 40px → ahora grande */
+  width: auto;
+  display: block;
+}
+
+.brand-text {
+  font-size: 1.6rem;               /* un pelín más grande también */
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+
+.brand-text span {
+  color: #2563eb;
+}
+
 .appbar .brand:hover {
-  opacity: .85;
+  opacity: .9;
   transform: translateY(-1px);
 }
+
+@media (max-width: 720px) {
+  .appbar {
+    padding: 0.9rem 1.2rem 0.4rem;
+  }
+
+  .brand-logo {
+    height: 48px;                  /* algo más pequeño en móvil */
+  }
+
+  .brand-text {
+    font-size: 1.3rem;
+  }
+}
+
 
 /* ====== pantalla de espera de hotword (layout horizontal) ====== */
 .await-shell {
@@ -472,17 +507,27 @@ textarea:focus {
 }
 
 .await-icon {
-  /* esto ya lo tenías más o menos */
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .mic-svg {
-  width: 62px;
-  height: 62px;
-  fill: #b0bef8;          /* color del micro */
-  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.12));
+  width: 80px;
+  height: 80px;
+  fill: #ffffff;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.18));
+}
+
+.await-mic-square {
+  width: 180px;
+  height: 180px;
+  border-radius: 32px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 22px 45px rgba(37, 99, 235, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 
@@ -536,4 +581,3 @@ textarea:focus {
     width: fit-content;
   }
 }
-

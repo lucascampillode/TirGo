@@ -27,9 +27,16 @@
     <section class="hero">
       <h2>Di “hola, Tirgo”</h2>
       <p class="muted">Estoy escuchando… Cuando te oiga, desbloquearé las opciones.</p>
-      <form method="post" action="{{ url_for('main.simulate_hola') }}" onsubmit="setTimeout(()=>location.reload(),300);">
-        <button class="btn ghost">Simular “hola” (demo)</button>
-      </form>
+
+      {# --- Botón demo SOLO si tirgo_dev = True --- #}
+      {% if tirgo_dev %}
+        <form method="post"
+              action="{{ url_for('main.simulate_hola') }}"
+              onsubmit="setTimeout(()=>location.reload(),300);">
+          <button class="btn ghost">Simular “hola” (demo)</button>
+        </form>
+      {% endif %}
+
       <p class="small muted">Ventana de detección activa: {{ window_secs }} s</p>
     </section>
     <script>
@@ -44,6 +51,7 @@
       tick();
     </script>
   {% endif %}
+
 
   {# --- MENÚ PRINCIPAL --- #}
   {% if not view %}

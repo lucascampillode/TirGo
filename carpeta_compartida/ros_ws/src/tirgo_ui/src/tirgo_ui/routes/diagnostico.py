@@ -4,8 +4,16 @@ from .. import session, rosio
 
 bp = Blueprint('diagnostico', __name__)
 
+
 @bp.route('/diagnostico', methods=['GET', 'POST'])
 def diagnostico():
+    """
+    Vista de diagnóstico guiado.
+
+    - GET: muestra el cuestionario y publica estado DIAG_START.
+    - POST: opcionalmente podría usarse para un botón de 'finalizar', pero
+      el flujo normal del wizard NO hace POST aquí; sólo hace POST a /leer.
+    """
     if not session.is_active():
         return redirect(url_for('main.index'))
 
@@ -13,12 +21,11 @@ def diagnostico():
         rosio.pub_state('DIAG_START')
         return render_template('diagnostico.html')
 
-    # --- POST: tu lógica de diagnóstico aquí ---
+    # POST opcional por si algún día añades un botón de 'finalizar diagnóstico'
     decision = (request.form.get('decision') or '').strip().lower()
     if decision == 'finalizar':
-        # si aquí consideras que termina la operación:
         session.end_session()
         return redirect(url_for('main.index'))
 
-    # si no finaliza, seguir en la misma pantalla o redirigir:
+    # Por defecto, vuelve a mostrar la vista
     return render_template('diagnostico.html', msg='Acción registrada')

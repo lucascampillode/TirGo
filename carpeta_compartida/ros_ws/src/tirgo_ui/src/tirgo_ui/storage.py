@@ -1,3 +1,15 @@
+"""
+[LEGACY] Módulo de almacenamiento basado en SQLite.
+
+Actualmente NO se usa en TirGoPharma:
+- La capa activa de persistencia es `storage_mongo.py` (MongoDB).
+- Este archivo se mantiene solo como referencia histórica
+  para la memoria del TFG (primer prototipo con SQLite).
+
+IMPORTANTE:
+No lo importes desde ninguna parte nueva del código.
+Si necesitas acceso a la base de datos, usa `storage_mongo.py`.
+"""
 import os, sqlite3, hashlib, time
 from typing import Optional
 from .config import DB_PATH, PEPPER
