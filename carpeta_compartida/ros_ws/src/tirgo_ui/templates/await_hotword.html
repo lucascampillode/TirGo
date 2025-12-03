@@ -1,68 +1,206 @@
 {% extends "base.html" %}
-{% block title %}TirGoPharma · Dime “hola”{% endblock %}
+{% block title %}TirGoPharma · Hotword{% endblock %}
 
 {% block content %}
-<section class="await-shell">
-  <div class="await-card row">
-    <div class="await-icon-box">
-      <div class="await-icon" aria-label="Micrófono">
-        <svg class="mic-svg" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" />
-          <path d="M5 11a1 1 0 0 0-2 0 9 9 0 0 0 8 8.94V22a1 1 0 0 0 2 0v-2.06A9 9 0 0 0 21 11a1 1 0 0 0-2 0 7 7 0 0 1-14 0Z" />
-        </svg>
-      </div>
+<style>
+  /* --- Layout general de la página de hotword --- */
+  .hotword-page {
+    min-height: calc(100vh - 80px); /* deja hueco para el header de base.html */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem 4rem;
+    background: radial-gradient(circle at top left, #e4f1ff 0, #f6f9ff 40%, #ffffff 100%);
+  }
 
+  .hotword-card {
+    max-width: 960px;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 32px;
+    box-shadow: 0 24px 60px rgba(15, 35, 95, 0.18);
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr);
+    gap: 2.5rem;
+    padding: 2.5rem 3rem;
+  }
+
+  @media (max-width: 800px) {
+    .hotword-card {
+      grid-template-columns: 1fr;
+      padding: 2rem 1.75rem;
+      border-radius: 24px;
+    }
+  }
+
+  /* --- Bloque izquierdo: cuadrado azul + icono --- */
+  .hotword-left {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hotword-mic-box {
+    width: 190px;
+    height: 190px;
+    border-radius: 32px;
+    background: linear-gradient(145deg, #1755ff, #2342c0);
+    box-shadow: 0 18px 40px rgba(23, 85, 255, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hotword-mic-box img {
+    width: 80px;
+    height: 80px;
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.35));
+  }
+
+  /* --- Bloque derecho: textos + botones --- */
+  .hotword-right-title {
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: #12325b;
+    margin: 0 0 0.6rem 0;
+  }
+
+  .hotword-right-title span {
+    color: #1a57ff;
+  }
+
+  .hotword-subtitle {
+    margin: 0 0 1.8rem 0;
+    color: #66738a;
+    font-size: 0.98rem;
+  }
+
+  .hotword-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    margin-bottom: 1.3rem;
+  }
+
+  .btn-primary {
+    border: none;
+    outline: none;
+    padding: 0.85rem 1.8rem;
+    border-radius: 999px;
+    background: #1a57ff;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.98rem;
+    cursor: pointer;
+    box-shadow: 0 12px 25px rgba(26, 87, 255, 0.5);
+    transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    background: #1347d4;
+    box-shadow: 0 16px 32px rgba(26, 87, 255, 0.6);
+  }
+
+  .btn-ghost {
+    border: none;
+    outline: none;
+    padding: 0.85rem 1.6rem;
+    border-radius: 999px;
+    background: #edf1ff;
+    color: #2e3b59;
+    font-weight: 500;
+    font-size: 0.96rem;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  .btn-ghost:hover {
+    background: #dbe3ff;
+    transform: translateY(-1px);
+  }
+
+  .hotword-tip {
+    font-size: 0.9rem;
+    color: #8a93a7;
+    max-width: 28rem;
+  }
+</style>
+
+<div class="hotword-page">
+  <section class="hotword-card">
+    <!-- Lado izquierdo: micro grande -->
+    <div class="hotword-left">
+      <div class="hotword-mic-box">
+        <!-- Si no tienes este PNG, puedes apuntar al que uses ahora mismo -->
+        <img src="{{ url_for('static', filename='microfono.png') }}" alt="Micrófono">
+      </div>
     </div>
 
-    <div class="await-body">
-      <h1 class="await-title">Di <span>“hola, Tirgo”</span></h1>
-      <p class="await-sub">Estoy escuchando… cuando te oiga desbloquearé las opciones.</p>
+    <!-- Lado derecho: texto y botones -->
+    <div class="hotword-right">
+      <h1 class="hotword-right-title">
+        Di <span>“hola, Tiago”</span>
+      </h1>
 
-      <div class="await-actions">
-        {# le ponemos id para pillarlo en JS #}
-        <form id="simulate-form" method="post" action="{{ url_for('main.simulate_hola') }}">
-          <button class="btn primary" type="submit">Simular “hola” (demo)</button>
+      <p class="hotword-subtitle">
+        Estoy escuchando… cuando te oiga desbloquearé las opciones.
+      </p>
+
+      <div class="hotword-buttons">
+        {% if dev_mode %}
+        <form method="post" action="{{ url_for('main.simulate_hola') }}">
+          <button type="submit" class="btn-primary">
+            Simular "hola" (demo)
+          </button>
         </form>
-        <button class="btn" type="button" onclick="location.reload()">Recargar</button>
+        {% endif %}
+        <button type="button" class="btn-ghost" onclick="window.location.reload()">
+          Recargar
+        </button>
       </div>
 
-      <p class="await-hint">Consejo: di la frase completa cerca del micro. Si no funciona, revisa el nodo de voz.</p>
+      <p class="hotword-tip">
+        Consejo: di la frase completa cerca del micro.
+      </p>
     </div>
-  </div>
-</section>
-{% endblock %}
+  </section>
+</div>
 
-{% block scripts %}
 <script>
-  // 1) seguimos chequeando si se activa solo
-  async function tick() {
-    try {
-      const r = await fetch('/session_status', { cache: 'no-store' });
-      const j = await r.json();
-      if (j && j.active) { location.reload(); return; }
-    } catch (e) {}
-    setTimeout(tick, 800);
-  }
-  tick();
+  // Endpoint que ya tienes definido en main.py
+  const SESSION_STATUS_URL = "{{ url_for('main.session_status') }}";
+  const REDIRECT_URL = "{{ url_for('main.index') }}";
 
-  // 2) interceptar el submit para que no muestre el JSON
-  const form = document.getElementById('simulate-form');
-  if (form) {
-    form.addEventListener('submit', async (ev) => {
-      ev.preventDefault(); // no navegues
-      try {
-        const resp = await fetch(form.action, {
-          method: 'POST',
-          headers: {'X-Requested-With': 'XMLHttpRequest'}
-        });
-        // si ha ido bien, recargamos para que el index ya vea la sesión activa
-        if (resp.ok) {
-          location.reload();
+  async function checkSessionAndRedirect() {
+    try {
+      const res = await fetch(SESSION_STATUS_URL, {
+        cache: 'no-cache',
+        headers: {
+          'Accept': 'application/json'
         }
-      } catch (err) {
-        console.warn('No se pudo simular hola:', err);
+      });
+
+      if (!res.ok) {
+        console.warn('Error HTTP en /session_status:', res.status);
+        return;
       }
-    });
+
+      const data = await res.json();
+
+      // Si la sesión está activa, redirigimos al índice (que ya muestra el menú)
+      if (data.active) {
+        window.location.href = REDIRECT_URL;
+      }
+    } catch (err) {
+      console.error('Error comprobando /session_status:', err);
+    }
   }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Polling cada 1.5 segundos
+    setInterval(checkSessionAndRedirect, 1500);
+  });
 </script>
+
 {% endblock %}
