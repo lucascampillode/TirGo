@@ -78,9 +78,8 @@ Para más detalles sobre cada componente, consulta los README específicos:
 
   * [Scripts y ejecución](./scripts/README.md)
   * [Launch files](./launch/README.md)
-  * [Nodos y código fuente (`src/move/`)]
-  * [Mapas](./maps)
-  * [Configuración (`configs/`)]
+  * [Nodos y código fuente](./src/move/README.md)
+  * [Configuración](./configs/README.md)
 
 <!-- end list -->
 
