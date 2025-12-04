@@ -30,13 +30,13 @@ rosrun move publish_initial_pose.py
 
 # Esperar un momento para asegurarse de que el mapa esta bien lanzado
 sleep 10
-
-# Lanzar los demas nodos
-rosrun move test_comunicaciones.py &
-CHECKPOINT_PID=$!
-echo "[INFO] Lanzado test_comunicaciones con PID $CHECKPOINT_PID"
-
-# Esperar a que terminen todos los procesos lanzados
+#
+## Lanzar los demas nodos
+#rosrun move test_comunicaciones.py &
+#CHECKPOINT_PID=$!
+#echo "[INFO] Lanzado test_comunicaciones con PID $CHECKPOINT_PID"
+#
+## Esperar a que terminen todos los procesos lanzados
 wait $CHECKPOINT_PID
 echo "Terminado"
 
