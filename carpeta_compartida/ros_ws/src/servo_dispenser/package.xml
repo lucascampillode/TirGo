@@ -11,5 +11,6 @@
 
   <depend>rospy</depend>
   <depend>std_msgs</depend>
+  <test_depend>rostest</test_depend>
 
 </package>

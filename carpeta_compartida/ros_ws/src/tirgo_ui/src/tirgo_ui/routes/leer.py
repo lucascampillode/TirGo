@@ -144,9 +144,10 @@ def leer_post():
             if no_stock_resp is not None:
                 return no_stock_resp
 
-            # Lanzar misión vía Action Server (sin paciente explícito)
+            # Lanzar misión vía Action Server con paciente anónimo
             bin_id = _resolve_bin_id(med, med_id)
-            rosio.start_mission_async("", bin_id)
+            anon_hash = h_dni("ANON")  # hash fijo para meds libres
+            rosio.start_mission_async(anon_hash, bin_id)
             rosio.pub_state('DISPENSING')
 
             session.end_session()
@@ -190,7 +191,8 @@ def recoger(med_id: int):
     except Exception:
         pass
 
-    rosio.start_mission_async("", bin_id)
+    anon_hash = h_dni("ANON")  # paciente anónimo también aquí
+    rosio.start_mission_async(anon_hash, bin_id)
     rosio.pub_state('DISPENSING')
 
     session.end_session()
@@ -234,7 +236,8 @@ def leer_ident():
             pid = None
 
         if pid is not None:
-            necesita     = paciente_necesita_restringido(pid)
+            # 🔧 Corregido: pasar también el medicamento
+            necesita     = paciente_necesita_restringido(pid, med)
             tiene_receta = tiene_receta_activa(pid, med_id)
 
             if (med.get('tipo') or '').strip().upper() == 'R' and not (tiene_receta or necesita):
@@ -300,7 +303,8 @@ def leer_ident():
         rosio.pub_error('ID_FAIL', 'Datos incompletos')
         return render_template('leer_ident.html', med=med, msg='Datos no válidos', error=True)
 
-    necesita     = paciente_necesita_restringido(pid)
+    # 🔧 Corregido: pasar también el medicamento
+    necesita     = paciente_necesita_restringido(pid, med)
     tiene_receta = tiene_receta_activa(pid, med_id)
 
     if (med.get('tipo') or '').strip().upper() == 'R' and not (tiene_receta or necesita):

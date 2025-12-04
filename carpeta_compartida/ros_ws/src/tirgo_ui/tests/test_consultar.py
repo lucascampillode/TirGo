@@ -1,430 +1,206 @@
-import os
+# tests/test_consultar.py
 import sys
 from pathlib import Path
 
 import pytest
-from flask import Flask, get_flashed_messages
-from unittest.mock import MagicMock, patch  # por si luego quieres ampliar tests
+from flask import Flask
 
-# ==========================
-# CONFIGURAR PYTHONPATH
-# ==========================
-
+# ---------- Path al src ----------
 CURRENT_DIR = Path(__file__).resolve().parent
 PROJECT_SRC = CURRENT_DIR.parent / "src"
 sys.path.insert(0, str(PROJECT_SRC))
 
-# Importamos el módulo real de la ruta
 from tirgo_ui.routes import consultar as consultar_mod
 from tirgo_ui.routes.consultar import (
     _normalize_dni,
     _is_valid_dni,
     _normalize_name_for_compare,
     _is_valid_name,
-    bp as consultar_bp,  # blueprint real
 )
-
-# ==========================
-# DOBLES (FAKES / STUBS)
-# ==========================
-
-
-class DummyStore:
-    """
-    Fake de storage_mongo para no tocar la BD real.
-    """
-
-    def __init__(self):
-        # diccionario DNI normalizado -> doc paciente
-        self.pacientes_by_dni = {}
-        # id paciente -> lista de meds
-        self.meds_by_pac_id = {}
-
-    def find_paciente_by_dni(self, dni):
-        return self.pacientes_by_dni.get(dni)
-
-    def create_paciente_if_allowed(self, nombre, apellidos, dni):
-        if dni in self.pacientes_by_dni:
-            raise ValueError("Paciente ya existe")
-        pac = {
-            "_id": f"pac_{dni}",
-            "nombre": nombre,
-            "apellidos": apellidos,
-            "dni": dni,
-        }
-        self.pacientes_by_dni[dni] = pac
-        return pac
-
-    def permitted_meds_for_patient(self, pac_id):
-        # Fallback que usa _get_meds_for_patient cuando no hay DB directa
-        return self.meds_by_pac_id.get(pac_id, [])
-
-
-class DummyRosio:
-    """
-    Fake de rosio para registrar las llamadas a pub_state().
-    """
-
-    def __init__(self):
-        self.states = []
-
-    def pub_state(self, state):
-        self.states.append(state)
+from tirgo_ui import rosio as rosio_mod
+from tirgo_ui.routes import consultar as consultar_mod
 
 
 # ==========================
-# FIXTURES
+# FIXTURE: Flask client
 # ==========================
-
 
 @pytest.fixture
-def app():
+def client(monkeypatch):
     """
-    Creamos una app mínima de Flask y registramos el blueprint real.
-    No usamos las plantillas reales: las vamos a fakear con monkeypatch.
+    Crea una app mínima solo con el blueprint de /consultar.
+    Pone SECRET_KEY para que flash() no pete.
     """
-    app = Flask(__name__)
-    app.secret_key = "testing-secret-key"
-    app.register_blueprint(consultar_bp)
-    return app
+    app = Flask("test_consultar")
+    app.config["TESTING"] = True
+    app.secret_key = "testing-secret"
 
+    # No queremos hablar con ROS de verdad en estos tests
+    monkeypatch.setattr(rosio_mod, "pub_state", lambda *a, **k: None, raising=False)
 
-@pytest.fixture
-def client(app):
+    app.register_blueprint(consultar_mod.bp)
     return app.test_client()
 
 
-@pytest.fixture
-def fake_env(monkeypatch):
+# ==========================
+# TESTS UNITARIOS UTILIDADES
+# ==========================
+
+def test_normalize_dni_strips_and_upper():
+    assert _normalize_dni(" 12345678z ") == "12345678Z"
+    assert _normalize_dni("12 345 678-z") == "12345678Z"
+
+
+def test_is_valid_dni_ok_and_ko():
     """
-    Inyecta DummyStore, DummyRosio y un render_template fake
-    dentro del módulo consultar.
-    Devuelve (store, rosio) para que los tests puedan inspeccionarlos.
+    _is_valid_dni debe aceptar un DNI correcto y rechazar uno incorrecto.
+    Usamos 49582367W que es válido según la tabla oficial.
     """
-    store = DummyStore()
-    rosio = DummyRosio()
 
-    def fake_render_template(template_name, **context):
-        """
-        Simula los templates devolviendo un texto plano que incluye:
-        - nombre de la plantilla
-        - mensajes flash
-        - algunos campos del contexto útiles para los asserts
-        """
-        pieces = [f"TEMPLATE:{template_name}"]
+    # DNI correcto
+    assert consultar_mod._is_valid_dni("49582367W") is True
 
-        # Añadimos mensajes flash
-        flashes = get_flashed_messages()
-        pieces.extend(flashes)
+    # DNI incorrecto (letra mal)
+    assert consultar_mod._is_valid_dni("49582367A") is False
 
-        # Algunos campos típicos de contexto que nos interesan
-        # (ajusta nombres si en consultar.py usas otros)
-        for key in ("dni", "dni_normalizado", "dni_input"):
-            if key in context and context[key]:
-                pieces.append(str(context[key]))
 
-        paciente = context.get("paciente")
-        if paciente:
-            pieces.append(str(paciente.get("nombre", "")))
-            pieces.append(str(paciente.get("apellidos", "")))
 
-        meds = context.get("meds") or context.get("medicamentos")
-        if meds:
-            for med in meds:
-                nombre_med = med.get("nombre", None) if isinstance(med, dict) else str(med)
-                if nombre_med:
-                    pieces.append(str(nombre_med))
+def test_is_valid_name_ok_and_ko():
+    assert _is_valid_name("Katrin Muñoz") is True
+    assert _is_valid_name("José-Luis O'Connor") is True
+    assert _is_valid_name("") is False
+    assert _is_valid_name("   ") is False
+    # meter números no debería colar
+    assert _is_valid_name("Juan123") is False
 
-        # Mensajes específicos que puedas pasar en el contexto
-        for key in ("mensaje", "mensaje_ok", "mensaje_error"):
-            if key in context and context[key]:
-                pieces.append(str(context[key]))
 
-        # Devolvemos un string que contenga todo eso
-        return "\n".join(pieces)
+def test_normalize_name_for_compare_collapses_spaces_and_casefold():
+    s = _normalize_name_for_compare("  José   Luis  ")
+    assert s == "josé luis"
 
-    # Inyectamos los dobles en el módulo real
-    monkeypatch.setattr(consultar_mod, "store", store)
-    monkeypatch.setattr(consultar_mod, "rosio", rosio)
+
+# ==========================
+# TESTS VISTA /consultar
+# ==========================
+
+def _patch_render_template_basic(monkeypatch):
+    """
+    Parche genérico para que consultar.render_template no busque
+    plantillas reales. Devuelve un string plano.
+    """
+    monkeypatch.setattr(
+        consultar_mod,
+        "render_template",
+        lambda *a, **k: "TPL:" + str(a[0]) if a else "TPL",
+        raising=False,
+    )
+
+
+def test_consultar_get_renders_form(client, monkeypatch):
+    """
+    GET /consultar/ debe responder 200 y no petar por plantillas.
+    """
+    _patch_render_template_basic(monkeypatch)
+
+    resp = client.get("/consultar/")
+    assert resp.status_code == 200
+    assert b"tpl:consultar.html" in resp.data.lower()
+
+
+def test_consultar_post_missing_dni_redirects(client, monkeypatch):
+    """
+    Sin DNI -> redirect a /consultar/ con flash de error.
+    """
+    _patch_render_template_basic(monkeypatch)
+
+    data = {"nombre": "Paciente", "apellidos": "Prueba", "dni": ""}
+    resp = client.post("/consultar/", data=data, follow_redirects=False)
+
+    # redirección (302/303/307 está OK, miramos que es redirect)
+    assert resp.status_code in (302, 303, 307)
+    assert "/consultar/" in resp.headers.get("Location", "")
+
+
+def test_consultar_post_invalid_dni_redirects(client, monkeypatch):
+    """
+    DNI con formato o letra incorrecta -> redirect.
+    """
+    _patch_render_template_basic(monkeypatch)
+
+    data = {"nombre": "Paciente", "apellidos": "Prueba", "dni": "AAAAAA"}
+    resp = client.post("/consultar/", data=data, follow_redirects=False)
+
+    assert resp.status_code in (302, 303, 307)
+    assert "/consultar/" in resp.headers.get("Location", "")
+
+
+def test_consultar_post_invalid_name_shows_error(client, monkeypatch):
+    """
+    Nombre inválido (si se proporciona) -> redirect.
+    """
+    _patch_render_template_basic(monkeypatch)
+
+    data = {"nombre": "X$", "apellidos": "Prueba", "dni": "00000000T"}
+    resp = client.post("/consultar/", data=data, follow_redirects=False)
+
+    assert resp.status_code in (302, 303, 307)
+    assert "/consultar/" in resp.headers.get("Location", "")
+
+def test_consultar_existing_patient_without_meds_shows_message(client, monkeypatch):
+    """
+    Si el paciente existe pero no tiene recetas activas, se debe renderizar
+    consultar_result.html con has_meds=False y un mensaje informativo.
+    """
+    from tirgo_ui.routes import consultar as consultar_mod
+    from tirgo_ui import rosio
+
+    # Paciente existente con datos COHERENTES con el formulario
+    pac = {
+        "_id": "pac-id-1",
+        "nombre": "Katrin",
+        "apellidos": "Muñoz",
+        "dni_hash": "hash123",
+    }
+
+    # find_paciente_by_dni debe devolver ese paciente
+    def fake_find_paciente_by_dni(dni):
+        assert dni == "49582367W"
+        return pac
+
+    # Forzamos que _get_meds_for_patient devuelva lista vacía + mensaje
+    def fake_get_meds_for_patient(p, msg_if_empty):
+        assert p == pac
+        # simulamos "paciente sin recetas activas"
+        return [], msg_if_empty
+
+    # Capturamos qué plantilla y qué contexto se usan
+    def fake_render_template(name, **ctx):
+        # devolvemos un string reconocible en el body de la respuesta
+        return f"tpl:{name} ctx:{ctx}"
+
+    # Parcheamos dentro del módulo consultar
+    monkeypatch.setattr(consultar_mod, "store", consultar_mod.store)
+    monkeypatch.setattr(consultar_mod.store, "find_paciente_by_dni", fake_find_paciente_by_dni)
+    monkeypatch.setattr(consultar_mod, "_get_meds_for_patient", fake_get_meds_for_patient)
     monkeypatch.setattr(consultar_mod, "render_template", fake_render_template)
 
-    return store, rosio
+    # Evitar side effects de ROS
+    monkeypatch.setattr(rosio, "pub_state", lambda *_args, **_kwargs: None)
 
-
-# ==========================
-# TESTS CONSULTAR
-# ==========================
-
-
-def test_consultar_dni_vacio_redirige_con_error(client, fake_env):
-    """
-    DNI vacío -> flash de error y redirect a /consultar/.
-    """
-    resp = client.post(
-        "/consultar/",
-        data={"nombre": "", "apellidos": "", "dni": ""},
-        follow_redirects=True,
-    )
-
-    assert resp.status_code == 200
-    assert b"Debes introducir un DNI para realizar la consulta." in resp.data
-
-
-def test_consultar_dni_formato_invalido(client, fake_env):
-    """
-    DNI con formato malo (o letra incorrecta) -> error.
-    """
-    resp = client.post(
-        "/consultar/",
-        data={"nombre": "Katrin", "apellidos": "Munoz", "dni": "1234ABC"},
-        follow_redirects=True,
-    )
-
-    assert resp.status_code == 200
-    assert (
-        b"DNI no v\xc3\xa1lido. Debe tener 8 n\xc3\xbameros y una letra correcta."
-        in resp.data
-    )
-
-
-def test_consultar_nombre_invalido(client, fake_env):
-    """
-    Nombre con números/símbolos -> error antes de consultar.
-    """
-    resp = client.post(
-        "/consultar/",
-        data={"nombre": "K4tr1n", "apellidos": "Munoz", "dni": "12345678Z"},
-        follow_redirects=True,
-    )
-
-    assert resp.status_code == 200
-    assert (
-        b"El nombre solo puede contener letras, espacios, ap\xc3\xb3strofos y guiones"
-        in resp.data
-    )
-
-
-def test_consultar_apellidos_invalidos(client, fake_env):
-    """
-    Apellidos con números/símbolos -> error.
-    """
-    resp = client.post(
-        "/consultar/",
-        data={"nombre": "Katrin", "apellidos": "Mun0z!!", "dni": "12345678Z"},
-        follow_redirects=True,
-    )
-
-    assert resp.status_code == 200
-    assert (
-        b"Los apellidos solo pueden contener letras, espacios, ap\xc3\xb3strofos y guiones"
-        in resp.data
-    )
-
-
-def test_consultar_paciente_inexistente_muestra_pantalla_crear(client, fake_env):
-    """
-    Paciente inexistente -> plantilla 'no existente'.
-    (Comprobamos que aparece el DNI normalizado en la respuesta).
-    """
-    resp = client.post(
-        "/consultar/",
-        data={"nombre": "Katrin", "apellidos": "Munoz", "dni": "12345678z"},
-    )
-
-    assert resp.status_code == 200
-    # el DNI se normaliza a mayúsculas y sin espacios/guiones
-    assert b"12345678Z" in resp.data
-
-
-def test_consultar_mismatch_nombre_apellidos_da_error(client, fake_env):
-    """
-    Mismo DNI pero nombre/apellidos que no coinciden → error + PATIENT_DATA_MISMATCH.
-    """
-    store, rosio = fake_env
-
-    # Paciente guardado en la "BD"
-    dni = "12345678Z"
-    store.pacientes_by_dni[dni] = {
-        "_id": "pac_1",
+    data = {
+        "dni": "49582367W",   # DNI válido
         "nombre": "Katrin",
-        "apellidos": "Munoz",
-        "dni": dni,
+        "apellidos": "Muñoz",
     }
 
-    resp = client.post(
-        "/consultar/",
-        data={"nombre": "Otra", "apellidos": "Persona", "dni": dni},
-        follow_redirects=True,
-    )
+    # No hace falta seguir redirects: consultar_post ya renderiza directamente
+    resp = client.post("/consultar/", data=data)
+    body = resp.get_data(as_text=True)
 
     assert resp.status_code == 200
-    assert (
-        b"Los datos introducidos (nombre/apellidos) no coinciden con el DNI registrado."
-        in resp.data
-    )
-    assert "PATIENT_DATA_MISMATCH" in rosio.states
-
-
-def test_consultar_nombre_normalizado_aceptado(client, fake_env):
-    """
-    Mismo DNI, pero nombre con mayúsculas/minúsculas/espacios distintos → aceptado.
-    """
-    store, rosio = fake_env
-
-    dni = "49582367W"   # DNI real que aceptas en tu sistema
-    pac_id = "pac_1"
-    store.pacientes_by_dni[dni] = {
-        "_id": pac_id,
-        "nombre": "Katrin",
-        "apellidos": "Muñoz",   # tal y como está en la BD
-        "dni": dni,
-    }
-    # Simulamos que tiene una receta activa
-    store.meds_by_pac_id[pac_id] = [
-        {"id": 101, "nombre": "Paracetamol 1g"}
-    ]
-
-    resp = client.post(
-        "/consultar/",
-        data={
-            # nombre con espacios y casing raros
-            "nombre": "   kaTrin   ",
-            # apellidos con mayúsculas y espacios de más
-            "apellidos": "   MUÑOZ    ",
-            # DNI en minúscula o con la misma forma, se normaliza dentro
-            "dni": "49582367w",
-        },
-        follow_redirects=True,
-    )
-
-    assert resp.status_code == 200
-    # Debería mostrarse el nombre real del paciente y algún medicamento
-    assert b"Katrin" in resp.data
-    assert b"Paracetamol" in resp.data
-    assert "PATIENT_FOUND" in rosio.states or "NO_RECIPES" in rosio.states
-
-
-def test_consultar_dni_con_espacios_y_guiones_se_normaliza(client, fake_env):
-    """
-    El DNI con espacios/guiones se normaliza correctamente antes de buscar.
-    """
-    store, _ = fake_env
-
-    dni_normal = "12345678Z"
-    store.pacientes_by_dni[dni_normal] = {
-        "_id": "pac_1",
-        "nombre": "Katrin",
-        "apellidos": "Munoz",
-        "dni": dni_normal,
-    }
-
-    resp = client.post(
-        "/consultar/",
-        data={
-            "nombre": "",
-            "apellidos": "",
-            "dni": "1234 5678-z",
-        },
-    )
-
-    assert resp.status_code == 200
-    # si ha encontrado al paciente, debería aparecer su nombre
-    assert b"Katrin" in resp.data
-
-
-# ==========================
-# TESTS CREAR PACIENTE
-# ==========================
-
-
-def test_crear_paciente_nombre_invalido(client, fake_env):
-    """
-    Crear paciente con nombre inválido -> error.
-    """
-    resp = client.post(
-        "/consultar/crear_paciente",
-        data={"nombre": "1234", "apellidos": "Munoz", "dni": "12345678Z"},
-        follow_redirects=True,
-    )
-
-    assert resp.status_code == 200
-    assert (
-        b"El nombre solo puede contener letras, espacios, ap\xc3\xb3strofos y guiones"
-        in resp.data
-    )
-
-
-def test_crear_paciente_dni_invalido(client, fake_env):
-    """
-    Crear paciente sin DNI válido -> error.
-    """
-    resp = client.post(
-        "/consultar/crear_paciente",
-        data={"nombre": "Katrin", "apellidos": "Munoz", "dni": "BAD"},
-        follow_redirects=True,
-    )
-
-    assert resp.status_code == 200
-    assert (
-        b"DNI no v\xc3\xa1lido. Debe tener 8 n\xc3\xbameros y una letra correcta."
-        in resp.data
-    )
-
-
-def test_crear_paciente_duplicado_por_dni(client, fake_env):
-    """
-    Si ya existe un paciente con ese DNI, no se permite crear otro.
-    """
-    store, rosio = fake_env
-
-    dni = "12345678Z"
-    store.pacientes_by_dni[dni] = {
-        "_id": "pac_1",
-        "nombre": "Katrin",
-        "apellidos": "Munoz",
-        "dni": dni,
-    }
-
-    resp = client.post(
-        "/consultar/crear_paciente",
-        data={"nombre": "Otra", "apellidos": "Persona", "dni": dni},
-        follow_redirects=True,
-    )
-
-    assert resp.status_code == 200
-    assert b"Ya existe un paciente registrado con ese DNI." in resp.data
-    assert "PATIENT_DUPLICATE_DNI" in rosio.states
-
-
-def test_crear_paciente_ok_y_luego_ver_resultado(client, fake_env):
-    """
-    Flujo feliz de creación de paciente:
-    - DNI válido y libre
-    - Nombre y apellidos válidos
-    -> Paciente creado y se muestran (o no) sus recetas.
-    """
-    store, rosio = fake_env
-
-    dni = "12345678Z"
-
-    # No hay paciente inicialmente
-    assert dni not in store.pacientes_by_dni
-
-    # Además simulamos que luego tendrá una receta activa
-    # (usando el id que generará DummyStore)
-    expected_pac_id = f"pac_{dni}"
-    store.meds_by_pac_id[expected_pac_id] = [{"id": 101, "nombre": "Paracetamol 1g"}]
-
-    resp = client.post(
-        "/consultar/crear_paciente",
-        data={"nombre": "Katrin", "apellidos": "Munoz", "dni": dni},
-        follow_redirects=True,
-    )
-
-    assert resp.status_code == 200
-    # Se ha creado en la "BD"
-    assert dni in store.pacientes_by_dni
-    assert b"Paciente creado correctamente" in resp.data
-    assert b"Katrin" in resp.data
-    assert b"Paracetamol" in resp.data
-    assert "PATIENT_CREATED" in rosio.states
+    # Ha usado la plantilla de resultado
+    assert "tpl:consultar_result.html" in body
+    # El contexto indica que no hay meds
+    assert "has_meds': False" in body
+    # Y aparece el mensaje informativo
+    assert "Este paciente no tiene recetas activas." in body

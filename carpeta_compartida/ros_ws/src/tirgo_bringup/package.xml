@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>tirgo_bringup</name>
+  <version>0.0.1</version>
+  <description>Bringup completo de TirGoPharma (web + misión + voz + STT)</description>
+
+  <maintainer email="tirgo@example.com">TirGo</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- No compilamos código, pero declaramos deps de runtime -->
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <exec_depend>tirgo_ui</exec_depend>
+  <exec_depend>tirgo_mission_server</exec_depend>
+  <exec_depend>stt_vosk</exec_depend>
+</package>

@@ -329,9 +329,18 @@ def log_dispense(
     ok: bool,
     error: Optional[str] = None,
     meta: Optional[Dict[str, Any]] = None,
+    **extra: Any,
 ) -> None:
     """
     Guarda un log de dispensado en la colección 'dispenses'.
+
+    Campos básicos:
+      - ts, medicamento_id, dni_hash, ok
+    Extra:
+      - med_nombre (si está en med)
+      - meta (dict arbitrario)
+      - error (string)
+      - mission_id, error_code (si se pasan como kwargs)
     """
     doc: Dict[str, Any] = {
         "ts": datetime.now(timezone.utc),
@@ -349,4 +358,49 @@ def log_dispense(
     if error:
         doc["error"] = str(error)
 
+    # Campos extra opcionales
+    mission_id = extra.get("mission_id")
+    if mission_id:
+        doc["mission_id"] = str(mission_id)
+
+    error_code = extra.get("error_code")
+    if error_code:
+        doc["error_code"] = str(error_code)
+
     _db.dispenses.insert_one(doc)
+
+def apply_mission_result(
+    med_id: int,
+    dni_hash: Optional[str],
+    success: bool,
+    mission_id: Optional[str] = None,
+    error_code: str = "",
+    error_message: str = "",
+    meta: Optional[Dict[str, Any]] = None,
+) -> None:
+    """
+    Aplica el resultado de una misión de dispensado:
+
+    - Si success=True:
+        * decrementa el stock (si hay)
+        * registra log ok=True
+    - Si success=False:
+        * NO toca el stock
+        * registra log ok=False con error_code / error_message
+
+    Deja toda la lógica de negocio encapsulada aquí.
+    """
+    med = lookup_medicamento_by_id(med_id) or {"id": med_id}
+
+    if success:
+        dec_stock_if_available(med_id, 1)
+
+    log_dispense(
+        med,
+        dni_hash,
+        ok=success,
+        error=error_message or None,
+        meta=meta,
+        mission_id=mission_id,
+        error_code=error_code,
+    )

@@ -16,3 +16,13 @@ catkin_install_python(PROGRAMS
   scripts/servo_dispenser_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+
+  # pytest (opcional, si integras con catkin)
+  # catkin_add_nosetests(test)
+
+  # rostest de flujo
+  add_rostest(test/servo_dispenser_flow.test)
+endif()

@@ -102,6 +102,23 @@ class TirgoMissionServer:
             f"[TMS] Nuevo goal: patient_id={goal.patient_id}, med_id(bin_id)={goal.med_id}"
         )
 
+            # --- Validación de goal ---
+        if not goal.patient_id or goal.patient_id.strip() == "":
+            res = TirgoMissionResult()
+            res.success = False
+            res.error_code = "BAD_GOAL"
+            res.error_message = "patient_id inválido"
+            self._as.set_aborted(res)
+            return
+
+        if goal.med_id is None or goal.med_id <= 0:
+            res = TirgoMissionResult()
+            res.success = False
+            res.error_code = "BAD_GOAL"
+            res.error_message = "med_id inválido"
+            self._as.set_aborted(res)
+            return
+
         fb = TirgoMissionFeedback()
         res = TirgoMissionResult()
 
