@@ -13,7 +13,6 @@ catkin_package()
 catkin_install_python(
   PROGRAMS
     scripts/tirgo_mission_server.py
-    scripts/test_tirgo_mission.py
     scripts/tiago_speech_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

@@ -17,6 +17,35 @@ NEUTRAL = 1500
 DWELL_PUSH = 0.10     # Tiempo empujando
 MOVE_TIME  = 0.02     # Tiempo mínimo en la posición
 
+# ==============================
+#  LÓGICA PURA DE MAPEADO
+# ==============================
+
+def compute_servo_command(bin_id):
+    """
+    Lógica pura de mapeo bin_id → (gpio, angle_deg).
+
+    Devuelve:
+      (gpio, angle_deg) si el bin_id es válido
+      None si el bin_id es inválido.
+    """
+    try:
+        i = int(bin_id)
+    except (TypeError, ValueError):
+        return None
+
+    if   i == 1:
+        return SERVO_A, +90.0
+    elif i == 2:
+        return SERVO_A, -90.0
+    elif i == 3:
+        return SERVO_B, +90.0
+    elif i == 4:
+        return SERVO_B, -90.0
+
+    return None
+
+
 class ServoDispenser:
     def __init__(self):
         rospy.loginfo("Iniciando ServoDispenser RÁPIDO...")
@@ -31,7 +60,7 @@ class ServoDispenser:
 
         self.set_neutral()
 
-        # 👉 NUEVO TOPIC
+        # 👉 TOPIC READY
         self.pub_ready = rospy.Publisher("/tirgo/dispense/ready", Bool, queue_size=10)
 
         rospy.Subscriber("/tirgo/dispense/request", Int32,
@@ -63,32 +92,28 @@ class ServoDispenser:
         time.sleep(0.05)
 
     # --------------------------
-    #  Acciones de dispensado
+    #  Acción genérica de dispensado
     # --------------------------
 
-    def push_A(self):
-        us = self.angle_to_us(+90)
-        self.fast_move(SERVO_A, us)
-        time.sleep(DWELL_PUSH)
-        self.fast_move(SERVO_A, NEUTRAL)
+    def do_push_for_bin(self, bin_id):
+        """
+        Usa compute_servo_command para decidir qué servo mover y cuánto.
 
-    def push_B(self):
-        us = self.angle_to_us(-90)
-        self.fast_move(SERVO_A, us)
-        time.sleep(DWELL_PUSH)
-        self.fast_move(SERVO_A, NEUTRAL)
+        Devuelve:
+          True  -> si el bin_id es válido y se ha ejecutado movimiento
+          False -> si el bin_id es inválido (no se mueve nada)
+        """
+        cmd = compute_servo_command(bin_id)
+        if cmd is None:
+            return False
 
-    def push_C(self):
-        us = self.angle_to_us(+90)
-        self.fast_move(SERVO_B, us)
-        time.sleep(DWELL_PUSH)
-        self.fast_move(SERVO_B, NEUTRAL)
+        gpio, angle = cmd
+        us = self.angle_to_us(angle)
 
-    def push_D(self):
-        us = self.angle_to_us(-90)
-        self.fast_move(SERVO_B, us)
+        self.fast_move(gpio, us)
         time.sleep(DWELL_PUSH)
-        self.fast_move(SERVO_B, NEUTRAL)
+        self.fast_move(gpio, NEUTRAL)
+        return True
 
     # --------------------------
     #  Callback ROS
@@ -98,19 +123,15 @@ class ServoDispenser:
         i = msg.data
         rospy.loginfo("Solicitud recibida: %d", i)
 
-        ok = True
-        if   i == 1: self.push_A()
-        elif i == 2: self.push_B()
-        elif i == 3: self.push_C()
-        elif i == 4: self.push_D()
-        else:
+        ok = self.do_push_for_bin(i)
+
+        if not ok:
             rospy.logwarn("ID no válido: %d", i)
-            ok = False
+            return
 
         # 🔔 Publicar READY si se hizo acción válida
-        if ok:
-            rospy.loginfo("Publicando ready=True en /tirgo/dispense/ready")
-            self.pub_ready.publish(Bool(data=True))
+        rospy.loginfo("Publicando ready=True en /tirgo/dispense/ready")
+        self.pub_ready.publish(Bool(data=True))
 
     def shutdown(self):
         rospy.loginfo("Apagando: servos a neutro y liberados.")
