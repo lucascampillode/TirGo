@@ -185,23 +185,110 @@ source devel/setup.bash
 rosrun tirgo_mission_server tirgo_mission_server.py
 ```
 
+## 9. Tests automatizados
+
+El paquete **`tirgo_mission_server`** incluye una batería de tests pensada para comprobar que:
+
+* La **máquina de estados** avanza correctamente en función de los flags ROS.
+* Se respetan todos los **timeouts** configurados.
+* El Action Server publica el **feedback** y el **result** esperados.
+* Se generan las órdenes adecuadas hacia TIAGo y el dispensador.
+
+Los tests se basan en **`rostest`** + **`rosunit`** y se centran en pruebas de **integración** del nodo completo.
+
+### 9.1. Estructura de los tests
+
+```text
+tirgo_mission_server/
+├── src/
+│   └── tirgo_mission_server.py      ← Action Server + FSM
+└── test/
+    ├── test_mission_flow.test       ← fichero .test (launch + configuración)
+    └── test_mission_flow.py         ← lógica de los casos de prueba
+```
+
+* **`test_mission_flow.test`**
+
+  * Define un `roslaunch` de prueba que levanta:
+
+    * `roscore`
+    * el nodo `tirgo_mission_server.py`
+    * nodos “fake”/helpers que publican los flags (`/tirgo/tiago/arrived`, `/tirgo/dispense/ready`, etc.)
+  * Configura los **timeouts** a valores pequeños (segundos) para acelerar las pruebas.
+  * Ejecuta `test_mission_flow.py` con `rosunit`.
+
+* **`test_mission_flow.py`**
+
+  * Contiene los distintos **casos de prueba** implementados con `unittest`/`rosunit`.
+  * Usa un **Action Client** (`SimpleActionClient`) contra `/tirgo/mission`.
+  * Publica flags simulados en los tópicos `/tirgo/tiago/*` y `/tirgo/dispense/ready`.
+  * Verifica `feedback`, `result`, `success`, `error_code` y las órdenes publicadas por el servidor.
+
 ---
 
-## 9. Tests automáticos (rostest)
+### 9.2. Casos cubiertos
 
-Se incluyen tests completos:
+Los tests actuales cubren, como mínimo, los siguientes escenarios:
 
-* Camino feliz
-* Los 6 timeouts
-* Cancelación de la misión (PREEMPTED)
-* Comprobación de feedback y result
-* Verificación de publicaciones `/tirgo/mission/start` y `/tirgo/dispense/request`
+1. **Camino feliz (happy path)**
 
-Ejecutar:
+2. **Timeout de llegada al dispensador (`TIMEOUT_ARRIVE`)**
+
+3. **Timeout del dispensador (`TIMEOUT_READY`)**
+
+4. **Timeout de pick (`TIMEOUT_PICK`)**
+
+5. **Timeout de llegada al paciente (`TIMEOUT_PATIENT`)**
+
+6. **Timeout de entrega (`TIMEOUT_DELIVER`)**
+
+7. **Timeout de despedida (`TIMEOUT_FAREWELL`)**
+
+8. **Cancelación del cliente (`PREEMPTED`)**
+
+---
+
+### 9.3. Requisitos para ejecutar los tests
+
+Es necesario disponer de:
+
+* **ROS 1 Noetic** correctamente inicializado.
+* El workspace compilado (`catkin_make`) con:
+
+  * `tirgo_mission_server`
+  * `tirgo_msgs`
+* Paquetes de test de ROS:
+
+  * `rostest`
+  * `rosunit`
+
+Antes de lanzar los tests:
+
+```bash
+cd ~/carpeta_compartida/ros_ws
+catkin_make
+source devel/setup.bash
+```
+
+---
+
+### 9.4. Ejecución de los tests
+
+Desde una terminal con el entorno de ROS cargado:
 
 ```bash
 rostest tirgo_mission_server test_mission_flow.test
 ```
+
+Esto:
+
+1. Levanta el `roscore` (si no estaba lanzado).
+2. Arranca `tirgo_mission_server.py` con parámetros de timeout reducidos.
+3. Lanza los nodos fake de flags (si se usan).
+4. Ejecuta `test_mission_flow.py` con `rosunit`.
+5. Genera los logs en `~/.ros/log/.../test_mission_flow-*.log`.
+
+Para no tener que buscar los logs a mano, se puede usar el script de la sección **10** (`scripts/resumen_tests.sh`), que extrae un **resumen de resultados**.
 
 ---
 
