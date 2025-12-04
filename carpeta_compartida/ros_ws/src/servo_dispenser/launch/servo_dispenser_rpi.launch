@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="servo_dispenser"
+        type="servo_dispenser_node.py"
+        name="servo_dispenser"
+        output="screen" />
+</launch>
