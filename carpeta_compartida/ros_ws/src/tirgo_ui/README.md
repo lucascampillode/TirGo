@@ -397,3 +397,151 @@ export TIRGO_STT_TOPIC="/stt/text"
 export TIRGO_DEV=1
 rosrun tirgo_ui tirgo_web_server
 ```
+
+
+
+
+
+Perfecto, aquí tienes el **README completo en formato Markdown**, ya integrado y con la sección de **tests** añadida al final.
+Está listo para copiar/pegar en tu `tirgo_ui/README.md`.
+
+---
+
+# `tirgo_ui`
+
+Interfaz web de **TirgoPharma** integrada en **ROS 1 (Noetic)**.
+
+Este paquete expone una aplicación **Flask** dentro de un paquete ROS para poder lanzarla con `rosrun`/`roslaunch` y comunicarse con el resto del sistema mediante **ROS**. La web sirve como capa de interacción con el usuario y permite:
+
+* Desbloquear la interfaz por **voz** (hotword) escuchando el tópico de STT.
+* Consultar pacientes, recetas y medicamentos almacenados en **MongoDB**.
+* Lanzar una **misión de dispensación** a través del **Action Server** `/tirgo/mission`.
+* Mostrar el estado de la misión a partir del feedback/result del Action y de tópicos ROS.
+* Probar el sistema en **modo desarrollo** (simular la hotword) sin necesidad de disponer del robot.
+
+Está pensada para funcionar junto al paquete `stt_vosk` (reconocimiento de voz), con `tirgo_mission_server` (servidor de acciones de misión) y con una instancia de MongoDB.
+
+---
+
+# 12. Tests automatizados
+
+El paquete **`tirgo_ui`** incluye una batería de tests que validan tanto la lógica interna (Flask, sesión, helper de Mongo) como la integración con la capa ROS a través del módulo `rosio.py`.
+El objetivo principal es garantizar que la interfaz web funcione aunque ROS o Mongo no estén disponibles, y que las rutas críticas (lanzar misión, consultar pacientes, diagnóstico…) se comporten correctamente.
+
+Se han diseñado tres niveles de tests:
+
+1. **Unitarios (puro Python/Flask)**
+   Validan funciones, lógica de sesión, rutas y validaciones sin depender de ROS real ni Mongo real.
+
+2. **Tests con dependencias simuladas**
+   `storage_mongo.py` y `rosio.py` se ejecutan en modo “dummy” para simular respuestas de Mongo y ROS.
+
+3. **Tests de integración web + ROS dummy**
+   Comprueban que el flujo completo (UI → rosio → misión simulada) funciona como un pipeline lógico cohesivo.
+
+---
+
+## 12.1. Estructura de tests
+
+```text
+tirgo_ui/tests/
+├── conftest.py                   ← fixtures comunes para Flask, sesión y dummies
+├── test_main_routes.py           ← tests de pantalla principal, hotword y estado UI
+├── test_consultar.py             ← flujo de consulta de paciente y recetas
+├── test_leer.py                  ← selección de medicamento y lanzamiento de misión
+├── test_diagnostico.py           ← cuestionario clínico + propuesta de medicamento
+├── test_session.py               ← sesión interna (bloqueo, usuario activo, flags…)
+├── test_storage_mongo.py         ← acceso a DB en modo stub (sin Mongo real)
+└── test_web_ros_integration.py   ← integración Flask + rosio (ROS en modo dummy)
+```
+
+### Breve resumen del rol de cada fichero
+
+| Test file                       | Qué valida                                                                                               |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **test_main_routes.py**         | Que la web arranca, carga plantillas, la hotword desbloquea la interfaz (modo TIRGO_DEV o STT simulado). |
+| **test_consultar.py**           | Búsqueda de pacientes, normalización, recetas activas, manejo de errores.                                |
+| **test_leer.py**                | Validación de medicamento, stock, receta (R/L), y lanzamiento de misión (goal enviado).                  |
+| **test_diagnostico.py**         | Flujo del diagnóstico, decisiones clínicas simuladas, propuesta final de medicación.                     |
+| **test_session.py**             | Cambios de estado de sesión (IDLE → READY, paciente seleccionado, reseteos).                             |
+| **test_storage_mongo.py**       | Queries típicas contra un backend Mongo simulado en memoria.                                             |
+| **test_web_ros_integration.py** | El pipeline completo UI → rosio + Action fake → resultado esperado.                                      |
+
+---
+
+## 12.2. Qué cubren los tests (garantías funcionales)
+
+### **Validación de hotword y desbloqueo**
+
+* La UI permanece en `IDLE` hasta recibir texto con la hotword.
+* En modo `TIRGO_DEV=1`, el endpoint `/simular_hotword` desbloquea sin STT real.
+* Comprueba que `rosio.py` publica el estado correcto en `tirgo/ui/state`.
+
+### **Flujos de consulta y lectura**
+
+* Verifica que un paciente se encuentra correctamente.
+* Comprueba recetas activas e inactivas.
+* Detecta errores: paciente inexistente, receta inexistente, medicamento sin stock, tipo R sin receta.
+
+### **Lanzamiento correcto de una misión**
+
+* Construcción del goal `TirgoMissionGoal(patient_id, med_id)`.
+* Envío al Action Client dummy (no requiere ROS).
+* Verificación de que la UI recibe y procesa feedback/result simulado.
+
+### **Cobertura de sesión interna**
+
+* Control del estado del flujo (IDLE → READY → DISPENSING → DONE).
+* Selección y reseteo de paciente/medicación.
+* Estados de error.
+
+### **Validación de acceso a MongoDB en modo seguro**
+
+* Testean que las funciones de `storage_mongo.py` no rompen incluso sin DB real.
+* Simulación de búsqueda de medicamentos, recetas y operaciones de stock.
+* Registro de dispensaciones en memoria.
+
+### **Integración web+ROS (modo dummy)**
+
+* Flujo completo:
+  `client.post(/leer)` → lógica → rosio → misión simulada → respuesta HTML correcta.
+* Prueba del feedback incremental de ROS (READY, DISPENSING, SUCCESS, ERROR…).
+
+---
+
+## 12.3. Requisitos para ejecutar los tests
+
+Instalar dependencias:
+
+```bash
+pip install pytest
+```
+
+Para tests que simulan Mongo:
+
+```bash
+export MONGO_URI="mongodb://localhost:27017/tirgo_test"
+```
+
+> *No es necesario que exista la BD real: el stub funciona incluso sin servidor corriendo.*
+
+ROS **NO es necesario** para los tests unitarios ni para los de integración dummy.
+
+---
+
+## 12.5. Ejecutar los tests
+
+```bash
+# Ejecutar todos los tests
+cd ~/carpeta_compartida/ros_ws/src/tirgo_ui
+pytest -q
+
+# Ejecutar un fichero concreto
+pytest tests/test_leer.py -q
+
+# Ejecutar por nombre de test
+pytest -k "receta_activa" -q
+
+# Ver salida detallada
+pytest -vv
+```
