@@ -26,7 +26,7 @@ class Follower:
             - True  -> este objeto inicializa el nodo ROS (comportamiento original).
             - False -> asume que el nodo ROS ya está inicializado desde fuera.
         """
-        # ✅ Cambio mínimo: solo inicializar el nodo si procede
+        # Cambio mínimo: solo inicializar el nodo si procede
         if init_node and not rospy.core.is_initialized():
             rospy.init_node("checkpoint_action_client", anonymous=True)
 
@@ -228,8 +228,15 @@ if __name__ == "__main__":
     #    [6.128891746903331,  -2.156612477116119,  -0.100474241670117,   0.9949396598592374], #Alfondo
     #    [1.4998722751648397, -0.7247556435570256, 0.989510915323257, 0.14445812007682451] #Punto referencia
     #]
+
+
+
+    ### 1.600 -0.8636  0.9939  0.109555
     checkpoints = [
-        [0.18342637607098958,1.6793108675387105,-0.16066645574411148,0.9870087588256882],  # Pasillo
+        [1.4998722751648397, -0.7247556435570256, 0.989510915323257, 0.14445812007682451], # Pasillo
     ]
+    ### 0.27089 2.3590 0.22086 0.97539
+    
     follower = Follower()  # comportamiento original: init_node=True
-    follower.enviar_puntos(checkpoints)
+    for i in range(5):
+        follower.enviar_puntos(checkpoints)

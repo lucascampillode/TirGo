@@ -1,70 +1,56 @@
-# Navegación y Uso de run_all.sh
 
-Script orquestador en **Bash** encargado de levantar el sistema mínimo de navegación del robot TIAGo para el proyecto.
+````markdown
+# Scripts de Navegación (`scripts/`)
 
-Automatiza la carga secuencial de **RViz**, el **Servidor de Mapas** y el nodo de **Lógica de Navegación** (`checkpointfollower.py`), gestionando los tiempos de espera necesarios entre procesos para asegurar una carga correcta y evitar conflictos.
+Esta carpeta contiene los scripts en Bash encargados de orquestar el lanzamiento de los distintos nodos del sistema (visualización, mapas y lógica de navegación).
 
 ---
 
-## 1. Ubicación en el Paquete
+## 1. Archivos disponibles
 
-Este script se encuentra dentro de la carpeta `scripts/` del paquete `move`. Asume la siguiente estructura de archivos relativa:
+```text
+scripts/
+├── run_all.sh   # Script principal: Lanza el sistema completo
+└── run_test.sh  # Script auxiliar: Para pruebas aisladas o de desarrollo
+````
+
+> **Nota:** Antes de ejecutarlos, asegúrate de que tienen permisos de ejecución:
+>
+> ```bash
+> chmod +x run_all.sh run_test.sh
+> ```
+
+-----
+
+## 2\. `run_all.sh` (Sistema Principal)
+
+Este es el script que debe ejecutarse para iniciar la demostración completa. Realiza las siguientes acciones en secuencia:
+
+1.  **Lanza RViz** cargando la configuración visual del proyecto.
+2.  **Inicia el `map_server`** para publicar el mapa estático del aula.
+3.  **Ejecuta `checkpointfollower.py`**, el nodo que gestiona el envío de objetivos de navegación al robot.
+
+### Uso
+
+Con el entorno de ROS cargado y el robot (real o simulado) activo:
+
+```bash
+roscd move/scripts
+./run_all.sh
+```
+
+-----
+
+## 3\. `run_test.sh` (Pruebas)
+
+Este script se utiliza para depuración o pruebas rápidas. Dependiendo de su configuración interna (se puede editar según necesidad), suele lanzar solo herramientas de visualización o nodos de test sin ejecutar la lógica completa de navegación automática.
+
+### Uso
+
+```bash
+roscd move/scripts
+./run_test.sh
+```
 
 ```
-text
-move/
-├── launch/
-│   └── rviz.launch              ← Configuración de visualización
-├── maps/
-│   ├── Mapa_aula_mod_1.0.yaml   ← Metadatos del mapa
-│   └── Mapa_aula_mod_1.0.pgm    ← Imagen del mapa
-└── scripts/
-    ├── run_all.sh               ← ESTE SCRIPT
-    └── checkpointfollower.py    ← Nodo de lógica de movimiento
-```
 
-## 2.Qué hace este script
-
-El script ejecuta una secuencia lineal de arranque diseñada para evitar condiciones de carrera (race conditions):
-
-   1. Carga el Workspace: Hace source del entorno de trabajo local (devel/setup.bash).
-
-   2. Lanza RViz: Ejecuta roslaunch move rviz.launch en segundo plano (background) y guarda su PID.
-
-   3. Espera (4s): Da tiempo a que la interfaz gráfica de RViz cargue completamente.
-
-   4. Carga el Mapa: Lanza el map_server apuntando al archivo .yaml definido.
-
-   5. Espera (5s): Asegura que el mapa esté publicado y disponible en el topic /map antes de continuar, este tiempo puede ser ajustado pero con menos tiempo no carga correctamente.
-
-   6. Lanza la Lógica: Ejecuta el nodo de control checkpointfollower.py.
-
-   7. Gestión de Procesos: Mantiene el script vivo (wait) mientras los nodos hijos sigan corriendo.
-## 3.Dependencias del Sistema
-
-Para que este script funcione sin errores, necesitas:
-
-ROS Noetic instalado.
-Paquete map_server:
-  ``` Bash
-  sudo apt-get install ros-noetic-map-server
-  ```
-    * Tener compilado el workspace (catkin_make) para que devel/setup.bash exista.
-
-    * Los archivos del mapa (.yaml y .pgm) deben existir en la ruta especificada dentro de src/move/maps/.
-
-## 4. Uso
- ```bash
-    cd carpeta_compartida/ros_ws/src/move/scripts/
-    ./run_all.sh
- ```
- ## 5. Nodos gestionados
-
-Este script es responsable de levantar los siguientes componentes:
-
-   * RViz (rviz): Visualización del estado del robot, mapa y sensores.
-
-   * Map Server (map_server): Publica el mapa estático del aula en /map.
-
-   * Checkpoint Follower (checkpointfollower.py): Cliente Python que envía al robot a las posiciones objetivo.
-    
