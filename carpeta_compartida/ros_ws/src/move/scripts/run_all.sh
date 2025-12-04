@@ -32,9 +32,9 @@ rosrun move publish_initial_pose.py
 sleep 10
 
 # Lanzar los demas nodos
-rosrun move checkpointfollower.py &
-CHECKPOINT_PID=$!
-echo "[INFO] Lanzado checkpointfollower con PID $CHECKPOINT_PID"
+#rosrun move checkpointfollower.py &
+#CHECKPOINT_PID=$!
+#echo "[INFO] Lanzado checkpointfollower con PID $CHECKPOINT_PID"
 
 # Esperar a que terminen todos los procesos lanzados
 wait $CHECKPOINT_PID
