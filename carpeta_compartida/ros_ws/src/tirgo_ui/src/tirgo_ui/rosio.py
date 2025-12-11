@@ -338,6 +338,22 @@ def pub_error(code: str, msg: str):
         pass
 
 
+# === Helper interno: cerrar sesión y volver a idle tras misión ===
+def _reset_session_after_mission():
+    """
+    Pone la sesión en 'no activa' y devuelve el pequeño autómata de conversación a 'idle'.
+    Se llama tanto en éxito como en error de la misión.
+    """
+    global _conv_state
+    try:
+        if session.is_active():
+            session.end_session()
+    except Exception:
+        # No queremos que un fallo aquí rompa el flujo de la misión
+        pass
+    _conv_state = "idle"
+
+
 # === ACTION CLIENT: lanzar misión TirgoPharma ===
 def start_mission_async(patient_id: str, med_id: int):
     """
@@ -398,6 +414,8 @@ def start_mission_async(patient_id: str, med_id: int):
                 error_code="MISSION_CLIENT_FAIL",
                 error_message=str(e),
             )
+            # Ante fallo gordo también dejamos la sesión en idle
+            _reset_session_after_mission()
 
     threading.Thread(target=_run, daemon=True).start()
 
@@ -448,6 +466,8 @@ def _mission_done_cb(state, result):
             error_message=msg,
             progress=0.0,
         )
+        # En caso de error, también cerramos la sesión y volvemos a idle
+        _reset_session_after_mission()
     else:
         try:
             rospy.loginfo("[MISSION DONE] success ✅")
@@ -463,3 +483,5 @@ def _mission_done_cb(state, result):
             error_message="",
             progress=1.0,
         )
+        # Misión OK -> sesión terminada y conversación a idle
+        _reset_session_after_mission()

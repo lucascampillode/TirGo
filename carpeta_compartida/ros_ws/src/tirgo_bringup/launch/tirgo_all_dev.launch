@@ -1,8 +1,93 @@
 <launch>
-  <!-- Bringup completo en modo DESARROLLO -->
-  <include file="$(find tirgo_bringup)/launch/tirgo_all.launch">
-    <arg name="tirgo_dev"        value="1"/>
-    <arg name="flask_debug"      value="1"/>
-    <!-- mongo_uri, secret_key, etc. se quedan en sus defaults de dev -->
+  <!-- ============================================================
+       TirGoPharma · Bringup "ALL" (DEV)
+       Lanza:
+         - STT Vosk
+         - Nodo de voz de TIAGo
+         - TirgoMissionServer
+         - Web tirgo_ui
+       ============================================================ -->
+
+  <!-- ==========================
+       ARGUMENTOS PARA LA WEB
+       (los mismo que usa tirgo_ui/web.launch)
+       ========================== -->
+
+  <!-- 1 = entorno desarrollo, 0 = despliegue -->
+  <arg name="tirgo_dev"        default="1"/>
+
+  <!-- Flask -->
+  <arg name="port"             default="9001"/>
+  <arg name="flask_secret_key" default="dev-secret"/>
+  <arg name="flask_debug"      default="1"/>
+
+  <!-- Seguridad / paciente -->
+  <arg name="pepper"           default="cambia-esta-cadena-larga"/>
+
+  <!-- Voz -->
+  <arg name="hotword"          default="hola tirgo"/>
+  <arg name="stt_topic"        default="/stt/text"/>
+
+  <!-- Mongo: por defecto el contenedor tirgo_mongo -->
+  <arg name="mongo_uri"
+       default="mongodb://tirgo_app:tirgo@tirgo_mongo:27017/tirgo?authSource=tirgo"/>
+
+  <!-- Vídeo (web_video_server) opcional -->
+  <arg name="use_video_server" default="true"/>
+  <arg name="video_port"       default="8080"/>
+
+
+  <!-- ==========================
+       2) STT Vosk (voz -> texto)
+       ========================== -->
+
+  <include file="$(find stt_vosk)/launch/stt_vosk.launch" />
+  <!-- Si algún día quieres pasarle args (modelo, micro, etc.)
+       puedes añadir <arg ...> aquí y dentro del launch de stt_vosk -->
+
+
+  <!-- ==========================
+       3) Nodo de voz de TIAGo
+       ========================== -->
+
+  <node
+    pkg="tirgo_mission_server"
+    type="tiago_speech_node.py"
+    name="tirgo_speech_node"
+    output="screen"
+  />
+
+
+  <!-- ==========================
+       4) TirgoMissionServer
+       ========================== -->
+
+  <node
+    pkg="tirgo_mission_server"
+    type="tirgo_mission_server.py"
+    name="tirgo_mission_server"
+    output="screen"
+  />
+
+
+  <!-- ==========================
+       1) Web UI (Flask + ROS bridge)
+       ========================== -->
+
+  <include file="$(find tirgo_ui)/launch/web.launch">
+    <arg name="port"             value="$(arg port)"/>
+    <arg name="flask_secret_key" value="$(arg flask_secret_key)"/>
+    <arg name="flask_debug"      value="$(arg flask_debug)"/>
+
+    <arg name="hotword"          value="$(arg hotword)"/>
+    <arg name="stt_topic"        value="$(arg stt_topic)"/>
+    <arg name="pepper"           value="$(arg pepper)"/>
+
+    <arg name="tirgo_dev"        value="$(arg tirgo_dev)"/>
+    <arg name="mongo_uri"        value="$(arg mongo_uri)"/>
+
+    <arg name="use_video_server" value="$(arg use_video_server)"/>
+    <arg name="video_port"       value="$(arg video_port)"/>
   </include>
+
 </launch>

@@ -18,9 +18,9 @@ class TirgoMissionServer:
         # Parámetros de timeout (segundos)
         self.timeout_arrive   = rospy.get_param("~timeout_arrive",   120.0)
         self.timeout_ready    = rospy.get_param("~timeout_ready",     60.0)
-        self.timeout_pick     = rospy.get_param("~timeout_pick",      60.0)
+        self.timeout_pick     = rospy.get_param("~timeout_pick",     120.0)
         self.timeout_patient  = rospy.get_param("~timeout_patient",  120.0)
-        self.timeout_deliver  = rospy.get_param("~timeout_deliver",   30.0)
+        self.timeout_deliver  = rospy.get_param("~timeout_deliver",  120.0)
         self.timeout_farewell = rospy.get_param("~timeout_farewell",  30.0)
 
         self._as = actionlib.SimpleActionServer(

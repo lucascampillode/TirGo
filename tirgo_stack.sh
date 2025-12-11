@@ -46,11 +46,3 @@ fi
 
 echo
 echo "🎉 Base de datos lista."
-echo "Ahora, para ROS:"
-echo "  1. Abre el devcontainer 'tirgo' en VS Code."
-echo "  2. Dentro, ejecuta:"
-echo "       cd /home/TirGo/carpeta_compartida/ros_ws"
-echo "       source /opt/ros/noetic/setup.bash"
-echo "       source devel/setup.bash"
-echo "       roslaunch tirgo_bringup tirgo_all_dev.launch"
-echo
