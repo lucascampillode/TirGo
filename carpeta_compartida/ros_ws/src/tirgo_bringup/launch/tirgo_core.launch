@@ -1,0 +1,20 @@
+<launch>
+  <!-- Núcleo de lógica: TirgoMissionServer -->
+
+  <!-- Flag por si quieres cambiar comportamiento según entorno -->
+  <arg name="tirgo_dev" default="1"/>
+
+  <!-- Aquí podrías añadir params de timeouts, etc. -->
+  <!--
+  <param name="mission/timeout_arrive"   value="120.0" />
+  <param name="mission/timeout_ready"    value="60.0" />
+  <param name="mission/timeout_deliver"  value="90.0" />
+  -->
+
+  <node pkg="tirgo_mission_server"
+        type="tirgo_mission_server.py"
+        name="tirgo_mission_server"
+        output="screen">
+    <param name="tirgo_dev" value="$(arg tirgo_dev)"/>
+  </node>
+</launch>

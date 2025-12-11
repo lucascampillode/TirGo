@@ -1,0 +1,13 @@
+<launch>
+  <!-- Bringup completo en modo DESPLIEGUE -->
+  <arg name="flask_secret_key" default="cambia-esta-clave"/>
+  <arg name="mongo_uri"
+       default="mongodb://tirgo_app:tirgo@TIAGO_IP:27017/tirgo?authSource=tirgo"/>
+
+  <include file="$(find tirgo_bringup)/launch/tirgo_all.launch">
+    <arg name="tirgo_dev"        value="0"/>
+    <arg name="flask_debug"      value="0"/>
+    <arg name="flask_secret_key" value="$(arg flask_secret_key)"/>
+    <arg name="mongo_uri"        value="$(arg mongo_uri)"/>
+  </include>
+</launch>

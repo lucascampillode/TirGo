@@ -1,0 +1,8 @@
+<launch>
+  <!-- Bringup completo en modo DESARROLLO -->
+  <include file="$(find tirgo_bringup)/launch/tirgo_all.launch">
+    <arg name="tirgo_dev"        value="1"/>
+    <arg name="flask_debug"      value="1"/>
+    <!-- mongo_uri, secret_key, etc. se quedan en sus defaults de dev -->
+  </include>
+</launch>

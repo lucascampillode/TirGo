@@ -1,0 +1,9 @@
+<launch>
+  <!-- Grupo HRI: voz (STT + TTS TIAGo) -->
+
+  <!-- STT Vosk -->
+  <include file="$(find stt_vosk)/launch/stt_vosk.launch" />
+
+  <!-- Nodo de voz de TIAGo para TirGoPharma -->
+  <include file="$(find tirgo_mission_server)/launch/tiago_speech.launch" />
+</launch>
