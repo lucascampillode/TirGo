@@ -26,7 +26,7 @@ pgrep -a rosmaster     # debería haber uno
 
 ¿Estoy en remoto?
 echo $ROS_MASTER_URI   # http://tiago-222c:11311
-echo $ROS_IP           # tu IP en esa red
+echo $ROS_IP           # 10.172.209.120
 ping -c1 tiago-222c
 
 
