@@ -1,3 +1,18 @@
+"""
+[LEGACY] Servidor web original de TirGo (v1).
+
+Este script montaba una interfaz mínima con detección de hotword
+y visualización básica del texto de STT.
+
+En la versión actual:
+- El servidor principal es `tirgo_web_server` (ver `scripts/tirgo_web_server`)
+- La app Flask real está en `tirgo_ui/app.py`
+- La lógica de conversación y misión vive en `rosio.py`
+
+Este archivo se mantiene solo como referencia histórica y NO se usa
+en el despliegue normal (se prefiere `roslaunch tirgo_ui web.launch`).
+"""
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os, sys, atexit, signal, subprocess, threading, time, re

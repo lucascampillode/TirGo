@@ -1,0 +1,26 @@
+# ===== GOAL =====
+# Identificador del paciente (hash del DNI)
+string patient_id
+
+# Identificador de la cubeta física (bin) en el dispensador
+int32 med_id
+
+---
+# ===== RESULT =====
+# Éxito global de la misión
+bool success
+
+# Código de error en caso de fallo (TIMEOUT_ARRIVE, TIMEOUT_READY, etc.)
+string error_code
+
+# Mensaje de error más descriptivo (para logs/UI)
+string error_message
+
+---
+# ===== FEEDBACK =====
+# Estado textual de la misión (para la UI)
+# Ejemplos: "GOING_TO_DISPENSER", "WAITING_DISPENSE", "GOING_TO_PATIENT", "RETURNING_HOME"
+string state
+
+# Progreso aproximado 0.0 - 1.0
+float32 progress

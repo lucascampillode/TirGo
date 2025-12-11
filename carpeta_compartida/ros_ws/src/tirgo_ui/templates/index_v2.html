@@ -27,9 +27,16 @@
     <section class="hero">
       <h2>Di “hola, Tirgo”</h2>
       <p class="muted">Estoy escuchando… Cuando te oiga, desbloquearé las opciones.</p>
-      <form method="post" action="{{ url_for('main.simulate_hola') }}" onsubmit="setTimeout(()=>location.reload(),300);">
-        <button class="btn ghost">Simular “hola” (demo)</button>
-      </form>
+
+      {# --- Botón demo SOLO si tirgo_dev = True --- #}
+      {% if tirgo_dev %}
+        <form method="post"
+              action="{{ url_for('main.simulate_hola') }}"
+              onsubmit="setTimeout(()=>location.reload(),300);">
+          <button class="btn ghost">Simular “hola” (demo)</button>
+        </form>
+      {% endif %}
+
       <p class="small muted">Ventana de detección activa: {{ window_secs }} s</p>
     </section>
     <script>
@@ -44,6 +51,7 @@
       tick();
     </script>
   {% endif %}
+
 
   {# --- MENÚ PRINCIPAL --- #}
   {% if not view %}
@@ -66,6 +74,35 @@
       <a class="btn primary" href="{{ url_for('diagnostico.diagnostico') }}">Entrar</a>
     </article>
   </section>
+
+  <!-- Navegación por voz: consultar / leer / diagnostico -->
+  <script>
+  (function(){
+    async function pollNav(){
+      try{
+        const r = await fetch('/voice_nav', {cache:'no-store'});
+        const j = await r.json();
+        const nav = (j.nav || '').toLowerCase();
+        if (nav){
+          if (nav === 'consultar') {
+            window.location.href = "{{ url_for('consultar.consultar') }}";
+            return;
+          }
+          if (nav === 'leer') {
+            window.location.href = "{{ url_for('leer.leer') }}";
+            return;
+          }
+          if (nav === 'diagnostico') {
+            window.location.href = "{{ url_for('diagnostico.diagnostico') }}";
+            return;
+          }
+        }
+      } catch(e){}
+      setTimeout(pollNav, 700);
+    }
+    pollNav();
+  })();
+  </script>
   {% endif %}
 
   {# --- CONSULTAR --- #}

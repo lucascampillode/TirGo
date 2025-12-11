@@ -1,24 +1,76 @@
 <launch>
-  <!-- ===== Args con defaults seguros (cámbialos al lanzar si quieres) ===== -->
-  <arg name="port"              default="9001" />
-  <arg name="flask_secret_key"  default="dev-secret" />
-  <arg name="hotword"           default="hola" />
-  <arg name="stt_topic"         default="/stt/text" />
-  <arg name="pepper"            default="cadena-larga-estable" />
-  <arg name="tirgo_dev"         default="1" />
-  <!-- Con auth (recomendado): -->
-  <arg name="mongo_uri" default="mongodb://tirgo_app:tirgo@127.0.0.1:27017/tirgo?authSource=tirgo" />
-  <!-- Sin auth: cambia el arg mongo_uri a: mongodb://127.0.0.1:27017/tirgo -->
+  <!-- ============================================================
+       TirgoPharma · Lanzador de la web (tirgo_ui)
+       ============================================================
+       Modo típico (desarrollo):
 
-  <!-- ===== Exporta las variables de entorno para el proceso ===== -->
-  <env name="PORT"                value="$(arg port)" />
-  <env name="FLASK_SECRET_KEY"    value="$(arg flask_secret_key)" />
-  <env name="TIRGO_HOTWORD"       value="$(arg hotword)" />
-  <env name="TIRGO_STT_TOPIC"     value="$(arg stt_topic)" />
-  <env name="TIRGO_PEPPER"        value="$(arg pepper)" />
-  <env name="TIRGO_DEV"           value="$(arg tirgo_dev)" />
-  <env name="MONGO_URI"           value="$(arg mongo_uri)" />
+         roslaunch tirgo_ui web.launch
 
-  <!-- ===== Lanza el servidor web ===== -->
-  <node pkg="tirgo_ui" type="tirgo_web_server" name="tirgo_web" output="screen" />
+       Modo “despliegue” (sin DEV, sin debug Flask, con auth en Mongo):
+
+         roslaunch tirgo_ui web.launch \
+           tirgo_dev:=0 \
+           flask_debug:=0 \
+           flask_secret_key:=cambia-esta-clave \
+           mongo_uri:=mongodb://tirgo_app:tirgo@TIAGO_IP:27017/tirgo?authSource=tirgo
+
+       En despliegue real, los valores sensibles deberían venir de .env
+       y NO dejarse así en duro.
+       ============================================================ -->
+
+  <!-- =====================
+       Args principales web
+       ===================== -->
+  <arg name="port"             default="9001"/>
+  <arg name="flask_secret_key" default="dev-secret"/>
+  <arg name="flask_debug"      default="1"/>
+
+  <arg name="hotword"          default="hola tirgo"/>
+  <arg name="stt_topic"        default="/stt/text"/>
+  <arg name="pepper"           default="cambia-esta-cadena-larga"/>
+
+  <!-- Flag de entorno: 1 = dev, 0 = despliegue -->
+  <arg name="tirgo_dev"        default="1"/>
+
+  <!-- Mongo: por defecto apunta al stack local de desarrollo -->
+  <arg name="mongo_uri"
+       default="mongodb://tirgo_app:tirgo@127.0.0.1:27017/tirgo?authSource=tirgo"/>
+
+  <!-- Servidor de vídeo opcional (cámara TIAGo en navegador) -->
+  <arg name="use_video_server" default="true"/>
+  <arg name="video_port"       default="8080"/>
+
+  <!-- ==========================
+       Nodo principal de la web
+       ========================== -->
+  <node pkg="tirgo_ui"
+        type="tirgo_web_server"
+        name="tirgo_ui_web"
+        output="screen">
+
+    <!-- Variables de entorno que leerá tirgo_web_server / tirgo_ui.app -->
+    <env name="PORT"             value="$(arg port)" />
+    <env name="FLASK_SECRET_KEY" value="$(arg flask_secret_key)" />
+    <env name="FLASK_DEBUG"      value="$(arg flask_debug)" />
+    <env name="MONGO_URI"        value="$(arg mongo_uri)" />
+    <env name="TIRGO_PEPPER"     value="$(arg pepper)" />
+    <env name="TIRGO_DEV"        value="$(arg tirgo_dev)" />
+    <env name="TIRGO_HOTWORD"    value="$(arg hotword)" />
+    <env name="TIRGO_STT_TOPIC"  value="$(arg stt_topic)" />
+
+    <!-- El script ya se encarga de lanzar tirgo_ui.app -->
+  </node>
+
+  <!-- ==============================
+       Servidor web de vídeo opcional
+       ============================== -->
+  <group if="$(arg use_video_server)">
+    <node pkg="web_video_server"
+          type="web_video_server"
+          name="web_video_server"
+          output="screen">
+      <param name="port" value="$(arg video_port)" />
+    </node>
+  </group>
+
 </launch>

@@ -1,0 +1,83 @@
+<launch>
+  <!-- ============================================================
+       TirgoPharma · Bringup completo
+       ============================================================
+       Uso típico (desarrollo):
+
+         roslaunch tirgo_bringup tirgo_all.launch
+
+       Despliegue (sin DEV, sin debug Flask, etc.):
+
+         roslaunch tirgo_bringup tirgo_all.launch \
+           tirgo_dev:=0 \
+           flask_debug:=0 \
+           use_move:=true \
+           use_hri:=true \
+           use_web:=true
+
+       Los valores sensibles reales (secret key, mongo_uri) deberían
+       venir de .env + scripts, no en duro.
+       ============================================================ -->
+
+  <!-- Modo: 1 = desarrollo, 0 = despliegue -->
+  <arg name="tirgo_dev"    default="1"/>
+
+  <!-- Activar o no cada grupo -->
+  <arg name="use_move"     default="true"/>
+  <arg name="use_hri"      default="true"/>
+  <arg name="use_web"      default="true"/>
+
+  <!-- Parámetros web por defecto (dev) -->
+  <arg name="web_port"         default="9001"/>
+  <arg name="flask_secret_key" default="dev-secret"/>
+  <arg name="flask_debug"      default="1"/>
+  <arg name="hotword"          default="hola tirgo"/>
+  <arg name="stt_topic"        default="/stt/text"/>
+  <arg name="pepper"           default="cambia-esta-cadena-larga"/>
+  <arg name="mongo_uri"
+       default="mongodb://tirgo_app:tirgo@127.0.0.1:27017/tirgo?authSource=tirgo"/>
+
+  <arg name="use_video_server" default="true"/>
+  <arg name="video_port"       default="8080"/>
+
+  <!-- ==========================
+       Núcleo de misión (siempre)
+       ========================== -->
+  <include file="$(find tirgo_bringup)/launch/tirgo_core.launch">
+    <arg name="tirgo_dev" value="$(arg tirgo_dev)"/>
+  </include>
+
+  <!-- ==========================
+       HRI (STT + voz TIAGo)
+       ========================== -->
+  <group if="$(arg use_hri)">
+    <include file="$(find tirgo_bringup)/launch/tirgo_hri.launch"/>
+  </group>
+
+  <!-- ==========================
+       Navegación / Move / RViz
+       ========================== 
+  <group if="$(arg use_move)">
+    <include file="$(find tirgo_bringup)/launch/tirgo_move.launch"/>
+  </group> 
+  -->
+
+  <!-- ==========================
+       Web clínica (tirgo_ui)
+       ========================== -->
+  <group if="$(arg use_web)">
+    <include file="$(find tirgo_bringup)/launch/tirgo_web.launch">
+      <arg name="port"             value="$(arg web_port)"/>
+      <arg name="flask_secret_key" value="$(arg flask_secret_key)"/>
+      <arg name="flask_debug"      value="$(arg flask_debug)"/>
+      <arg name="hotword"          value="$(arg hotword)"/>
+      <arg name="stt_topic"        value="$(arg stt_topic)"/>
+      <arg name="pepper"           value="$(arg pepper)"/>
+      <arg name="tirgo_dev"        value="$(arg tirgo_dev)"/>
+      <arg name="mongo_uri"        value="$(arg mongo_uri)"/>
+      <arg name="use_video_server" value="$(arg use_video_server)"/>
+      <arg name="video_port"       value="$(arg video_port)"/>
+    </include>
+  </group>
+
+</launch>

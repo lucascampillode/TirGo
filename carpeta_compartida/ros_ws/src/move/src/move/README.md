@@ -1,60 +1,67 @@
-# checkpointfollower.py
+## Carpeta Move 
+````markdown
 
-Nodo de **lógica de navegación** en Python.
+# Módulo `move` (Python) – Nodos de Navegación
 
-Este script actúa como un "director de misión": contiene una lista predefinida de coordenadas (checkpoints) y se encarga de enviarlas una a una al sistema de navegación (`move_base`), verificando manualmente que el robot se mueva y llegue a su destino antes de enviar la siguiente.
+Este directorio contiene el código fuente en Python que implementa la lógica de navegación, secuenciación de objetivos y pruebas del robot TIAGo.
 
 ---
 
-## 1. Ubicación en el Paquete
-
-Se encuentra en la carpeta `scripts/` y debe tener permisos de ejecución.
+## 1. Archivos del Paquete
 
 ```text
-move/
-└── scripts/
-    ├── run_all.sh               ← Script que lanza este nodo
-    └── checkpointfollower.py    ← ESTE ARCHIVO
+src/move/
+├── checkpointfollower.py   # Nodo principal de navegación
+├── publish_initial_pose.py # Herramienta de localización
+├── comunicacion_test.py    # Test de conectividad
+└── test_puntos.py          # Validación de coordenadas
+````
+
+-----
+
+## 2\. Descripción de los Nodos
+
+### 2.1. `checkpointfollower.py`
+
+Es el **nodo principal** ("Director de Misión"). Su función es guiar al robot a través de una ruta preestablecida.
+
+  * **Funcionamiento:**
+    1.  Lee una lista de coordenadas (checkpoints) definida en el código.
+    2.  Envía cada punto como un objetivo (`goal`) al topic `/move_base/goal`.
+    3.  Monitoriza el estado del robot y espera a que llegue al destino antes de enviar el siguiente punto.
+  * **Mensajes clave:** `move_base_msgs/MoveBaseActionGoal`.
+
+### 2.2. `publish_initial_pose.py`
+
+Un script auxiliar para ayudar al sistema de localización (`amcl`) a situarse.
+
+  * **Funcionamiento:** Publica una estimación de la posición inicial del robot en el topic `/initialpose`. Esto es útil para "resetear" la ubicación del robot en el mapa al inicio de la ejecución sin usar la interfaz gráfica de RViz.
+
+### 2.3. `test_puntos.py`
+
+Script de validación de datos.
+
+  * **Uso:** Se utiliza para verificar que las listas de coordenadas (x, y, orientación) tienen el formato correcto antes de integrarlas en el nodo principal de navegación. Ayuda a evitar errores de sintaxis o formato en las rutas.
+
+### 2.4. `comunicacion_test.py`
+
+Script básico de diagnóstico.
+
+  * **Uso:** Comprueba que la comunicación entre nodos ROS está funcionando correctamente enviando y recibiendo mensajes de prueba simples.
+
+-----
+
+## 3\. Dependencias
+
+Para que estos scripts funcionen, el entorno debe tener acceso a las siguientes librerías de ROS y Python:
+
+  * `rospy`
+  * `geometry_msgs`
+  * `move_base_msgs`
+  * `tf.transformations` (para el manejo de cuaterniones y orientación)
+  * `numpy`
+
+<!-- end list -->
+
 ```
-## 2.Cómo funciona
 
-A diferencia de un cliente de acción estándar, este nodo implementa su propia lógica de verificación basada en la posición real del robot:
-
-  * Publica un objetivo (goal) en el topic de navegación.
-
-  * Espera movimiento: Monitoriza la posición del robot (/robot_pose) hasta detectar que ha empezado a desplazarse.
-
-  * Espera llegada: Sigue monitorizando hasta que el robot deja de moverse (velocidad cercana a 0 durante un tiempo), asumiendo que ha llegado al objetivo.
-
-  * Siguiente punto: Repite el proceso con la siguiente coordenada de la lista.
-
-## 3. Topics ROS
-El nodo interactúa con la navegación a través de estos canales:
-```
-Tipo              Topic                    Mensaje                                              Descripción
-Publica,    /move_base/goal    move_base_msgs/MoveBaseActionGoal           Envía la coordenada objetivo al planificador.
-Suscribe      /robot_pose      geometry_msgs/PoseWithCovarianceStamped     Lee la posición actual para saber si el robot se mueve o está quieto.
-```
-## 4.Cómo editar los Puntos (Checkpoints)
-
-Las coordenadas están definidas al final del archivo, en el bloque if __name__ == "__main__":.
-
-Para cambiar la ruta, edita la lista checkpoints. El formato es: [Posición X, Posición Y, Orientación Z, Orientación W]
-```Python
-checkpoints = [
-    # [   X,      Y,       oz,       ow   ]
-    [1.80,  -0.72,   -0.17,    0.98],  # Puerta
-    [0.75,   0.69,    0.87,    0.48],  # Puerta 2
-    [3.67,  -1.89,   -0.34,    0.93],  # Al Medio
-    [6.12,  -2.15,   -0.10,    0.99],  # Al Fondo
-]
-```
-## 6.Dependencias Python
-
-Este script utiliza las siguientes librerías estándar y de ROS:
-
-  rospy
-
-  numpy (cálculo matricial y distancias)
-
-  tf.transformations (manejo de cuaterniones)

@@ -1,0 +1,13 @@
+<launch>
+  <!-- Nodo real del dispensador -->
+  <node pkg="servo_dispenser"
+        type="servo_dispenser_node.py"
+        name="servo_dispenser"
+        output="screen" />
+
+  <!-- Test de flujo con rostest -->
+  <test test-name="servo_dispenser_flow"
+        pkg="servo_dispenser"
+        type="test_servo_dispenser_flow.py"
+        time-limit="20.0" />
+</launch>

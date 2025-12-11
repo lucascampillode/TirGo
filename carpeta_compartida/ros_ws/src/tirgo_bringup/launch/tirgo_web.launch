@@ -1,0 +1,29 @@
+<launch>
+  <!-- Grupo WEB: interfaz clínica (tirgo_ui) -->
+
+  <!-- Reexponemos los args clave del launch de tirgo_ui -->
+  <arg name="port"             default="9001"/>
+  <arg name="flask_secret_key" default="dev-secret"/>
+  <arg name="flask_debug"      default="1"/>
+  <arg name="hotword"          default="hola tirgo"/>
+  <arg name="stt_topic"        default="/stt/text"/>
+  <arg name="pepper"           default="cambia-esta-cadena-larga"/>
+  <arg name="tirgo_dev"        default="1"/>
+  <arg name="mongo_uri"
+       default="mongodb://tirgo_app:tirgo@127.0.0.1:27017/tirgo?authSource=tirgo"/>
+  <arg name="use_video_server" default="true"/>
+  <arg name="video_port"       default="8080"/>
+
+  <include file="$(find tirgo_ui)/launch/web.launch">
+    <arg name="port"             value="$(arg port)"/>
+    <arg name="flask_secret_key" value="$(arg flask_secret_key)"/>
+    <arg name="flask_debug"      value="$(arg flask_debug)"/>
+    <arg name="hotword"          value="$(arg hotword)"/>
+    <arg name="stt_topic"        value="$(arg stt_topic)"/>
+    <arg name="pepper"           value="$(arg pepper)"/>
+    <arg name="tirgo_dev"        value="$(arg tirgo_dev)"/>
+    <arg name="mongo_uri"        value="$(arg mongo_uri)"/>
+    <arg name="use_video_server" value="$(arg use_video_server)"/>
+    <arg name="video_port"       value="$(arg video_port)"/>
+  </include>
+</launch>

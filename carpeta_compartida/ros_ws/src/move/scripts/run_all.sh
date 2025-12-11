@@ -7,7 +7,7 @@ source /home/TirGo/carpeta_compartida/ros_ws/devel/setup.bash
 roslaunch move rviz.launch &
 RVIZ_PID=$!
 echo "[INFO] Lanzado rviz con PID $RVIZ_PID"
-
+    
 # Esperar un momento para que se abra rviz y le de tiempo antes de cargar el mapa
 sleep 4
 
@@ -20,15 +20,23 @@ MAP_PID=$!
 echo "[INFO] Lanzado map_server con PID $MAP_PID"
 
 # Esperar un momento para asegurarse de que el mapa esta bien lanzado
-sleep 5 
+sleep 1
 
 # Cargar mi ws
 source /home/TirGo/carpeta_compartida/ros_ws/devel/setup.bash
 
+# Localizarse en posicion inicial
+rosrun move publish_initial_pose.py
+
+# Esperar un momento para asegurarse de que el mapa esta bien lanzado
+sleep 10
+
 # Lanzar los demas nodos
-rosrun move checkpointfollower.py &
-CHECKPOINT_PID=$!
-echo "[INFO] Lanzado checkpointfollower con PID $CHECKPOINT_PID"
+#rosrun move checkpointfollower.py &
+#CHECKPOINT_PID=$!
+#echo "[INFO] Lanzado checkpointfollower con PID $CHECKPOINT_PID"
 
 # Esperar a que terminen todos los procesos lanzados
-wait
+wait $CHECKPOINT_PID
+echo "Terminado"
+

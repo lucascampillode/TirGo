@@ -1,4 +1,6 @@
 move
+/home/TirGo/carpeta_compartida/ros_ws/devel/.private/move/lib/move/publish_initial_pose.py /home/TirGo/carpeta_compartida/ros_ws/devel/lib/move/publish_initial_pose.py
+/home/TirGo/carpeta_compartida/ros_ws/devel/.private/move/lib/move/test_comunicaciones.py /home/TirGo/carpeta_compartida/ros_ws/devel/lib/move/test_comunicaciones.py
 /home/TirGo/carpeta_compartida/ros_ws/devel/.private/move/lib/move/checkpointfollower.py /home/TirGo/carpeta_compartida/ros_ws/devel/lib/move/checkpointfollower.py
 /home/TirGo/carpeta_compartida/ros_ws/devel/.private/move/lib/pkgconfig/move.pc /home/TirGo/carpeta_compartida/ros_ws/devel/lib/pkgconfig/move.pc
 /home/TirGo/carpeta_compartida/ros_ws/devel/.private/move/share/move/cmake/moveConfig.cmake /home/TirGo/carpeta_compartida/ros_ws/devel/share/move/cmake/moveConfig.cmake
