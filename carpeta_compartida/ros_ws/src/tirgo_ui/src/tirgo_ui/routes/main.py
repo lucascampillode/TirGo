@@ -50,6 +50,7 @@ def index():
                 return "<h3>Di la hotword para desbloquear</h3>", 200
 
     # si hay sesión activa -> mostrar menú
+    rosio.set_ui_menu("home")
     return render_template("menu.html")
 
 
@@ -94,8 +95,6 @@ def simulate_hola():
         return ("", 404)
 
     session.start_session(op_name="dev_sim")
-    # opcional: avisar a ROS del nuevo estado
-    # rosio.pub_state("MENU")
     return redirect(url_for("main.index"))
 
 
@@ -104,6 +103,7 @@ def cancelar_operacion():
     """Botón de cancelar / volver atrás desde el flujo principal."""
     session.end_session()
     rosio.reset_conv()   # volvemos al estado idle también
+    rosio.set_ui_menu("home")
     return redirect(url_for("main.index"))
 
 
@@ -114,8 +114,7 @@ def reset_hotword():
     Cierra la sesión actual (si la hay), resetea la conversación en ROS
     y vuelve al index, que ya enseñará await_hotword.
     """
-    # cerramos la sesión actual (si la hay)
     session.end_session()
-    rosio.reset_conv()   # reseteamos la conversación
-    # y volvemos al index, que ya enseñará await_hotword
+    rosio.reset_conv()
+    rosio.set_ui_menu("home")
     return redirect(url_for("main.index"))

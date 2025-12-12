@@ -16,43 +16,10 @@ launch_tiago_simulation
 Ejemplo: rostopic list => ver los topics disponibles
 
 
-Checks rápidos
-
-¿Estoy en local?
-
-echo $ROS_MASTER_URI   # http://localhost:11311
-echo ${ROS_IP:-<vacio>}
-pgrep -a rosmaster     # debería haber uno
-
-¿Estoy en remoto?
-echo $ROS_MASTER_URI   # http://tiago-222c:11311
-echo $ROS_IP           # 10.172.209.120
-ping -c1 tiago-222c
-
-
-____________________________________
-
-LANZAR WEB
-
-
-
-export MONGO_URI="mongodb://tirgo_app:tirgo@127.0.0.1:27017/tirgo?authSource=tirgo"
-export FLASK_SECRET_KEY="dev-secret"
-export TIRGO_HOTWORD="hola"
-export TIRGO_STT_TOPIC="/stt/text"
-export TIRGO_DEV="1"                      # activa /simulate_hola
-export PORT="9001"
-
-
-pruebaa
-cd ~/carpeta_compartida/ros_ws
-catkin_make
-source devel/setup.bash
-
-
-rosrun tirgo_ui tirgo_web_server
-
-
+rosrun tirgo_mission_server tirgo_mission_server.py
+roslaunch stt_vosk stt_vosk.launch
+roslaunch tirgo_ui web.launch
+rosrun tirgo_mission_server tiago_speech_node.py 
 
 LANZAR ACTIONS
 

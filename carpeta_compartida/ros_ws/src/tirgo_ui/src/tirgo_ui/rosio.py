@@ -122,6 +122,26 @@ def get_and_clear_voice_nav() -> str:
     return v or ""
 
 
+# ============================================================
+# CONTEXTO UI: en qué pantalla está la web (para "gating" de STT)
+# ============================================================
+# home | consultar | leer | diagnostico
+_ui_menu = "home"
+
+def set_ui_menu(menu: str):
+    """
+    La web llama a esto cuando cambia de pantalla.
+    Sirve para ignorar intents globales en submenús.
+    """
+    global _ui_menu
+    m = (menu or "").strip().lower()
+    if m in ("home", "consultar", "leer", "diagnostico"):
+        _ui_menu = m
+
+def get_ui_menu() -> str:
+    return _ui_menu
+
+
 def master_up() -> bool:
     try:
         uri = os.environ.get("ROS_MASTER_URI", "http://localhost:11311")
@@ -226,7 +246,8 @@ def _stt_cb(msg: Any):
     Callback de STT:
     - si estamos en idle y oímos el saludo -> TIAGo saluda y pasamos a await_confirm
     - si estamos en await_confirm y oímos un sí -> activamos sesión
-    - si la sesión está activa -> detectar intents de navegación (consultar/leer/diagnóstico)
+    - si la sesión está activa -> detectar intents de navegación SOLO en home
+      (en submenús se ignoran para que Tiago no se dispare)
     """
     global _conv_state
     try:
@@ -272,13 +293,19 @@ def _stt_cb(msg: Any):
                 pass
             return
 
-    # 3) Con sesión activa: detectar intents de navegación
+    # 3) Con sesión activa
     else:
         try:
-            rospy.loginfo(f"[STT] sesión activa, texto: {text_norm}")
+            rospy.loginfo(f"[STT] sesión activa, texto: {text_norm} (ui_menu={_ui_menu})")
         except Exception:
             pass
 
+        # 🔒 Bloqueo de intents globales en submenús:
+        # Si la UI no está en "home", ignoramos consultar/leer/diagnostico.
+        if _ui_menu in ("consultar", "leer", "diagnostico"):
+            return
+
+        # Solo en HOME aceptamos intents de navegación
         intent = _match_intent(text_norm)
         if intent:
             global _last_voice_nav
@@ -336,6 +363,22 @@ def pub_error(code: str, msg: str):
             rospy.loginfo(f"[ERROR] {code}: {msg}")
     except Exception:
         pass
+
+
+# === Helper interno: cerrar sesión y volver a idle tras misión ===
+def _reset_session_after_mission():
+    """
+    Pone la sesión en 'no activa' y devuelve el pequeño autómata de conversación a 'idle'.
+    Se llama tanto en éxito como en error de la misión.
+    """
+    global _conv_state
+    try:
+        if session.is_active():
+            session.end_session()
+    except Exception:
+        # No queremos que un fallo aquí rompa el flujo de la misión
+        pass
+    _conv_state = "idle"
 
 
 # === ACTION CLIENT: lanzar misión TirgoPharma ===
@@ -398,6 +441,8 @@ def start_mission_async(patient_id: str, med_id: int):
                 error_code="MISSION_CLIENT_FAIL",
                 error_message=str(e),
             )
+            # Ante fallo gordo también dejamos la sesión en idle
+            _reset_session_after_mission()
 
     threading.Thread(target=_run, daemon=True).start()
 
@@ -448,6 +493,8 @@ def _mission_done_cb(state, result):
             error_message=msg,
             progress=0.0,
         )
+        # En caso de error, también cerramos la sesión y volvemos a idle
+        _reset_session_after_mission()
     else:
         try:
             rospy.loginfo("[MISSION DONE] success ✅")
@@ -463,3 +510,5 @@ def _mission_done_cb(state, result):
             error_message="",
             progress=1.0,
         )
+        # Misión OK -> sesión terminada y conversación a idle
+        _reset_session_after_mission()

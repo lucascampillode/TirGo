@@ -159,6 +159,7 @@ def _get_meds_for_patient(pac: dict, msg_if_empty: str):
 
 @bp.get("/", endpoint="consultar")
 def consultar_get():
+    rosio.set_ui_menu("consultar")
     return render_template("consultar.html")
 
 
@@ -187,7 +188,7 @@ def consultar_post():
         return redirect(url_for("consultar.consultar"))
 
     if apellidos and not _is_valid_name(apellidos):
-        flash("Los apellidos solo pueden contener letras, espacios, apóstrofos y guiones (máx. 80 caracteres).", "error")
+        flash("Los apellidos solo puede contener letras, espacios, apóstrofos y guiones (máx. 80 caracteres).", "error")
         return redirect(url_for("consultar.consultar"))
 
     rosio.pub_state('IDENTIFYING')
@@ -248,7 +249,7 @@ def crear_paciente():
         return redirect(url_for("consultar.consultar"))
 
     if not _is_valid_name(apellidos):
-        flash("Los apellidos solo pueden contener letras, espacios, apóstrofos y guiones (máx. 80 caracteres).", "error")
+        flash("Los apellidos solo puede contener letras, espacios, apóstrofos y guiones (máx. 80 caracteres).", "error")
         return redirect(url_for("consultar.consultar"))
 
     # Validar DNI
