@@ -88,6 +88,8 @@ def leer_get():
     try:
         if not session.is_active():
             return redirect(url_for('main.index'))
+
+        rosio.set_ui_menu("leer")
         rosio.pub_state('MODE_SELECTED')
 
         try:

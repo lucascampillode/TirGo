@@ -139,7 +139,7 @@ sleep 3
 # Mission Server 2 (Tiago speech node) - con log aparte
 rosrun tirgo_mission_server tiago_speech_node.py > /tmp/tiago_speech.log 2>&1 &
 PID_MS2=$!
-echo "[LAUNCH] Mission Server 2 (PID: $PID_MS2, log: /tmp/tiago_speech.log)"
+echo "[LAUNCH] Tiago speech node (PID: $PID_MS2, log: /tmp/tiago_speech.log)"
 
 # TirGo UI
 roslaunch tirgo_ui web.launch &
@@ -150,6 +150,7 @@ echo "[LAUNCH] TirGo UI (PID: $PID_UI)"
 # 3) Lanzar navegación: RViz + mapa + move
 ############################################
 
+export DISABLE_ROS1_EOL_WARNINGS=1
 # Rviz (visualización)
 roslaunch move rviz.launch &
 PID_RVIZ=$!

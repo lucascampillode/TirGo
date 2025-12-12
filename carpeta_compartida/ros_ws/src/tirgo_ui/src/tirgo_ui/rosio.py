@@ -122,6 +122,26 @@ def get_and_clear_voice_nav() -> str:
     return v or ""
 
 
+# ============================================================
+# CONTEXTO UI: en qué pantalla está la web (para "gating" de STT)
+# ============================================================
+# home | consultar | leer | diagnostico
+_ui_menu = "home"
+
+def set_ui_menu(menu: str):
+    """
+    La web llama a esto cuando cambia de pantalla.
+    Sirve para ignorar intents globales en submenús.
+    """
+    global _ui_menu
+    m = (menu or "").strip().lower()
+    if m in ("home", "consultar", "leer", "diagnostico"):
+        _ui_menu = m
+
+def get_ui_menu() -> str:
+    return _ui_menu
+
+
 def master_up() -> bool:
     try:
         uri = os.environ.get("ROS_MASTER_URI", "http://localhost:11311")
@@ -226,7 +246,8 @@ def _stt_cb(msg: Any):
     Callback de STT:
     - si estamos en idle y oímos el saludo -> TIAGo saluda y pasamos a await_confirm
     - si estamos en await_confirm y oímos un sí -> activamos sesión
-    - si la sesión está activa -> detectar intents de navegación (consultar/leer/diagnóstico)
+    - si la sesión está activa -> detectar intents de navegación SOLO en home
+      (en submenús se ignoran para que Tiago no se dispare)
     """
     global _conv_state
     try:
@@ -272,13 +293,19 @@ def _stt_cb(msg: Any):
                 pass
             return
 
-    # 3) Con sesión activa: detectar intents de navegación
+    # 3) Con sesión activa
     else:
         try:
-            rospy.loginfo(f"[STT] sesión activa, texto: {text_norm}")
+            rospy.loginfo(f"[STT] sesión activa, texto: {text_norm} (ui_menu={_ui_menu})")
         except Exception:
             pass
 
+        # 🔒 Bloqueo de intents globales en submenús:
+        # Si la UI no está en "home", ignoramos consultar/leer/diagnostico.
+        if _ui_menu in ("consultar", "leer", "diagnostico"):
+            return
+
+        # Solo en HOME aceptamos intents de navegación
         intent = _match_intent(text_norm)
         if intent:
             global _last_voice_nav
