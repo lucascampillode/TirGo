@@ -183,16 +183,17 @@ class SecuenciaBrazoTiago(object):
         p.time_from_start = rospy.Duration(duration)
 
         traj.points = [p]
-        self.gripper_pub.publish(p)
+        # CORRECCIÓN: publicar la trayectoria completa, no el punto
+        self.gripper_pub.publish(traj)
 
     def _abrir_gripper(self):
         rospy.loginfo("Abriendo gripper...")
-        self._publicar_gripper([0.045, 0.045], duration=1.0)
+        self._publicar_gripper([0.044, 0.044], duration=2.0)
         rospy.sleep(2.0)
 
     def _cerrar_gripper(self):
         rospy.loginfo("Cerrando gripper...")
-        self._publicar_gripper([0.0, 0.0], duration=1.0)
+        self._publicar_gripper([0.02, 0.02], duration=2.0)
         rospy.sleep(2.0)
 
     # -------------------  BRAZO (ACTION SERVER) -------------------
@@ -272,7 +273,8 @@ class SecuenciaBrazoTiago(object):
                 pasada_pos_cogida = True
                 continue
 
-            if nombre == "SEGUNDA_APROX" and pasada_pos_cogida:
+            # CORRECCIÓN: el nombre real del paso es "SEGUNDA APROXIMACION"
+            if nombre == "SEGUNDA APROXIMACION" and pasada_pos_cogida:
                 self._ejecutar_paso(paso)
                 rospy.sleep(0.5)
                 self._cerrar_gripper()
