@@ -1,4 +1,4 @@
-#!/bin/bash
+a ver este es mi codigo lo quiero que funcione: #!/bin/bash
 
 # Cargar mi ws
 source /home/TirGo/carpeta_compartida/ros_ws/devel/setup.bash

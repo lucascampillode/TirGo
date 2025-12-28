@@ -136,15 +136,29 @@ echo "[LAUNCH] Mission Server 1 (PID: $PID_MS1)"
 # Pequeña espera para que arranquen bien los primeros nodos
 sleep 3
 
+cd "$WS"
+
+echo "[INFO] Ejecutando catkin_make en $WS..."
+catkin_make
+source devel/setup.bash
+
 # Mission Server 2 (Tiago speech node) - con log aparte
 rosrun tirgo_mission_server tiago_speech_node.py > /tmp/tiago_speech.log 2>&1 &
 PID_MS2=$!
 echo "[LAUNCH] Mission Server 2 (PID: $PID_MS2, log: /tmp/tiago_speech.log)"
 
+
+cd "$WS"
+
+echo "[INFO] Ejecutando catkin_make en $WS..."
+catkin_make
+source devel/setup.bash
 # TirGo UI
 roslaunch tirgo_ui web.launch &
 PID_UI=$!
 echo "[LAUNCH] TirGo UI (PID: $PID_UI)"
+
+
 
 ############################################
 # 3) Lanzar navegación: RViz + mapa + move
