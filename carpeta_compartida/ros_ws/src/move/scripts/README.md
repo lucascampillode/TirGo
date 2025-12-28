@@ -28,7 +28,7 @@ Este es el script que debe ejecutarse para iniciar la demostración completa. Re
 
 1.  **Lanza RViz** cargando la configuración visual del proyecto.
 2.  **Inicia el `map_server`** para publicar el mapa estático del aula.
-3.  **Ejecuta `checkpointfollower.py`**, el nodo que gestiona el envío de objetivos de navegación al robot.
+3.  **Ejecuta `comunication_move.py`**, el nodo que gestiona el envío de objetivos de navegación al robot. Además de administrar los nodos de movimiento y publicar cuando se llega al punto.
 
 ### Uso
 
@@ -43,7 +43,7 @@ roscd move/scripts
 
 ## 3\. `run_test.sh` (Pruebas)
 
-Este script se utiliza para depuración o pruebas rápidas. Dependiendo de su configuración interna (se puede editar según necesidad), suele lanzar solo herramientas de visualización o nodos de test sin ejecutar la lógica completa de navegación automática.
+Este script se utiliza para depuración o pruebas de posiciones. En este se prueba cuando quieres recalibrar el robot y lanzarlo a un lugar sin tener que esperar a la resolución de nodos de forma constante. 
 
 ### Uso
 
