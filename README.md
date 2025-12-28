@@ -12,8 +12,7 @@
     <a href="https://www.python.org/"><img alt="Python 3.8+" src="https://img.shields.io/badge/Python-3.8%2B-3776AB?style=flat&logo=python"></a>
     <a href="https://www.docker.com/"><img alt="Docker Compose" src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker"></a>
     <a href="https://www.mongodb.com/"><img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-Database-47A248?style=flat&logo=mongodb"></a>
-    <img alt="Status" src="https://img.shields.io/badge/Status-Released-blue?style=flat">
-
+    <img alt="Status" src="https://img.shields.io/badge/Status-Demo%20stable-blue?style=flat">
   </p>
 
   <p>
@@ -24,37 +23,31 @@
 ---
 
 ## Tabla de contenidos
-1. [Estado del proyecto](#estado-del-proyecto)
-2. [Explicación general del proyecto](#explicación-general-del-proyecto)
-3. [Demo](#demo)
-4. [Qué hace y por qué importa](#qué-hace-y-por-qué-importa)
-   - [Features clave](#features-clave)
-5. [Quickstart (demo “de verdad”)](#quickstart-demo-de-verdad)
-6. [Vista de alto nivel](#vista-de-alto-nivel)
-7. [Arquitectura](#arquitectura)
-   - [Diagrama completo](#diagrama-completo)
-   - [Secuencia “misión de dispensación”](#secuencia-misión-de-dispensación)
-   - [Despliegue (Docker + DB stack)](#despliegue-docker--db-stack)
-8. [Estructura de carpetas](#estructura-de-carpetas)
-9. [Paquetes ROS](#paquetes-ros)
-10. [Interfaces ROS](#interfaces-ros)
-11. [Requisitos](#requisitos)
-12. [Instalación](#instalación)
-13. [Configuración](#configuración)
-14. [Uso detallado](#uso-detallado)
-    - [Casos típicos](#casos-típicos)
-    - [Ejemplos, flags y endpoints](#ejemplos-flags-y-endpoints)
-    - [Inputs/outputs y formato](#inputsoutputs-y-formato)
-15. [Base de datos (Mongo)](#base-de-datos-mongo)
-16. [Testing](#testing)
-17. [Desarrollo local](#desarrollo-local)
-18. [Compatibilidad](#compatibilidad)
-19. [Autores](#autores)
+- [Estado del proyecto](#estado-del-proyecto)
+- [Explicación general del proyecto](#explicación-general-del-proyecto)
+- [Demo](#demo)
+- [Qué hace y por qué importa](#qué-hace-y-por-qué-importa)
+- [Quickstart](#quickstart)
+- [Vista de alto nivel](#vista-de-alto-nivel)
+- [Arquitectura](#arquitectura)
+- [Estructura de carpetas](#estructura-de-carpetas)
+- [Paquetes ROS](#paquetes-ros)
+- [Interfaces ROS](#interfaces-ros)
+- [Requisitos](#requisitos)
+- [Instalación](#instalación)
+- [Configuración](#configuración)
+- [Uso detallado](#uso-detallado)
+  - [Casos típicos](#casos-típicos)
+- [Base de datos (Mongo)](#base-de-datos-mongo)
+- [Testing](#testing)
+- [Desarrollo local](#desarrollo-local)
+- [Autores](#autores)
+
 
 ---
 
 ## Estado del proyecto
-- **Active development / WIP**: diseñado para funcionar como demo integrada y, al mismo tiempo, poder iterar por módulos sin romper el conjunto.
+- **Released (demo final estable)**: diseñado como una demo integrada y reproducible, con arquitectura modular para poder mantener o ampliar componentes sin romper el flujo end-to-end.
 - **Stack principal**: **ROS 1 Noetic**. Se recomienda Docker para asegurar reproducibilidad (mismas dependencias, mismo entorno).
 - **Arquitectura modular**: UI, DB, coordinación, ejecución y hardware están desacoplados para poder sustituir/iterar componentes.
 - **Entrada oficial de la demo final**: `./tirgo_ALL.sh` (script de raíz).
@@ -101,7 +94,7 @@ En un entorno hospitalario, dispensar y entregar medicación no es solo “mover
 - **Demo completa (YouTube/Drive):** `[ENLACE_AQUI]`  
 - **Demo corta (30–60s):** `[ENLACE_AQUI]`
 
-**GIF recomendado:** `docs/demo.gif` (10–15s, sin audio)
+**GIF* `docs/demo.gif` (10–15s, sin audio)
 ![Demo GIF](docs/demo.gif)
 
 ---
@@ -127,7 +120,7 @@ En un entorno hospitalario, dispensar y entregar medicación no es solo “mover
 > Este script es el “guion” del sistema: levanta la BD (infra), levanta el contenedor ROS, compila el workspace y lanza los nodos principales.
 
 ### Requisitos mínimos
-- Linux recomendado.
+- Linux.
 - Docker + Docker Compose v2.
 - Red/entorno de laboratorio según el escenario (TIAGo/RPi).
 
@@ -148,7 +141,7 @@ cp .env.example .env
 
 * **UI Web**
 
-  * suele estar en `http://localhost:9001`
+  * Por defecto esta en `http://localhost:9001`
   
 * **ROS (dentro del contenedor)**
 
@@ -253,8 +246,6 @@ flowchart TB
 
 ## Estructura de carpetas
 
-> Si llegas nuevo/a: aquí está el “GPS” del repo.
-
 ```text
 TirGo/
 ├── Dockerfile
@@ -304,7 +295,7 @@ TirGo/
 * El **coordinador** guía el flujo y espera confirmaciones de cada parte del sistema.
 * Los módulos de **ejecución** (movimiento/dispensación/brazo) reportan hitos para mantener el proceso trazable.
 
-📌 Para el detalle fino (definiciones exactas y comportamiento):
+Para el detalle (definiciones exactas y comportamiento):
 
 * [`tirgo_mission_server/README.md`](carpeta_compartida/ros_ws/src/tirgo_mission_server/README.md)
 * [`tirgo_msgs/README.md`](carpeta_compartida/ros_ws/src/tirgo_msgs/README.md)
@@ -333,23 +324,26 @@ TirGo/
 * Raspberry Pi 3B + servos (dispensador)
 * Micrófono (opcional)
 
+| Componente   | Recomendado                                 |
+| ------------ | ------------------------------------------- |
+| OS           | Linux (Ubuntu)                              |
+| ROS          | ROS 1 Noetic                                |
+| DB           | MongoDB (via `infra/tirgo_db_stack`)        |
+| Contenedores | Docker + docker compose                     |
+| Dispensador  | Raspberry Pi 3B + pigpio (si hardware real) |
+
+
 ---
 
 ## Instalación
 
 ```bash
-git clone <URL_DEL_REPO>
+git clone https://github.com/lucascampillode/TirGo
 cd TirGo
 
 cp .env.example .env
 # edita si hace falta:
 nano .env
-```
-
-(Optativo) Levantar solo DB:
-
-```bash
-./tirgo_stack.sh
 ```
 
 ---
@@ -382,54 +376,15 @@ Referencias:
 3. Sigue el flujo de solicitud/validación
 4. Lanza misión y observa el proceso end-to-end
 
-➡️ Detalle real de pantallas y flujo:
-
-* [`tirgo_ui/README.md`](carpeta_compartida/ros_ws/src/tirgo_ui/README.md)
 
 #### 2) Interacción por voz (opcional)
 
 Con el stack levantado, el módulo STT permite capturar voz → texto para apoyar el flujo.
 
-➡️ Configuración de dispositivos y STT:
-
-* [`stt_vosk/README.md`](carpeta_compartida/ros_ws/src/stt_vosk/README.md)
 
 #### 3) Depuración sin hardware
 
 Se puede validar por módulos (UI+DB, coordinación de misión, etc.) sin depender del dispensador físico real.
-
-➡️ Coordinación, ejecución y troubleshooting:
-
-* [`tirgo_mission_server/README.md`](carpeta_compartida/ros_ws/src/tirgo_mission_server/README.md)
-
----
-
-### Ejemplos, flags y endpoints
-
-* **Script demo oficial:** `./tirgo_ALL.sh`
-* **Stack DB:** `./tirgo_stack.sh` o `infra/tirgo_db_stack/`
-* **Rutas/endpoints web (código):** `carpeta_compartida/ros_ws/src/tirgo_ui/routes/`
-* **Launchers:** `carpeta_compartida/ros_ws/src/tirgo_bringup/` *(si aplica)*
-
-📌 Para el detalle exacto de endpoints y navegación:
-
-* [`tirgo_ui/README.md`](carpeta_compartida/ros_ws/src/tirgo_ui/README.md)
-
----
-
-### Inputs/outputs y formato
-
-**Inputs típicos**
-
-* Identificación del paciente (cuando aplica)
-* Selección de medicación / petición desde UI
-* Confirmación del usuario (web/voz)
-
-**Outputs típicos**
-
-* Progreso/estado visible en la UI
-* Resultado final de misión (éxito/error/cancelación)
-* Evidencias: logs/monitorización (y vídeos si se añaden)
 
 ---
 
@@ -455,24 +410,30 @@ Si la web no conecta a Mongo, lo más típico es que el `mongo_uri` que está us
 
 **Solución recomendada:** alinea las credenciales en `.env` con las del stack DB y usa un `mongo_uri` coherente.
 
-Ejemplo (si tu usuario es `tirgo_user` y tu password coincide con `TIRGO_DB_PASSWORD`):
-
-```bash
-roslaunch tirgo_ui web.launch mongo_uri:=mongodb://tirgo_user:tirgo_pass_cambia@127.0.0.1:27017/tirgo?authSource=tirgo
-```
-
-> Si estás usando el stack completo con `./tirgo_ALL.sh`, lo ideal es que este ajuste quede reflejado en `.env`/config para no depender de “parches manuales” el día de demo.
-
 ---
-
 ## Testing
 
-El testing se enfoca en lo que suele romper demos: el flujo end-to-end y la coordinación.
+El testing en **TirGoPharma** está orientado a proteger lo que más suele romper una demo end-to-end: **el flujo**, la **coordinación** y los **contratos entre módulos** (inputs/outputs esperados).
 
-Referencias:
+### Enfoque general
 
-* [`tirgo_mission_server/README.md`](carpeta_compartida/ros_ws/src/tirgo_mission_server/README.md)
-* [`stt_vosk/README.md`](carpeta_compartida/ros_ws/src/stt_vosk/README.md) *(si aplica)*
+- **Unit tests (rápidos):** validan lógica de negocio y utilidades sin depender de hardware real.
+  - Ej.: validaciones de la UI, construcción de mensajes/requests, helpers y reglas.
+- **Integración (ROS):** validan que los nodos se entienden entre sí y que el flujo “feliz” y los errores típicos están cubiertos.
+  - Ej.: misión completa simulada (coordinación + estados + timeouts/cancelación).
+- **Hardware-in-the-loop (cuando aplica):** pruebas específicas solo en el entorno real (p. ej. Raspberry Pi 3B + servos).
+  - Ej.: dispensación real con `pigpio` y confirmación de “bin listo”.
+
+### Dónde está el detalle
+
+Este README solo da la visión global. Los comandos concretos, qué tests existen por paquete y cómo ejecutarlos están en:
+
+- **Guía principal de testing:** `docs/TESTING.md`
+- Tests por paquete en sus READMEs:
+  - `tirgo_ui/README.md`
+  - `tirgo_mission_server/README.md`
+  - `servo_dispenser/README.md`
+  - `stt_vosk/README.md`
 
 ---
 
@@ -485,18 +446,6 @@ Ruta recomendada para modificar el sistema sin perderte:
 3. Valida integración con `./tirgo_ALL.sh`.
 
 **Regla de oro (debug):** `.env` → DB/seed → `tirgo_ALL.sh` → README del paquete.
-
----
-
-## Compatibilidad
-
-| Componente   | Recomendado                                 |
-| ------------ | ------------------------------------------- |
-| OS           | Linux (Ubuntu)                              |
-| ROS          | ROS 1 Noetic                                |
-| DB           | MongoDB (via `infra/tirgo_db_stack`)        |
-| Contenedores | Docker + docker compose                     |
-| Dispensador  | Raspberry Pi 3B + pigpio (si hardware real) |
 
 ---
 
