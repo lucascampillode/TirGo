@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="tirgo_tiago_arm_seq"
+        type="tiago_secuencia_brazo.py"
+        name="tiago_secuencia_brazo"
+        output="screen" />
+</launch>
