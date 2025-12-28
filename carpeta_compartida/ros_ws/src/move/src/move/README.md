@@ -37,17 +37,36 @@ Un script auxiliar para ayudar al sistema de localización (`amcl`) a situarse.
 
   * **Funcionamiento:** Publica una estimación de la posición inicial del robot en el topic `/initialpose`. Esto es útil para "resetear" la ubicación del robot en el mapa al inicio de la ejecución sin usar la interfaz gráfica de RViz.
 
-### 2.3. `test_puntos.py`
 
-Script de validación de datos.
+### 2.3. `communication_move.py`
 
-  * **Uso:** Se utiliza para verificar que las listas de coordenadas (x, y, orientación) tienen el formato correcto antes de integrarlas en el nodo principal de navegación. Ayuda a evitar errores de sintaxis o formato en las rutas.
+Es el **coordinador de la misión** y actúa como una máquina de estados asíncrona. Gestiona todo el ciclo de vida del proceso de dispensación, desde que se recibe la orden hasta que el medicamento se entrega al paciente.
 
-### 2.4. `comunicacion_test.py`
+* **Funcionamiento:**
+1. **Espera de misión:** Permanece en estado `IDLE` hasta recibir un mensaje en `/tirgo/mission/start`.
+2. **Orquestación de navegación:** Utiliza la clase `Follower` (de `checkpointfollower.py`) para mover al robot entre dos puntos clave: el **paciente** y el **dispensador**.
+3. **Gestión de eventos (Callbacks):** El nodo no solo mueve al robot, sino que escucha eventos externos de hardware y lógica para avanzar de fase (ej. cuando el dispensador está listo o el brazo ha recogido el envase).
 
-Script básico de diagnóstico.
 
-  * **Uso:** Comprueba que la comunicación entre nodos ROS está funcionando correctamente enviando y recibiendo mensajes de prueba simples.
+* **Fases del Proceso:**
+* `MOVING_TO_DISPENSER`: Trayecto hacia el módulo de carga.
+* `DISPENSING`: Espera a que el sistema mecánico libere el medicamento.
+* `PICKING_CONTAINER`: Fase de recogida por parte del robot.
+* `RETURNING_TO_PATIENT`: Trayecto de vuelta al origen.
+* `DELIVERING_TO_PATIENT` / `CLOSING_INTERACTION`: Entrega final y despedida.
+
+
+* **Topics Clave:**
+* **Subscripciones:** `/tirgo/mission/start`, `/tirgo/dispense/ready`, `/tirgo/tiago/picked`, `/tirgo/tiago/delivered`.
+* **Publicaciones:** `/tirgo/tiago/arrived` (llegada al dispensador), `/tirgo/tiago/at_patient` (llegada al paciente).
+
+
+* **Uso:**
+Para iniciar una misión manualmente desde la terminal una vez el nodo esté activo:
+```bash
+rostopic pub /tirgo/mission/start std_msgs/String "data: 'go'" -1
+
+```
 
 -----
 
