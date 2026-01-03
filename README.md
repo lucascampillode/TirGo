@@ -24,9 +24,9 @@
 
 ## Tabla de contenidos
 - [Estado del proyecto](#estado-del-proyecto)
-- [Explicación general del proyecto](#explicación-general-del-proyecto)
+- [Explicación general del proyecto](#explicaci%C3%B3n-general-del-proyecto)
 - [Demo](#demo)
-- [Qué hace y por qué importa](#qué-hace-y-por-qué-importa)
+- [Qué hace y por qué importa](#qu%C3%A9-hace-y-por-qu%C3%A9-importa)
 - [Quickstart](#quickstart)
 - [Vista de alto nivel](#vista-de-alto-nivel)
 - [Arquitectura](#arquitectura)
@@ -34,12 +34,15 @@
 - [Paquetes ROS](#paquetes-ros)
 - [Interfaces ROS](#interfaces-ros)
 - [Requisitos](#requisitos)
-- [Instalación](#instalación)
-- [Configuración](#configuración)
+- [Instalación](#instalaci%C3%B3n)
+- [Configuración](#configuraci%C3%B3n)
 - [Uso detallado](#uso-detallado)
-  - [Casos típicos](#casos-típicos)
+  - [Casos típicos](#casos-t%C3%ADpicos)
 - [Base de datos (Mongo)](#base-de-datos-mongo)
+- [Troubleshooting (errores comunes)](#troubleshooting-errores-comunes)
+- [Expected results / Cómo se evalúa la demo](#expected-results--c%C3%B3mo-se-eval%C3%BAa-la-demo)
 - [Testing](#testing)
+- [Guía principal de testing (detallada)](docs/TESTING.md)
 - [Desarrollo local](#desarrollo-local)
 - [Autores](#autores)
 
@@ -139,14 +142,30 @@ cp .env.example .env
   * `docker ps | grep tirgo_mongo`
   * mongo-express suele estar en `http://127.0.0.1:8081`
 
+  Ejemplo de salida esperada parcial:
+  ```
+  $ docker ps | grep tirgo_mongo
+  tirgo_mongo         mongo:7                Up 2m
+  tirgo_mongo_express mongo-express:latest   Up 2m
+  ```
+
 * **UI Web**
 
   * Por defecto esta en `http://localhost:9001`
-  
+  * Visita la URL y comprueba que la pantalla de inicio de TirGo aparece.
+
 * **ROS (dentro del contenedor)**
 
   ```bash
   docker exec -it "$(docker compose ps -q ros1_rob_tirgo)" bash -lc 'rostopic list | grep -E "tirgo|stt"'
+  ```
+
+  Ejemplo de salida esperada (nombres orientativos):
+  ```
+  /tirgo/ui/intent
+  /tirgo/mission/state
+  /tirgo/dispense/result
+  /stt/text
   ```
 
 ---
@@ -282,8 +301,8 @@ TirGo/
 | `move`                 | Movimiento/navegación y publicación de hitos del proceso.                                        | [`move/README.md`](carpeta_compartida/ros_ws/src/move/README.md)                                 |
 | `servo_dispenser`      | Dispensador por servos (RPi 3B): recibe solicitud y acciona el compartimento correspondiente.    | [`servo_dispenser/README.md`](carpeta_compartida/ros_ws/src/servo_dispenser/README.md)           |
 | `stt_vosk`             | STT offline: captura audio y publica texto para UI/HRI.                                          | [`stt_vosk/README.md`](carpeta_compartida/ros_ws/src/stt_vosk/README.md)                         |
-| `tirgo_tiago_arm_seq`  | Secuencias del brazo para recogida y entrega durante la demo.                                    | *(ver carpeta del paquete)*                                                                      |
-| `tirgo_bringup`        | Launchers “top-level” para arrancar conjuntos coherentes de nodos.                               | *(ver carpeta del paquete)*                                                                      |
+| `tirgo_tiago_arm_seq`  | Secuencias del brazo para recogida y entrega durante la demo.                                    | [`tirgo_tiago_arm_seq/README.md`](carpeta_compartida/ros_ws/src/tirgo_tiago_arm_seq/README.md)   |
+| `tirgo_bringup`        | Launchers “top-level” para arrancar conjuntos coherentes de nodos.                               | [`tirgo_bringup/README.md`](carpeta_compartida/ros_ws/src/tirgo_bringup/README.md)               |
 
 ---
 
@@ -410,7 +429,112 @@ Si la web no conecta a Mongo, lo más típico es que el `mongo_uri` que está us
 
 **Solución recomendada:** alinea las credenciales en `.env` con las del stack DB y usa un `mongo_uri` coherente.
 
+Ejemplo (no dejar credenciales reales en VCS):
+```
+MONGO_URI=mongodb://tirgo_user:tirgo_pass_cambia@127.0.0.1:27017/tirgo?authSource=admin
+```
+
 ---
+
+## Troubleshooting (errores comunes)
+
+Aquí tienes una sección mínima para las fallas más habituales y cómo resolverlas rápidamente:
+
+1. UI no conecta a la base de datos
+   - Comprobar que el contenedor Mongo está arriba:
+     ```
+     docker ps | grep tirgo_mongo
+     ```
+     Salida esperada:
+     ```
+     tirgo_mongo         mongo:7                Up Xm
+     ```
+   - Revisar que `.env` contiene el `MONGO_URI` correcto y que coincide con las credenciales creadas por `infra/mongo-init`.
+   - Ver logs de la UI (contenedor `ros1_rob_tirgo`) y de Mongo:
+     ```
+     docker logs tirgo_mongo
+     docker logs <container_ui_or_ros>
+     ```
+
+2. Contenedor no arranca / falla al inicializar
+   - Ver logs del contenedor problemático:
+     ```
+     docker logs <container_name>
+     ```
+   - Ejecutar `docker compose ps` para ver estado y nombres exactos de servicios.
+   - Si el init de Mongo falló, borra volumen y vuelve a levantar (advertencia: borrará datos):
+     ```
+     docker compose down -v
+     docker compose up -d
+     ```
+
+3. Puerto ocupado
+   - Puertos usados por defecto que pueden colisionar:
+     - UI web: 9001
+     - mongo-express: 8081
+     - MongoDB: 27017
+   - Si hay conflicto, cambiar en `.env` o en `infra/tirgo_db_stack/docker-compose.yml` y volver a levantar.
+
+4. Temas con ROS / roscore / topics faltantes
+   - Entrar al contenedor ROS para listar topics:
+     ```
+     docker exec -it "$(docker compose ps -q ros1_rob_tirgo)" bash
+     source /opt/ros/noetic/setup.bash
+     rostopic list | grep -E "tirgo|stt"
+     ```
+   - Si faltan topics clave, revisar que los launchers están ejecutándose y consultar los logs del proceso que los publica.
+
+5. Scripts no ejecutables
+   - Si `./tirgo_ALL.sh` no tiene permiso de ejecución:
+     ```
+     chmod +x tirgo_ALL.sh
+     chmod +x tirgo_stack.sh
+     ```
+
+6. Problemas con assets (logo / demo.gif)
+   - Comprobar que los archivos referenciados existen en las rutas indicadas:
+     ```
+     git ls-files | grep -E 'docs/demo.gif|tirgo_ui/static/logo.png'
+     ```
+
+---
+
+## Expected results / Cómo se evalúa la demo
+
+Esta sección está pensada para el profesor o evaluador: qué se debe comprobar y qué resultados esperar.
+
+1. Objetivo general de la demo
+   - Mostrar un flujo end-to-end reproducible: desde la interfaz web hasta la acción del dispensador y registro en la base de datos.
+
+2. Pasos para la evaluación (rápido)
+   - Ejecutar `./tirgo_ALL.sh` (tiempo estimado de arranque: 2–6 minutos según máquina).
+   - Acceder a `http://localhost:9001` → la página de inicio de TirGo se debe cargar.
+   - Realizar una solicitud desde la UI y lanzar la misión.
+   - Observar la secuencia de misión (navegación, dispensación, recogida/entrega) en la UI y en los logs.
+   - Verificar que en la DB existe un registro en la colección `dispensaciones` para la misión ejecutada.
+
+3. Puntos clave a comprobar (criterios de evaluación)
+   - UI funcional: formularios/botones responden y se muestran estados de misión.
+   - Misión completa: el coordinador (`tirgo_mission_server`) ejecuta la secuencia y llega al estado final OK (o maneja errores).
+   - Registro en DB: entradas en `dispensaciones` y logs de misión en `logs`.
+   - Topics de ROS: los tópicos principales están activos (ver lista de topics esperada).
+   - Comportamiento del dispensador (si se prueba con hardware): servos reciben la orden y se confirma "bin listo".
+
+4. Resultados esperados (ejemplos)
+   - En la UI: mensaje final "Entrega completada" o similar.
+   - En Mongo: documento en `dispensaciones` con campo `status: "completed"` y timestamps.
+   - En rostopic:
+     ```
+     /tirgo/mission/state: PUBLISH messages with states like "started","moving","dispensing","completed"
+     /tirgo/dispense/result: {"bin": 3, "status": "ok"}
+     ```
+
+5. Duración aproximada de la demo
+   - Demo completa con hardware: 2–5 minutos (dependiendo de movimientos del robot).
+   - Demo sin hardware (simulada): < 2 minutos.
+
+---
+
 ## Testing
 
 El testing en **TirGoPharma** está orientado a proteger lo que más suele romper una demo end-to-end: **el flujo**, la **coordinación** y los **contratos entre módulos** (inputs/outputs esperados).
