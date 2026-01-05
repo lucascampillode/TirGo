@@ -47,33 +47,33 @@ El diseño se ha realizado íntegramente en CAD, iterando desde volúmenes simpl
     <tr>
       <td align="center">
         <b>Vista Isométrica (Ensamblaje)</b><br>
-        <a href="TirGo/carpeta_compartida/Galeria/RenderPerspectivaIsometrica.png">
-          <img src="TirGo/carpeta_compartida/Galeria/RenderPerspectivaIsometrica.png" width="400" alt="Vista Isométrica"/>
+        <a href="docs/Galeria/RenderPerspectivaIsometrica.png">
+          <img src="docs/Galeria/RenderPerspectivaIsometrica.png" width="400" alt="Vista Isométrica"/>
         </a><br>
-        <a href="TirGo/carpeta_compartida/Galeria/RenderPerspectivaIsometrica.png">📄 Ver imagen original</a>
+        <a href="docs/Galeria/RenderPerspectivaIsometrica.png">📄 Ver imagen original</a>
       </td>
       <td align="center">
         <b>Vista Frontal (Alzado)</b><br>
-        <a href="TirGo/carpeta_compartida/Galeria/RenderAlzadoFrontal.png">
-          <img src="TirGo/carpeta_compartida/Galeria/RenderAlzadoFrontal.png" width="400" alt="Vista Frontal"/>
+        <a href="docs/Galeria/RenderAlzadoFrontal.png">
+          <img src="docs/Galeria/RenderAlzadoFrontal.png" width="400" alt="Vista Frontal"/>
         </a><br>
-        <a href="TirGo/carpeta_compartida/Galeria/RenderAlzadoFrontal.png">📄 Ver imagen original</a>
+        <a href="docs/Galeria/RenderAlzadoFrontal.png">📄 Ver imagen original</a>
       </td>
     </tr>
     <tr>
       <td align="center">
         <b>Perfil Lateral</b><br>
-        <a href="TirGo/carpeta_compartida/Galeria/RenderPerfilLateral.png">
-          <img src="TirGo/carpeta_compartida/Galeria/RenderPerfilLateral.png" width="400" alt="Vista Lateral"/>
+        <a href="docs/Galeria/RenderPerfilLateral.png">
+          <img src="docs/Galeria/RenderPerfilLateral.png" width="400" alt="Vista Lateral"/>
         </a><br>
-        <a href="TirGo/carpeta_compartida/Galeria/RenderPerfilLateral.png">📄 Ver imagen original</a>
+        <a href="docs/Galeria/RenderPerfilLateral.png">📄 Ver imagen original</a>
       </td>
       <td align="center">
         <b>Mecanismo Superior</b><br>
-        <a href="TirGo/carpeta_compartida/Galeria/RenderDetalleMecanismoSuperior.png">
-          <img src="TirGo/carpeta_compartida/Galeria/RenderDetalleMecanismoSuperior.png" width="400" alt="Detalle mecanismo"/>
+        <a href="docs/Galeria/RenderDetalleMecanismoSuperior.png">
+          <img src="docs/Galeria/RenderDetalleMecanismoSuperior.png" width="400" alt="Detalle mecanismo"/>
         </a><br>
-        <a href="TirGo/carpeta_compartida/Galeria/RenderDetalleMecanismoSuperior.png">📄 Ver imagen original</a>
+        <a href="docs/Galeria/RenderDetalleMecanismoSuperior.png">📄 Ver imagen original</a>
       </td>
     </tr>
   </table>
@@ -125,7 +125,7 @@ La fabricación se realizó mediante **impresión 3D FDM**, utilizando parámetr
     <img src="docs/Galeria/LaminadoEmbudoInterno.png" width="600" alt="Slicing Cuerpo"/>
   </a>
   <br>
-  <a href="TirGo/carpeta_compartida/Galeria/LaminadoEmbudoInterno.png">📄 Ver captura de laminado original</a>
+  <a href="docs/Galeria/LaminadoEmbudoInterno.png">📄 Ver captura de laminado original</a>
 </div>
 
 * **Tiempo estimado:** ~7h 45m
@@ -135,11 +135,11 @@ La fabricación se realizó mediante **impresión 3D FDM**, utilizando parámetr
 ### Pieza B: Base Estructural
 
 <div align="center">
-  <a href="TirGo/carpeta_compartida/Galeria/LaminadoBaseEstructural.png">
-    <img src="TirGo/carpeta_compartida/Galeria/LaminadoBaseEstructural.png" width="600" alt="Slicing Base"/>
+  <a href="docs/Galeria/LaminadoBaseEstructural.png">
+    <img src="docs/Galeria/LaminadoBaseEstructural.png" width="600" alt="Slicing Base"/>
   </a>
   <br>
-  <a href="TirGo/carpeta_compartida/Galeria/LaminadoBaseEstructural.png">📄 Ver captura de laminado original</a>
+  <a href="docs/Galeria/LaminadoBaseEstructural.png">📄 Ver captura de laminado original</a>
 </div>
 
 * **Tiempo estimado:** ~3h 24m
@@ -154,11 +154,11 @@ El sistema final valida las tolerancias teóricas del CAD. La separación en pie
 ### Prueba de ensamblaje (4 Botes)
 
 <div align="center">
-  <a href="TirGo/carpeta_compartida/Galeria/RenderEnsamblajeCompleto.png">
-    <img src="TirGo/carpeta_compartida/Galeria/RenderEnsamblajeCompleto.png" width="500" alt="Integración final"/>
+  <a href="docs/Galeria/RenderEnsamblajeCompleto.png">
+    <img src="docs/Galeria/RenderEnsamblajeCompleto.png" width="500" alt="Integración final"/>
   </a>
   <br>
-  <a href="TirGo/carpeta_compartida/Galeria/RenderEnsamblajeCompleto.png">📄 Ver render de alta resolución</a>
+  <a href="docs/Galeria/RenderEnsamblajeCompleto.png">📄 Ver render de alta resolución</a>
 </div>
 
 El diseño final cumple con los requisitos de:
