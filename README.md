@@ -293,16 +293,17 @@ TirGo/
 > Ruta: `carpeta_compartida/ros_ws/src`
 > Este README es la visión global. Los READMEs de cada paquete te dan el “cómo lo corro” y “cómo lo configuro” en detalle.
 
-| Paquete                | Qué vas a encontrar                                                                              | README                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `tirgo_ui`             | Servidor web Flask, rutas, sesión, validación de negocio y puente con ROS. Incluye assets de UI. | [`tirgo_ui/README.md`](carpeta_compartida/ros_ws/src/tirgo_ui/README.md)                         |
-| `tirgo_mission_server` | Coordinador end-to-end: orquesta el flujo y sincroniza pasos.                                    | [`tirgo_mission_server/README.md`](carpeta_compartida/ros_ws/src/tirgo_mission_server/README.md) |
-| `tirgo_msgs`           | Interfaces compartidas del sistema (acción principal).                                           | [`tirgo_msgs/README.md`](carpeta_compartida/ros_ws/src/tirgo_msgs/README.md)                     |
-| `move`                 | Movimiento/navegación y publicación de hitos del proceso.                                        | [`move/README.md`](carpeta_compartida/ros_ws/src/move/README.md)                                 |
-| `servo_dispenser`      | Dispensador por servos (RPi 3B): recibe solicitud y acciona el compartimento correspondiente.    | [`servo_dispenser/README.md`](carpeta_compartida/ros_ws/src/servo_dispenser/README.md)           |
-| `stt_vosk`             | STT offline: captura audio y publica texto para UI/HRI.                                          | [`stt_vosk/README.md`](carpeta_compartida/ros_ws/src/stt_vosk/README.md)                         |
-| `tirgo_tiago_arm_seq`  | Secuencias del brazo para recogida y entrega durante la demo.                                    | [`tirgo_tiago_arm_seq/README.md`](carpeta_compartida/ros_ws/src/tirgo_tiago_arm_seq/README.md)   |
-| `tirgo_bringup`        | Launchers “top-level” para arrancar conjuntos coherentes de nodos.                               | [`tirgo_bringup/README.md`](carpeta_compartida/ros_ws/src/tirgo_bringup/README.md)               |
+| Paquete                | Qué vas a encontrar                                                                                                                                                                                                            | README                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `tirgo_ui`             | Servidor web Flask, rutas, sesión, validación de negocio y puente con ROS. Incluye assets de UI.                                                                                                                               | [`tirgo_ui/README.md`](./carpeta_compartida/ros_ws/src/tirgo_ui/README.md)                         |
+| `tirgo_mission_server` | Coordinador end-to-end: orquesta el flujo y sincroniza pasos.                                                                                                                                                                  | [`tirgo_mission_server/README.md`](./carpeta_compartida/ros_ws/src/tirgo_mission_server/README.md) |
+| `tirgo_msgs`           | Interfaces compartidas del sistema (acción principal).                                                                                                                                                                           | [`tirgo_msgs/README.md`](./carpeta_compartida/ros_ws/src/tirgo_msgs/README.md)                     |
+| `move`                 | Movimiento/navegación y publicación de hitos del proceso.                                                                                                                                                                        | [`move/README.md`](./carpeta_compartida/ros_ws/src/move/README.md)                                 |
+| `servo_dispenser`      | Dispensador por servos (RPi 3B): recibe solicitud y acciona el compartimento correspondiente.<br/>**[Memoria de diseño y fabricación](./carpeta_compartida/ros_ws/src/servo_dispenser/README_BUILD_DISPENSER.md)** | [`servo_dispenser/README.md`](./carpeta_compartida/ros_ws/src/servo_dispenser/README.md)           |
+| `stt_vosk`             | STT offline: captura audio y publica texto para UI/HRI.                                                                                                                                                                        | [`stt_vosk/README.md`](./carpeta_compartida/ros_ws/src/stt_vosk/README.md)                         |
+| `tirgo_tiago_arm_seq`  | Secuencias del brazo para recogida y entrega durante la demo.                                                                                                                                                                  | [`tirgo_tiago_arm_seq/README.md`](./carpeta_compartida/ros_ws/src/tirgo_tiago_arm_seq/README.md)   |
+| `tirgo_bringup`        | Launchers “top-level” para arrancar conjuntos coherentes de nodos.                                                                                                                                                             | [`tirgo_bringup/README.md`](./carpeta_compartida/ros_ws/src/tirgo_bringup/README.md)               |
+
 
 ---
 
@@ -343,6 +344,9 @@ Para el detalle (definiciones exactas y comportamiento):
 * Raspberry Pi 3B + servos (dispensador)
 * Micrófono (opcional)
 
+> **Documentación de ingeniería:**
+> Para profundizar en el diseño mecánico, la validación CAD, los parámetros de impresión 3D y el proceso de ensamblaje del módulo, consulta la **[Memoria técnica de fabricación](./carpeta_compartida/ros_ws/src/servo_dispenser/README_BUILD_DISPENSER.md)**.
+
 | Componente   | Recomendado                                 |
 | ------------ | ------------------------------------------- |
 | OS           | Linux (Ubuntu)                              |
@@ -350,7 +354,6 @@ Para el detalle (definiciones exactas y comportamiento):
 | DB           | MongoDB (via `infra/tirgo_db_stack`)        |
 | Contenedores | Docker + docker compose                     |
 | Dispensador  | Raspberry Pi 3B + pigpio (si hardware real) |
-
 
 ---
 
