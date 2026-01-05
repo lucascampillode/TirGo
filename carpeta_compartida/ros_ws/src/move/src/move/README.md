@@ -1,86 +1,177 @@
-## Carpeta Move 
-````markdown
+<div align="center">
 
-# Módulo `move` (Python) – Nodos de Navegación
+# Módulo `move` (Python)
 
-Este directorio contiene el código fuente en Python que implementa la lógica de navegación, secuenciación de objetivos y pruebas del robot TIAGo.
+Nodos de **navegación y orquestación de movimiento** del robot TIAGo
+para el sistema **TirGoPharma**.
+
+Este directorio contiene la lógica que permite al robot desplazarse
+entre puntos clave (dispensador ↔ paciente) y publicar los hitos de navegación
+utilizados por el coordinador de misión.
+
+</div>
 
 ---
 
-## 1. Archivos del Paquete
+## Visión general
+
+La carpeta `src/move/` agrupa los nodos Python responsables de:
+
+- Navegación basada en **checkpoints**
+- Publicación de la **pose inicial** para localización
+- Pruebas de comunicación y validación
+- Coordinación del movimiento dentro del flujo de misión
+
+Estos nodos trabajan conjuntamente con:
+
+- El stack de navegación (`move_base`)
+- El mapa estático del entorno
+- El coordinador de misión (`tirgo_mission_server`)
+
+---
+
+## 1. Archivos del módulo
 
 ```text
 src/move/
-├── checkpointfollower.py   # Nodo principal de navegación
-├── publish_initial_pose.py # Herramienta de localización
-├── comunicacion_test.py    # Test de conectividad
-└── test_puntos.py          # Validación de coordenadas
+├── checkpointfollower.py      # Lógica principal de navegación por checkpoints
+├── publish_initial_pose.py    # Publicador de pose inicial (/initialpose)
+├── comunicacion_test.py       # Test de conectividad y comunicación
+└── test_puntos.py             # Validación de coordenadas y puntos
 ````
 
------
+---
 
-## 2\. Descripción de los Nodos
+## 2. Descripción de los nodos
 
-### 2.1. `checkpointfollower.py`
+### 2.1 `checkpointfollower.py`
 
-Es el **nodo principal** ("Director de Misión"). Su función es guiar al robot a través de una ruta preestablecida.
+Es el **nodo base de navegación**.
+Su responsabilidad es mover al robot a través de una secuencia fija de puntos.
 
-  * **Funcionamiento:**
-    1.  Lee una lista de coordenadas (checkpoints) definida en el código.
-    2.  Envía cada punto como un objetivo (`goal`) al topic `/move_base/goal`.
-    3.  Monitoriza el estado del robot y espera a que llegue al destino antes de enviar el siguiente punto.
-  * **Mensajes clave:** `move_base_msgs/MoveBaseActionGoal`.
+#### Funcionamiento
 
-### 2.2. `publish_initial_pose.py`
+1. Define una lista de **checkpoints** (coordenadas en el mapa).
+2. Envía cada punto como un objetivo al stack de navegación:
 
-Un script auxiliar para ayudar al sistema de localización (`amcl`) a situarse.
+   * `/move_base/goal`
+3. Espera a que el robot alcance el objetivo antes de continuar.
+4. Notifica cuando un punto ha sido alcanzado.
 
-  * **Funcionamiento:** Publica una estimación de la posición inicial del robot en el topic `/initialpose`. Esto es útil para "resetear" la ubicación del robot en el mapa al inicio de la ejecución sin usar la interfaz gráfica de RViz.
+Este nodo **no toma decisiones de alto nivel**;
+simplemente ejecuta movimiento de forma determinista.
 
+#### Mensajes clave
 
-### 2.3. `communication_move.py`
+* `move_base_msgs/MoveBaseActionGoal`
 
-Es el **coordinador de la misión** y actúa como una máquina de estados asíncrona. Gestiona todo el ciclo de vida del proceso de dispensación, desde que se recibe la orden hasta que el medicamento se entrega al paciente.
+---
 
-* **Funcionamiento:**
-1. **Espera de misión:** Permanece en estado `IDLE` hasta recibir un mensaje en `/tirgo/mission/start`.
-2. **Orquestación de navegación:** Utiliza la clase `Follower` (de `checkpointfollower.py`) para mover al robot entre dos puntos clave: el **paciente** y el **dispensador**.
-3. **Gestión de eventos (Callbacks):** El nodo no solo mueve al robot, sino que escucha eventos externos de hardware y lógica para avanzar de fase (ej. cuando el dispensador está listo o el brazo ha recogido el envase).
+### 2.2 `publish_initial_pose.py`
 
+Script auxiliar para facilitar la **localización inicial** del robot.
 
-* **Fases del Proceso:**
-* `MOVING_TO_DISPENSER`: Trayecto hacia el módulo de carga.
-* `DISPENSING`: Espera a que el sistema mecánico libere el medicamento.
-* `PICKING_CONTAINER`: Fase de recogida por parte del robot.
-* `RETURNING_TO_PATIENT`: Trayecto de vuelta al origen.
-* `DELIVERING_TO_PATIENT` / `CLOSING_INTERACTION`: Entrega final y despedida.
+#### Funcionamiento
 
+* Publica una estimación de la pose inicial del robot en:
 
-* **Topics Clave:**
-* **Subscripciones:** `/tirgo/mission/start`, `/tirgo/dispense/ready`, `/tirgo/tiago/picked`, `/tirgo/tiago/delivered`.
-* **Publicaciones:** `/tirgo/tiago/arrived` (llegada al dispensador), `/tirgo/tiago/at_patient` (llegada al paciente).
+  * `/initialpose`
+* Permite reiniciar o ajustar la localización de `amcl`
+  sin necesidad de usar RViz manualmente.
 
+Es especialmente útil:
 
-* **Uso:**
-Para iniciar una misión manualmente desde la terminal una vez el nodo esté activo:
-```bash
-rostopic pub /tirgo/mission/start std_msgs/String "data: 'go'" -1
+* Al iniciar la demo
+* Tras mover el robot manualmente
+* En pruebas repetidas
 
-```
+---
 
------
+### 2.3 `comunicacion_test.py`
 
-## 3\. Dependencias
+Nodo de **pruebas y verificación** de comunicación.
 
-Para que estos scripts funcionen, el entorno debe tener acceso a las siguientes librerías de ROS y Python:
+#### Uso principal
 
-  * `rospy`
-  * `geometry_msgs`
-  * `move_base_msgs`
-  * `tf.transformations` (para el manejo de cuaterniones y orientación)
-  * `numpy`
+* Validar que los topics relevantes están activos
+* Comprobar que el robot responde a mensajes de navegación
+* Detectar problemas de conexión o configuración
 
-<!-- end list -->
+Este nodo **no forma parte del flujo final de producción**,
+pero es clave durante el desarrollo.
 
-```
+---
 
+### 2.4 `test_puntos.py`
+
+Script de **validación de coordenadas**.
+
+Permite:
+
+* Comprobar que los checkpoints están bien definidos
+* Verificar que las posiciones son alcanzables en el mapa
+* Evitar errores de navegación por puntos mal configurados
+
+---
+
+## 3. Integración con la misión
+
+Los nodos de este directorio **no gestionan la misión completa**,
+pero sí proporcionan los **eventos físicos de movimiento**.
+
+En concreto:
+
+* Publican flags como:
+
+  * `/tirgo/tiago/arrived`
+  * `/tirgo/tiago/at_patient`
+* Estos flags son consumidos por:
+
+  * `tirgo_mission_server`
+
+De este modo, la misión avanza solo cuando
+el robot **ha llegado físicamente al punto esperado**.
+
+---
+
+## 4. Dependencias
+
+Para ejecutar estos nodos es necesario disponer de:
+
+### ROS
+
+* `rospy`
+* `geometry_msgs`
+* `move_base_msgs`
+
+### Python
+
+* `numpy`
+* `tf.transformations`
+  (manejo de cuaterniones y orientación)
+
+---
+
+## 5. Uso típico
+
+Este módulo **no suele lanzarse directamente** nodo a nodo.
+
+Forma parte del flujo iniciado mediante:
+
+* `scripts/run_all.sh`
+* o los launch files del paquete `move`
+
+Esto garantiza que el mapa, RViz y la navegación
+se inician en el orden correcto.
+
+---
+
+## 6. Resumen
+
+* `src/move/` contiene la **implementación real del movimiento**
+* `checkpointfollower.py` ejecuta navegación determinista
+* Los nodos auxiliares facilitan localización y pruebas
+* El módulo publica eventos que sincronizan la misión completa
+
+Este directorio es el punto donde el sistema
+**deja de ser lógico y empieza a moverse de verdad** 🤖🚶‍♂️
