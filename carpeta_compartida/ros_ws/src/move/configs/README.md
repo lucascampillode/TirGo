@@ -1,50 +1,60 @@
-## Configuración de mapas
+<div align="center">
 
-### 1\. `move/configs/README.md`
-
-Crea este archivo dentro de la carpeta `configs` y pega esto:
-
-```markdown
 # Configuraciones (`configs/`)
 
-Esta carpeta almacena los archivos de configuración predefinidos para las herramientas gráficas.
+Archivos de **configuración visual y de herramientas gráficas**
+utilizados por el paquete `move` dentro del proyecto **TirGoPharma**.
+
+</div>
+
+---
+
+## Visión general
+
+La carpeta `configs/` almacena configuraciones predefinidas
+que permiten lanzar herramientas gráficas (principalmente **RViz**)
+con un estado coherente y listo para usar.
+
+Esto evita tener que configurar manualmente la interfaz
+en cada ejecución.
 
 ---
 
 ## `rviz_configs.rviz`
 
-Es el perfil de configuración para **RViz**. Guarda el estado de la interfaz gráfica, incluyendo:
+Archivo de perfil para **RViz**.
 
-* **Displays activos:** Mapa, RobotModel, LaserScan, TF, Path, etc.
-* **Vistas:** Punto de vista de la cámara.
-* **Paneles:** Herramientas laterales activas.
+Guarda el estado completo de la interfaz gráfica, incluyendo:
 
-Este archivo es cargado automáticamente por `rviz.launch`. Si modificas la vista en RViz y pulsas "Save" (Ctrl+S), los cambios se guardarán aquí.
-```
+- **Displays activos**
+  - Mapa (`/map`)
+  - Modelo del robot (`RobotModel`)
+  - Sensores (LaserScan)
+  - Transformaciones (`TF`)
+  - Trayectoria (`Path`)
+- **Vistas**
+  - Posición y orientación de la cámara
+- **Paneles**
+  - Herramientas laterales y controles visibles
 
------
+Este archivo es cargado automáticamente por:
 
-### 2\. `move/maps/README.md`
+- `launch/rviz.launch`
 
-Crea este archivo dentro de la carpeta `maps` y pega esto:
+### Modificación del perfil
 
-```markdown
-# Mapas (`maps/`)
+Si realizas cambios en RViz (añadir displays, mover la cámara, etc.):
 
-Esta carpeta contiene los archivos del mapa estático del entorno (aula/laboratorio) utilizados para la localización y navegación.
+1. Abre RViz con `rviz.launch`
+2. Ajusta la vista según tus necesidades
+3. Guarda con **Ctrl + S**
+
+Los cambios quedarán persistentes en `rviz_configs.rviz`.
 
 ---
 
-## Archivos del Mapa
+## Resumen
 
-El mapa se compone de pares de archivos generados normalmente mediante `gmapping` o `cartographer`:
-
-* **Archivos de imagen (`.pgm`):** Contienen la información visual de ocupación (blanco = libre, negro = ocupado, gris = desconocido).
-* **Archivos de metadatos (`.yaml`):** Archivos de texto que definen la resolución, el origen de coordenadas y referencias a la imagen `.pgm` correspondiente.
-
-### Mapas disponibles
-
-* **`Mapa_aula`**: Mapa base original.
-* **`Mapa_aula_mod_1.0`**: Versión modificada/limpia, usada generalmente por el `map_server` en los scripts de lanzamiento.
-```
-
+- `configs/` centraliza la configuración visual del proyecto
+- `rviz_configs.rviz` garantiza una visualización consistente
+- Es clave para depuración, desarrollo y demostraciones
