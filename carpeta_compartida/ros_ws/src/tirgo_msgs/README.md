@@ -1,18 +1,37 @@
-# `tirgo_msgs`
+<div align="center">
+
+# tirgo_msgs
 
 Paquete de **mensajes y acciones ROS 1** para el ecosistema **TirgoPharma**.
 
-Aquí se definen los tipos compartidos entre:
+Define los **tipos compartidos** entre la interfaz web, el coordinador de misión
+y los nodos de ejecución robótica y hardware, garantizando **consistencia de
+interfaces** en todo el sistema.
 
-- La interfaz web (`tirgo_ui`)
-- El Action Server de misión (`tirgo_mission_server`)
-- Los nodos de TIAGo y del dispensador Raspberry Pi
+Compatible con **ROS 1 (Noetic)** y basado en **actionlib**.
 
-Actualmente contiene la acción principal:
+</div>
 
-- `TirgoMission.action` → describe toda la misión de dispensación y entrega para el robot TIAGo.
+---
 
-Está pensado para **ROS 1 (Noetic)** y se integra con `actionlib`.
+## Visión general
+
+El paquete **`tirgo_msgs`** centraliza todas las **definiciones de mensajes y acciones**
+utilizadas por los distintos módulos de TirgoPharma.
+
+Es un paquete **puramente declarativo**:  
+no contiene lógica de ejecución, solo contratos de comunicación claros y estables.
+
+Actualmente define la acción principal del sistema:
+
+- **`TirgoMission.action`** → describe la misión completa de dispensación y entrega
+  realizada por el robot TIAGo.
+
+Este paquete es utilizado por:
+
+- La **interfaz web** (`tirgo_ui`) como *Action Client*
+- El **coordinador de misión** (`tirgo_mission_server`) como *Action Server*
+- Los nodos de **navegación, manipulación y dispensación**
 
 ---
 
@@ -30,16 +49,18 @@ tirgo_msgs/
 
 ## 2. Acción `TirgoMission.action`
 
-Esta acción modela la misión completa de TirgoPharma: desde que la web lanza un pedido hasta que TIAGo entrega el medicamento y se despide.
+La acción **`TirgoMission`** modela la misión completa de TirgoPharma:
+desde que la web lanza una solicitud válida hasta que TIAGo entrega
+el medicamento y finaliza la interacción.
 
-Contenido:
+### Definición completa
 
 ```action
 # ===== GOAL =====
 # Identificador del paciente (hash del DNI)
 string patient_id
 
-# Identificador de la cubeta física en el dispensador
+# Identificador lógico del medicamento / cubeta del dispensador
 int32 med_id
 
 ---
@@ -62,23 +83,40 @@ string state
 float32 progress
 ```
 
-Resumen de cada bloque:
+---
 
-* **Goal**
+### Significado de cada bloque
 
-  * `patient_id`: hash del DNI del paciente. La web nunca pasa el DNI en claro.
-  * `med_id`: identificador lógico del medicamento / cubeta del dispensador.
+#### Goal
 
-* **Result**
+* `patient_id`
+  Hash del DNI del paciente.
+  La identidad nunca se transmite en claro por ROS.
 
-  * `success`: `true` si la misión ha terminado correctamente.
-  * `error_code`: código simbólico de error (`TIMEOUT_ARRIVE`, `TIMEOUT_READY`, etc.).
-  * `error_message`: texto más descriptivo para logs y para la UI web.
+* `med_id`
+  Identificador lógico del medicamento, que corresponde
+  con la cubeta física (`bin_id`) del dispensador.
 
-* **Feedback**
+#### Result
 
-  * `state`: estado textual de la máquina de estados (ej. `GOING_TO_DISPENSER`).
-  * `progress`: número en `[0.0, 1.0]` que aproxima el progreso total de la misión.
+* `success`
+  `true` si la misión ha finalizado correctamente.
+
+* `error_code`
+  Código simbólico de error (`TIMEOUT_ARRIVE`, `TIMEOUT_READY`, etc.).
+
+* `error_message`
+  Mensaje descriptivo para logs y visualización en la UI web.
+
+#### Feedback
+
+* `state`
+  Estado textual de la máquina de estados del coordinador
+  (por ejemplo: `GOING_TO_DISPENSER`, `WAITING_DISPENSE`, etc.).
+
+* `progress`
+  Valor en el rango `[0.0, 1.0]` que aproxima el progreso total
+  de la misión para la interfaz web.
 
 ---
 
@@ -86,26 +124,33 @@ Resumen de cada bloque:
 
 ### 3.1 `tirgo_mission_server`
 
-El paquete `tirgo_mission_server` implementa el **Action Server** `/tirgo/mission`:
+El paquete **`tirgo_mission_server`** implementa el **Action Server**
+asociado a `/tirgo/mission`:
 
-* Usa `TirgoMissionGoal.patient_id` y `med_id` para iniciar la misión.
-* Va publicando `TirgoMissionFeedback.state` y `progress`.
-* Rellena `TirgoMissionResult.success`, `error_code` y `error_message` al terminar.
+* Recibe `patient_id` y `med_id` en el `Goal`
+* Publica `state` y `progress` como `Feedback`
+* Devuelve `success`, `error_code` y `error_message` en el `Result`
+
+La **máquina de estados** del sistema está directamente reflejada
+en los campos de `Feedback`.
+
+---
 
 ### 3.2 `tirgo_ui`
 
-El paquete `tirgo_ui` implementa un **Action Client** en `rosio.py`:
+El paquete **`tirgo_ui`** implementa un **Action Client** (en `rosio.py`):
 
-
-* Cuando el usuario confirma un pedido, construye un `TirgoMissionGoal`.
-* Envía el goal al Action Server `/tirgo/mission`.
-* Muestra en la web el `feedback.state`, `progress` y el `result` final.
+* Construye un `TirgoMissionGoal` tras validar la solicitud del usuario
+* Envía el goal al Action Server `/tirgo/mission`
+* Muestra en la web el `feedback.state`, `feedback.progress`
+  y el `result` final de la misión
 
 ---
 
 ## 4. Reconstrucción tras cambios en la acción
 
-Cada vez que se cambie el contenido de `TirgoMission.action`, es recomendable limpiar y recompilar:
+Cada vez que se modifique el archivo `TirgoMission.action`,
+es necesario **recompilar el workspace** para regenerar los mensajes:
 
 ```bash
 cd ~/carpeta_compartida/ros_ws
@@ -114,20 +159,20 @@ catkin_make
 source devel/setup.bash
 ```
 
-Después:
+Para verificar que la definición activa es la correcta:
 
 ```bash
 rosmsg show tirgo_msgs/TirgoMissionAction
 ```
 
-para verificar que el sistema está viendo la versión actualizada.
-
 ---
 
 ## 5. Resumen
 
-* `tirgo_msgs` centraliza los tipos que comparten la web, el Action Server y los nodos de hardware.
-* `TirgoMission.action` encapsula toda la lógica de alto nivel de una misión de TirgoPharma.
-* `tirgo_mission_server` y `tirgo_ui` dependen directamente de este paquete, por lo que cualquier cambio en la acción debe ir acompañado de recompilación y tests.
+* `tirgo_msgs` centraliza los **contratos de comunicación** del sistema TirgoPharma.
+* `TirgoMission.action` encapsula toda la lógica de alto nivel de una misión.
+* La web, el coordinador y los nodos de ejecución dependen directamente de este paquete.
+* Cualquier cambio en la acción requiere recompilación y validación mediante tests.
 
-Este paquete es la base para mantener **consistencia de tipos** en todo el sistema TirgoPharma.
+Este paquete es la base para mantener **consistencia de tipos, trazabilidad
+y robustez** en todo el sistema TirgoPharma.
