@@ -18,14 +18,14 @@ utilizados por el coordinador de misión.
 La carpeta `src/move/` agrupa los nodos Python responsables de:
 
 - Navegación basada en **checkpoints**
+- Orquestación del movimiento dentro del **flujo de misión**
 - Publicación de la **pose inicial** para localización
 - Pruebas de comunicación y validación
-- Coordinación del movimiento dentro del flujo de misión
 
 Estos nodos trabajan conjuntamente con:
 
 - El stack de navegación (`move_base`)
-- El mapa estático del entorno
+- El mapa estático del entorno (`map_server`)
 - El coordinador de misión (`tirgo_mission_server`)
 
 ---
@@ -34,10 +34,11 @@ Estos nodos trabajan conjuntamente con:
 
 ```text
 src/move/
-├── checkpointfollower.py      # Lógica principal de navegación por checkpoints
-├── publish_initial_pose.py    # Publicador de pose inicial (/initialpose)
-├── comunicacion_test.py       # Test de conectividad y comunicación
-└── test_puntos.py             # Validación de coordenadas y puntos
+├── comunication_move.py     # Orquestador del movimiento dentro del flujo de misión
+├── checkpointfollower.py    # Lógica base de navegación por checkpoints
+├── publish_initial_pose.py  # Publicador de pose inicial (/initialpose)
+├── comunicacion_test.py     # Test de conectividad y comunicación (auxiliar)
+└── test_puntos.py           # Validación de coordenadas y puntos (auxiliar)
 ````
 
 ---
@@ -56,7 +57,7 @@ Su responsabilidad es mover al robot a través de una secuencia fija de puntos.
 
    * `/move_base/goal`
 3. Espera a que el robot alcance el objetivo antes de continuar.
-4. Notifica cuando un punto ha sido alcanzado.
+4. Detecta la llegada al punto antes de avanzar al siguiente.
 
 Este nodo **no toma decisiones de alto nivel**;
 simplemente ejecuta movimiento de forma determinista.
@@ -67,7 +68,41 @@ simplemente ejecuta movimiento de forma determinista.
 
 ---
 
-### 2.2 `publish_initial_pose.py`
+### 2.2 `comunication_move.py`
+
+Es el **orquestador de movimiento para la demo** y el nodo
+que se utiliza habitualmente en el flujo integrado del sistema.
+
+#### Rol dentro del sistema
+
+* Escucha el inicio de la misión (p. ej. `/tirgo/mission/start`)
+* Coordina el desplazamiento del robot a los puntos clave del flujo:
+
+  * dispensador
+  * paciente
+* Publica **hitos de navegación** consumidos por el coordinador de misión:
+
+  * `/tirgo/tiago/arrived`
+  * `/tirgo/tiago/at_patient`
+
+Este nodo no implementa navegación de bajo nivel,
+sino que **encapsula cuándo y hacia dónde debe moverse el robot**
+dentro del proceso completo de dispensación.
+
+> En la demo integrada, este nodo se lanza desde `scripts/run_all.sh`.
+
+#### Flujo simplificado
+
+1. Espera evento de inicio de misión.
+2. Navega al dispensador.
+3. Publica `/tirgo/tiago/arrived`.
+4. Espera confirmaciones del proceso (dispensación / recogida).
+5. Navega al paciente.
+6. Publica `/tirgo/tiago/at_patient`.
+
+---
+
+### 2.3 `publish_initial_pose.py`
 
 Script auxiliar para facilitar la **localización inicial** del robot.
 
@@ -81,13 +116,13 @@ Script auxiliar para facilitar la **localización inicial** del robot.
 
 Es especialmente útil:
 
-* Al iniciar la demo
-* Tras mover el robot manualmente
-* En pruebas repetidas
+* al iniciar la demo
+* tras mover el robot manualmente
+* en pruebas repetidas
 
 ---
 
-### 2.3 `comunicacion_test.py`
+### 2.4 `comunicacion_test.py`
 
 Nodo de **pruebas y verificación** de comunicación.
 
@@ -98,11 +133,11 @@ Nodo de **pruebas y verificación** de comunicación.
 * Detectar problemas de conexión o configuración
 
 Este nodo **no forma parte del flujo final de producción**,
-pero es clave durante el desarrollo.
+pero es útil durante el desarrollo y la depuración.
 
 ---
 
-### 2.4 `test_puntos.py`
+### 2.5 `test_puntos.py`
 
 Script de **validación de coordenadas**.
 
@@ -121,15 +156,15 @@ pero sí proporcionan los **eventos físicos de movimiento**.
 
 En concreto:
 
-* Publican flags como:
+* Publican hitos como:
 
   * `/tirgo/tiago/arrived`
   * `/tirgo/tiago/at_patient`
-* Estos flags son consumidos por:
+* Estos hitos son consumidos por:
 
   * `tirgo_mission_server`
 
-De este modo, la misión avanza solo cuando
+De este modo, la misión avanza únicamente cuando
 el robot **ha llegado físicamente al punto esperado**.
 
 ---
@@ -154,14 +189,13 @@ Para ejecutar estos nodos es necesario disponer de:
 
 ## 5. Uso típico
 
-Este módulo **no suele lanzarse directamente** nodo a nodo.
+Este módulo **no suele lanzarse nodo a nodo manualmente**.
 
 Forma parte del flujo iniciado mediante:
 
 * `scripts/run_all.sh`
-* o los launch files del paquete `move`
 
-Esto garantiza que el mapa, RViz y la navegación
+Esto garantiza que el mapa, la localización, RViz y la navegación
 se inician en el orden correcto.
 
 ---
@@ -169,9 +203,9 @@ se inician en el orden correcto.
 ## 6. Resumen
 
 * `src/move/` contiene la **implementación real del movimiento**
-* `checkpointfollower.py` ejecuta navegación determinista
+* `checkpointfollower.py` ejecuta navegación determinista de bajo nivel
+* `comunication_move.py` orquesta el movimiento dentro del flujo de misión
 * Los nodos auxiliares facilitan localización y pruebas
-* El módulo publica eventos que sincronizan la misión completa
 
-Este directorio es el punto donde el sistema
-**deja de ser lógico y empieza a moverse de verdad** 🤖🚶‍♂️
+Este directorio es donde el sistema
+**deja de ser lógico y empieza a moverse de verdad**
