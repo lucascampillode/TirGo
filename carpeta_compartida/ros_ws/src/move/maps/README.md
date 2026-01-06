@@ -58,6 +58,20 @@ Archivo de texto que define:
 
 ---
 
+## Vista previa del mapa
+
+A continuación se muestra una **vista previa del mapa de ocupación**
+utilizado durante la navegación del robot.
+
+<img width="506" height="609" alt="image" src="https://github.com/user-attachments/assets/a1ce8c56-fac2-4c5f-b525-2934c3362af6" />
+
+Esta visualización ayuda a comprender la relación entre:
+- el entorno físico real,
+- el mapa utilizado por el sistema,
+- y las trayectorias que sigue el robot durante la demo.
+
+---
+
 ## Uso en el sistema
 
 Los mapas de esta carpeta se cargan normalmente mediante:
