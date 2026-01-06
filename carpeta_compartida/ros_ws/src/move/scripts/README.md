@@ -27,8 +27,8 @@ La carpeta `scripts/` contiene utilidades de ejecución pensadas para:
 
 ```text
 scripts/
-├── run_all.sh    # Script principal: lanza el sistema completo
-└── run_test.sh   # Script auxiliar: ejecución simplificada para pruebas
+├── run_all.sh    # Script principal: demo completa (RViz + mapa + movimiento)
+└── run_test.sh   # Script auxiliar: pruebas/debug (puede requerir ajustes)
 ````
 
 > ⚠️ **Nota**
@@ -41,7 +41,7 @@ scripts/
 
 ---
 
-## 2. `run_all.sh` — Sistema principal
+## 2. `run_all.sh` — Sistema principal (demo)
 
 Este es el **script de referencia para la demo**.
 Debe utilizarse cuando se quiere ejecutar el flujo completo de navegación.
@@ -51,24 +51,27 @@ Debe utilizarse cuando se quiere ejecutar el flujo completo de navegación.
 Ejecuta las siguientes acciones **en orden**:
 
 1. **Lanza RViz**
-   Cargando la configuración visual específica del proyecto.
+   Cargando la configuración visual específica del proyecto (`rviz.launch`).
 
 2. **Inicia `map_server`**
-   Publica el mapa estático del aula para localización y navegación.
+   Publica el mapa estático del entorno para localización/navegación.
 
-3. **Ejecuta el nodo de navegación**
-   Lanza el nodo responsable de:
+3. **Publica la pose inicial**
+   Lanza `publish_initial_pose.py` para ayudar a iniciar la localización sin intervención manual.
 
-   * Enviar objetivos de movimiento al robot
-   * Gestionar el recorrido por checkpoints
-   * Publicar flags ROS cuando se alcanza cada punto
+4. **Ejecuta el orquestador de movimiento**
+   Lanza `comunication_move.py`, que:
+
+   * escucha el inicio de misión (p. ej. `/tirgo/mission/start`)
+   * ejecuta desplazamientos a puntos clave del flujo
+   * publica hitos como `/tirgo/tiago/arrived` y `/tirgo/tiago/at_patient`
 
 Este script deja el sistema listo para ser controlado
 por el coordinador de misión (`tirgo_mission_server`).
 
 ### Uso
 
-Con el entorno de ROS cargado y el robot (real o simulado) activo:
+Con el entorno ROS cargado y el robot (real o simulado) activo:
 
 ```bash
 roscd move/scripts
@@ -81,15 +84,14 @@ roscd move/scripts
 
 Este script está pensado para **desarrollo y debugging**.
 
-Permite:
+Permite acelerar iteraciones durante el desarrollo, por ejemplo:
 
-* Probar posiciones concretas
-* Recalibrar el robot
-* Ejecutar navegación sin levantar todo el sistema completo
-* Ahorrar tiempo durante ajustes finos
+* Probar visualización/localización sin levantar todo el sistema
+* Hacer comprobaciones rápidas del stack de navegación
+* Validar ajustes del entorno
 
-Es especialmente útil cuando se están validando
-coordenadas, mapas o comportamiento del robot.
+> Nota importante: `run_test.sh` es un script auxiliar.
+> Según el entorno (rutas, mapa, configuración del robot), puede requerir ajustes.
 
 ### Uso
 
@@ -115,8 +117,7 @@ roscd move/scripts
 
 * `scripts/` centraliza la **ejecución controlada** del sistema de navegación
 * `run_all.sh` es el punto de entrada para la demo oficial
-* `run_test.sh` acelera el desarrollo y las pruebas
-* Ambos scripts reducen errores y mejoran la reproducibilidad
+* `run_test.sh` acelera desarrollo/pruebas (con posibles ajustes por entorno)
 
 Esta carpeta permite que la navegación de TIAGo
-**se ejecute de forma consistente con un solo comando** 🚀
+**se ejecute de forma consistente con un solo comando** 
