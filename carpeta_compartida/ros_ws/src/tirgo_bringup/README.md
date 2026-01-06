@@ -1,171 +1,155 @@
 <div align="center">
 
 # tirgo_bringup
-**Bringup y orquestación de lanzadores (ROS 1 Noetic) para TirGoPharma**
+**Bringup y orquestación de launch files (ROS 1 Noetic) para TirGoPharma**
 
-Este paquete agrupa los **launch files** necesarios para levantar el sistema TirGoPharma en modo:
-- **DEV** (rápido para iterar)
-- **DEPLOY** (con configuración por variables de entorno)
-- **ALL** (modular por grupos: core / web / hri / move)
+Este paquete agrupa los **launch files ROS** necesarios para levantar
+subconjuntos coherentes del sistema **TirGoPharma** en distintos modos
+(de desarrollo, despliegue o pruebas).
+
+⚠️ **Este paquete NO es el punto de entrada oficial de la demo final.**  
+Para la ejecución integrada y reproducible del sistema completo se utiliza
+el script de raíz **`tirgo_ALL.sh`**.
 
 </div>
 
 ---
 
 ## Índice
-- [1. Qué hace este paquete](#1-qué-hace-este-paquete)
-- [2. Arquitectura a alto nivel](#2-arquitectura-a-alto-nivel)
-- [3. Launch files disponibles](#3-launch-files-disponibles)
-- [4. Quickstart](#4-quickstart)
-  - [4.1 DEV rápido (PC / Docker)](#41-dev-rápido-pc--docker)
-  - [4.2 DEPLOY (variables de entorno)](#42-deploy-variables-de-entorno)
-  - [4.3 ALL modular (activar/desactivar grupos)](#43-all-modular-activar-desactivar-grupos)
-- [5. Modo sin hardware](#5-modo-sin-hardware)
-- [6. Variables y parámetros](#6-variables-y-parámetros)
-- [7. Troubleshooting](#7-troubleshooting)
+- [1. Rol del paquete dentro del proyecto](#1-rol-del-paquete-dentro-del-proyecto)
+- [2. Qué hace (y qué NO hace) este paquete](#2-qué-hace-y-qué-no-hace-este-paquete)
+- [3. Arquitectura a alto nivel](#3-arquitectura-a-alto-nivel)
+- [4. Launch files disponibles](#4-launch-files-disponibles)
+- [5. Quickstart](#5-quickstart)
+- [6. Modo sin hardware](#6-modo-sin-hardware)
+- [7. Variables y parámetros](#7-variables-y-parámetros)
+- [8. Cuándo NO usar este paquete](#8-cuándo-no-usar-este-paquete)
+- [9. Troubleshooting](#9-troubleshooting)
 
 ---
 
-## 1. Qué hace este paquete
+## 1. Rol del paquete dentro del proyecto
 
-`tirgo_bringup` contiene los `*.launch` que agrupan los nodos de:
+`tirgo_bringup` ocupa un **nivel intermedio** dentro de la jerarquía de arranque
+del proyecto TirGoPharma.
 
-- **Núcleo de misión**: `tirgo_mission_server` (ActionServer `/tirgo/mission`)
-- **Web UI**: `tirgo_ui` (Flask + MongoDB + puente ROS)
-- **HRI (voz)**: `stt_vosk` (STT offline) + `tiago_speech_node` (TTS TIAGo)
-- **Movimiento (move)**: opcional
+### Jerarquía real de arranque
 
-> Nota: el **dispensador físico** (`servo_dispenser`) NO se lanza aquí porque se asume en **Raspberry Pi 3B** (ROS_MASTER_URI apuntando al PC/robot).
+| Nivel | Elemento                     | Rol |
+|------:|------------------------------|-----|
+| 1 | `tirgo_ALL.sh` | **Punto de entrada oficial de la demo final** |
+| 2 | Docker / docker-compose | Reproducibilidad del entorno |
+| 3 | **tirgo_bringup** | Orquestación de launch files ROS |
+| 4 | Launch files por paquete | Arranque fino y específico |
+
+Este paquete **no sustituye** a los scripts de raíz ni a Docker.
+Su objetivo es facilitar **desarrollo, pruebas e integración parcial** del sistema ROS.
 
 ---
 
-## 2. Arquitectura a alto nivel
+## 2. Qué hace (y qué NO hace) este paquete
 
-### 2.1 Componentes principales
+### Qué hace
+
+- Agrupa nodos ROS en **launch files coherentes**
+- Permite levantar el sistema:
+  - en modo **DEV**
+  - en modo **DEPLOY**
+  - de forma **modular** (activar/desactivar subsistemas)
+- Centraliza parámetros comunes (timeouts, puertos, flags)
+
+### Qué NO hace
+
+- No lanza el **dispensador físico** (`servo_dispenser`)
+- No levanta **MongoDB** ni infraestructura
+- No reemplaza scripts de arranque del repositorio
+- No es obligatorio para la demo final
+
+---
+
+## 3. Arquitectura a alto nivel
+
+### Componentes principales
 
 ```mermaid
 flowchart LR
   UI["tirgo_ui (Flask)"]
   AS["/tirgo/mission (ActionServer)\n(tirgo_mission_server)"]
-  MOVE["move (navegación)\ncheckpointfollower + communication_move"]
-  DISP["servo_dispenser (RPi 3B)\nservos + pigpio"]
-  ARM["brazo_robot\npick / deliver"]
-  TTS["tiago_speech_node\n/tts (pal_interaction_msgs)"]
-  STT["stt_vosk\n/stt/text"]
+  MOVE["move (navegación)"]
+  DISP["servo_dispenser (RPi 3B)"]
+  ARM["tirgo_tiago_arm_seq"]
+  TTS["tiago_speech_node"]
+  STT["stt_vosk"]
 
-  UI -->|"Action goal"| AS
-
-  AS -->|"topic: /tirgo/mission/start"| MOVE
-
-  AS -->|"topic: /tirgo/dispense/request (Int32)"| DISP
-  DISP -->|"topic: /tirgo/dispense/ready (Bool)"| AS
-
-  AS -->|"flags (Bool)"| ARM
-  ARM -->|"topics: /tirgo/tiago/picked, /tirgo/tiago/delivered"| AS
-
-  AS -->|"topic: /tirgo/say (String)"| TTS
-
+  UI --> AS
+  AS --> MOVE
+  AS --> DISP
+  DISP --> AS
+  AS --> ARM
+  ARM --> AS
+  AS --> TTS
   STT --> UI
-
 ````
-
-### 2.2 Secuencia “feliz” de la misión
-
-```mermaid
-sequenceDiagram
-  participant Web as tirgo_ui
-  participant MS as tirgo_mission_server (/tirgo/mission)
-  participant Move as move
-  participant Disp as servo_dispenser (RPi)
-  participant Arm as brazo_robot
-  participant TTS as tiago_speech_node
-
-  Web->>MS: Goal(patient_id, med_id)
-  MS->>Move: /tirgo/mission/start="start"
-  Move-->>MS: /tirgo/tiago/arrived=True
-  MS->>Disp: /tirgo/dispense/request=med_id
-  Disp-->>MS: /tirgo/dispense/ready=True
-  Arm-->>MS: /tirgo/tiago/picked=True
-  Move-->>MS: /tirgo/tiago/at_patient=True
-  Arm-->>MS: /tirgo/tiago/delivered=True
-  TTS-->>MS: /tirgo/tiago/farewell_done=True
-  MS-->>Web: Result=SUCCESS
-```
 
 ---
 
-## 3. Launch files disponibles
+## 4. Launch files disponibles
 
 > Ubicación: `tirgo_bringup/launch/`
 
-| Launch                    | Para qué sirve                                                                       | Recomendado para          |
-| ------------------------- | ------------------------------------------------------------------------------------ | ------------------------- |
-| `tirgo_all_dev.launch`    | Stack completo “DEV”: STT + voz TIAGo + MissionServer + Web                          | Iterar rápido             |
-| `tirgo_all_deploy.launch` | Stack “DEPLOY”: igual que DEV, pero con defaults por **variables de entorno**        | Demo estable / despliegue |
-| `tirgo_all.launch`        | Stack “ALL modular”: incluye `tirgo_core.launch` + grupos `use_web/use_hri/use_move` | Encender/apagar piezas    |
-| `tirgo_core.launch`       | Solo el núcleo (`tirgo_mission_server`) + parámetros de timeouts                     | Testing / integración     |
-| `tirgo_web.launch`        | Solo `tirgo_ui` con sus args (puerto, mongo_uri, vídeo…)                             | Web standalone            |
-| `tirgo_hri.launch`        | Solo voz: `stt_vosk` + `tiago_speech.launch`                                         | HRI standalone            |
+| Launch                    | Qué levanta                                              | Cuándo usar         |
+| ------------------------- | -------------------------------------------------------- | ------------------- |
+| `tirgo_all_dev.launch`    | MissionServer + Web + HRI                                | Desarrollo rápido   |
+| `tirgo_all_deploy.launch` | Igual que DEV, con configuración por entorno             | Demo estable        |
+| `tirgo_all.launch`        | Núcleo + módulos opcionales (`use_web/use_hri/use_move`) | Integración modular |
+| `tirgo_core.launch`       | Solo `tirgo_mission_server`                              | Testing / debug     |
+| `tirgo_web.launch`        | Solo `tirgo_ui`                                          | Web standalone      |
+| `tirgo_hri.launch`        | STT + TTS                                                | HRI standalone      |
 
 ---
 
-## 4. Quickstart
+## 5. Quickstart
 
-### 4.1 DEV rápido (PC / Docker)
+### 5.1 DEV rápido (PC / Docker)
 
-**Opción A: usando tus scripts del repo (recomendado)**
+**Opción recomendada (scripts del repositorio):**
 
 ```bash
 ./tirgo_stack.sh
 ```
 
-Esto levanta:
-
-* MongoDB (stack infra)
-* Contenedor `ros1_rob_tirgo`
-* Y dentro, lo típico es arrancar bringup con tu script dev.
-
-**Opción B: manual**
+**Opción manual (ROS ya activo):**
 
 ```bash
-# En el contenedor / PC con ROS Noetic
 source /opt/ros/noetic/setup.bash
 source ~/carpeta_compartida/ros_ws/devel/setup.bash
 
 roslaunch tirgo_bringup tirgo_all_dev.launch
 ```
 
-**Web**: por defecto en `http://localhost:9001`
+La interfaz web estará disponible, por defecto, en `http://localhost:9001`.
 
 ---
 
-### 4.2 DEPLOY (variables de entorno)
+### 5.2 DEPLOY (variables de entorno)
 
-`tirgo_all_deploy.launch` lee defaults desde entorno (ideal para `.env` o para docker compose).
+`tirgo_all_deploy.launch` toma valores por defecto desde el entorno:
 
 ```bash
 export TIRGO_WEB_PORT=9001
 export FLASK_SECRET_KEY="cambia-esta-clave"
 export TIRGO_PEPPER="cambia-este-pepper-largo"
-export TIRGO_HOTWORD="hola tirgo"
-export MONGO_URI="mongodb://tirgo_user:CAMBIA_PASS@tirgo_mongo:27017/tirgo?authSource=tirgo"
-export TIRGO_USE_VIDEO=true
-export TIRGO_VIDEO_PORT=8080
+export MONGO_URI="mongodb://tirgo_user:PASS@tirgo_mongo:27017/tirgo?authSource=tirgo"
 
 roslaunch tirgo_bringup tirgo_all_deploy.launch
 ```
 
-**Importante**: asegúrate de que `MONGO_URI` coincide con el usuario/clave creados en `infra/tirgo_db_stack`.
-
-* En algunos sitios del repo aparece `tirgo_app:tirgo@127.0.0.1...`
-* En deploy, el default apunta a `tirgo_user:CAMBIA_PASS@tirgo_mongo...`
-
+Asegúrate de que `MONGO_URI` coincide con las credenciales creadas en
+`infra/tirgo_db_stack`.
 
 ---
 
-### 4.3 ALL modular (activar/desactivar grupos)
-
-`tirgo_all.launch` permite encender por bloques:
+### 5.3 ALL modular (activar/desactivar grupos)
 
 ```bash
 roslaunch tirgo_bringup tirgo_all.launch \
@@ -179,68 +163,46 @@ Argumentos principales:
 * `use_web` (default: `true`)
 * `use_hri` (default: `true`)
 * `use_move` (default: `true`)
-* Config web: `web_port`, `mongo_uri`, `flask_debug`, etc.
 
 ---
 
-## 5. Modo sin hardware
+## 6. Modo sin hardware
 
-Si quieres demo “sin robot / sin RPi”, puedes simular la misión publicando flags.
+Este modo permite validar la lógica de misión **sin robot ni Raspberry Pi**.
 
-### 5.1 Levantar solo misión + web
-
-```bash
-roslaunch tirgo_bringup tirgo_all_dev.launch
-# (o tirgo_all.launch use_move:=false use_hri:=false si quieres ultra-minimal)
-```
-
-### 5.2 Simular los flags en orden
-
-En otra terminal:
+1. Lanza el sistema (por ejemplo, `tirgo_all_dev.launch`).
+2. Inicia una misión desde la web.
+3. Simula los eventos publicando flags manualmente:
 
 ```bash
-# 1) simular llegada al dispensador
 rostopic pub -1 /tirgo/tiago/arrived std_msgs/Bool "data: true"
-
-# 2) simular que el dispensador está listo
 rostopic pub -1 /tirgo/dispense/ready std_msgs/Bool "data: true"
-
-# 3) simular recogida con brazo
 rostopic pub -1 /tirgo/tiago/picked std_msgs/Bool "data: true"
-
-# 4) simular llegada al paciente
 rostopic pub -1 /tirgo/tiago/at_patient std_msgs/Bool "data: true"
-
-# 5) simular entrega
 rostopic pub -1 /tirgo/tiago/delivered std_msgs/Bool "data: true"
-
-# 6) simular despedida completada
 rostopic pub -1 /tirgo/tiago/farewell_done std_msgs/Bool "data: true"
 ```
 
-Con esto, el ActionServer debería terminar la misión como **SUCCESS** (si has lanzado la misión desde la web).
+El `tirgo_mission_server` debería finalizar la misión en estado **SUCCESS**.
 
 ---
 
-## 6. Variables y parámetros
+## 7. Variables y parámetros
 
-### 6.1 Args típicos de la web (`tirgo_ui/web.launch`)
-
-Estos args se pasan desde `tirgo_web.launch` y desde los `all_*`:
+### Variables típicas de la web
 
 * `port` (default: `9001`)
-* `flask_secret_key` (default: `dev-secret`)
-* `flask_debug` (default: `1`)
+* `flask_secret_key`
+* `flask_debug`
 * `mongo_uri`
-* `hotword` (default: `hola tirgo`)
-* `stt_topic` (default: `/stt/text`)
-* `pepper` (default: `cambia-esta-cadena-larga`)
-* `use_video_server` (default: `true`)
-* `video_port` (default: `8080`)
+* `hotword`
+* `pepper`
+* `use_video_server`
+* `video_port`
 
-### 6.2 Parámetros del MissionServer (timeouts)
+### Parámetros del MissionServer (timeouts)
 
-En `tirgo_core.launch` se definen parámetros como:
+Definidos en `tirgo_core.launch`:
 
 * `mission/timeout_arrive`
 * `mission/timeout_ready`
@@ -249,44 +211,48 @@ En `tirgo_core.launch` se definen parámetros como:
 * `mission/timeout_deliver`
 * `mission/timeout_farewell`
 
-Si estás en modo sin hardware, puedes subirlos o bajarlos según la demo.
+---
+
+## 8. Cuándo NO usar este paquete
+
+No se recomienda usar `tirgo_bringup` cuando:
+
+* Estás ejecutando la **demo final** con `tirgo_ALL.sh`
+* Usas Docker como punto de entrada principal
+* Estás probando hardware real con scripts dedicados
+* Necesitas un arranque completamente reproducible “one-click”
+
+En estos casos, `tirgo_bringup` puede duplicar nodos o romper el orden de arranque.
 
 ---
 
-## 7. Troubleshooting
+## 9. Troubleshooting
 
-### 7.1 “La web no conecta a Mongo” / auth fail
+### La web no conecta a Mongo
 
-* Revisa `mongo_uri` (usuario/clave/host/authSource).
-* Si estás en docker, probablemente el host sea `tirgo_mongo`.
-* Si estás en local, probablemente `127.0.0.1`.
-
-Consejo: usa `tirgo_all_deploy.launch` y fija `MONGO_URI` en tu `.env`.
+* Revisa `MONGO_URI` (host, usuario, contraseña, `authSource`).
+* En Docker, el host suele ser `tirgo_mongo`.
+* En local, normalmente `127.0.0.1`.
 
 ---
 
-### 7.2 “No hay STT / no pilla micro”
+### No funciona STT / micrófono
 
-`stt_vosk` depende del dispositivo de audio correcto.
+* El dispositivo de audio puede cambiar entre equipos.
+* En Docker, el acceso al audio depende del host.
 
-* En distintos PCs, el `device_index` puede cambiar.
-* En docker, audio puede ser “la fiesta del caos”.
-
-Mira el README de `stt_vosk` y ajusta el launch de ese paquete.
+Consulta el README de `stt_vosk`.
 
 ---
 
-### 7.3 “use_move=true rompe al lanzar”
+### `use_move=true` provoca errores
 
-Ahora mismo falta el launch `tirgo_move.launch` en `tirgo_bringup`.
+Actualmente no existe un `tirgo_move.launch` dentro de `tirgo_bringup`.
 
-Workaround manual (dentro de ROS Noetic con tu ws):
+Solución manual:
 
 ```bash
-# (opcional) RViz y mapa si lo usas
 roslaunch move rviz.launch
-
-# nodos de move (orden típico)
 rosrun move publish_initial_pose.py
 rosrun move checkpointfollower.py
 rosrun move comunication_move.py
@@ -294,9 +260,9 @@ rosrun move comunication_move.py
 
 ---
 
-### 7.4 “La misión se queda esperando para siempre”
+### La misión se queda esperando
 
-El MissionServer está esperando alguno de estos flags (Bool):
+El `tirgo_mission_server` está esperando alguno de estos flags:
 
 * `/tirgo/tiago/arrived`
 * `/tirgo/dispense/ready`
@@ -305,4 +271,4 @@ El MissionServer está esperando alguno de estos flags (Bool):
 * `/tirgo/tiago/delivered`
 * `/tirgo/tiago/farewell_done`
 
-Usa `rostopic echo` para ver si se publican, o simúlalos (modo sin hardware).
+Usa `rostopic echo` para verificar su publicación o simúlalos manualmente.
