@@ -33,9 +33,10 @@ El paquete incluye scripts para preparar la Pi (`setup_servo_rpi.sh`) y un scrip
 cd ~/carpeta_compartida/ros_ws/src/servo_dispenser/scripts
 sudo ./setup_servo_rpi.sh
 sudo reboot
-```
+````
 
-> 2) (Tras el reboot) Levantar ROS y lanzar el nodo con el script unificado
+> 2. (Tras el reboot) Levantar ROS y lanzar el nodo con el script unificado
+
 ```bash
 cd ~/carpeta_compartida/ros_ws/src/servo_dispenser
 chmod +x run_servo.sh
@@ -48,8 +49,17 @@ chmod +x run_servo.sh
 
 ### Suscribe
 
-* **`/tirgo/dispense/request`** (`std_msgs/Int32`)  
-  Recibe el **ID del bote** a dispensar:
+* **`/tirgo/dispense/request`** (`std_msgs/Int32`)
+  Recibe el **ID del bote** a dispensar.
+
+  **Contrato del topic:**
+
+  * IDs válidos: **1, 2, 3, 4**
+  * Cualquier otro valor se considera **inválido**
+  * Para IDs inválidos:
+
+    * no se mueven servos
+    * no se publica `/tirgo/dispense/ready`
 
   | ID | Servo | Movimiento | Bote |
   | -- | ----- | ---------- | ---- |
@@ -60,8 +70,8 @@ chmod +x run_servo.sh
 
 ### Publica
 
-* **`/tirgo/dispense/ready`** (`std_msgs/Bool`)  
-  Publica `True` cuando se ha completado un **ciclo de dispensado válido**.  
+* **`/tirgo/dispense/ready`** (`std_msgs/Bool`)
+  Publica `True` cuando se ha completado un **ciclo de dispensado válido**.
   En IDs inválidos, el nodo **no** mueve servos y **no** publica `ready`.
 
 ---
@@ -91,15 +101,19 @@ servo_dispenser/
 
 ## Requisitos
 
-* Hardware
-  * Raspberry Pi 3B (dispensador físico conectado a sus GPIO).
+### Hardware
 
-* Software
-  * Ubuntu 20.04
-  * ROS **Noetic**
-  * Python **3.8**
+* Raspberry Pi 3B (dispensador físico conectado a sus GPIO).
 
-* Entorno TirGoPharma en `~/carpeta_compartida`:
+### Software
+
+* Ubuntu 20.04
+* ROS **Noetic**
+* Python **3.8**
+
+### Entorno TirGoPharma
+
+El paquete asume el entorno del proyecto en `~/carpeta_compartida`:
 
 ```bash
 source /opt/ros/noetic/setup.bash
@@ -107,11 +121,23 @@ source ~/carpeta_compartida/gallium/setup.bash
 source ~/carpeta_compartida/setup_env.sh
 ```
 
-* GPIO / pigpio
-  * Usuario en el grupo `gpio`
-  * Daemon `pigpiod` activo
+### GPIO / pigpio
 
-> Siempre que vayas a compilar o lanzar, asegúrate de tener el **entorno unificado** cargado.
+* Usuario perteneciente al grupo `gpio`
+* Daemon `pigpiod` activo
+
+---
+
+## GPIO usados (demo)
+
+En la configuración de referencia de la demo, el nodo utiliza:
+
+* **Servo A** → GPIO **2**
+* **Servo B** → GPIO **3**
+
+Estos pines están definidos directamente en el código del nodo.
+Si tu montaje físico utiliza otros GPIO, será necesario ajustar
+la configuración en `scripts/servo_dispenser_node.py`.
 
 ---
 
@@ -128,7 +154,10 @@ sudo ./setup_servo_rpi.sh
 sudo reboot
 ```
 
-El reinicio es necesario para que se apliquen los cambios de pertenencia a grupos (`gpio`, `dialout`, `video`, etc.).
+El reinicio es necesario para que se apliquen los cambios de pertenencia
+a grupos (`gpio`, `dialout`, `video`, etc.).
+
+---
 
 ### 2. Compilar el workspace TirGo
 
@@ -157,18 +186,27 @@ Si no devuelve ruta, algo se ha roto en el build o en el entorno.
 
 ## Script de arranque: run_servo.sh
 
-El script `run_servo.sh`, se encuentra en la raíz del paquete, sirve para simplificar arrancar el servicio en la Pi. Este script:
+El script `run_servo.sh`, ubicado en la raíz del paquete, simplifica
+el arranque del servicio en la Raspberry Pi.
+
+Este script:
 
 1. Carga el entorno base de ROS y TirGo (si existen los archivos).
 2. Entra en `~/carpeta_compartida/ros_ws` y ejecuta `catkin_make`.
 3. Carga `devel/setup.bash`.
-4. Lanza el `roslaunch` del nodo: `roslaunch servo_dispenser servo_dispenser_rpi.launch`.
+4. Lanza el nodo mediante:
 
-Ruta: `~/carpeta_compartida/ros_ws/src/servo_dispenser/run_servo.sh`
+   ```
+   roslaunch servo_dispenser servo_dispenser_rpi.launch
+   ```
+
+Ruta:
+
+```
+~/carpeta_compartida/ros_ws/src/servo_dispenser/run_servo.sh
+```
 
 ### Uso básico
-
-Dar permisos y ejecutar:
 
 ```bash
 cd ~/carpeta_compartida/ros_ws/src/servo_dispenser
@@ -176,18 +214,14 @@ chmod +x run_servo.sh
 ./run_servo.sh
 ```
 
-El script muestra mensajes informativos y se detiene si algún comando falla (`set -e`).
-
-### Notas sobre permisos
-
-- El script no requiere `sudo` para ejecutar `catkin_make` ni `roslaunch` en condiciones normales.  
-- Asegúrate de ejecutar como el usuario correcto (usuario que pertenece a `gpio` y al que está configurado en `setup_env.sh`).
+El script se detiene automáticamente si algún comando falla (`set -e`).
 
 ---
 
 ## Ejecución (alternativas)
 
-Asegurar de que `ROS_MASTER_URI` y `ROS_HOSTNAME` están bien configurados en la Pi (normalmente ya lo gestiona tu `setup_env.sh`).
+Asegúrate de que `ROS_MASTER_URI` y `ROS_HOSTNAME`
+están correctamente configurados en la Raspberry Pi.
 
 ```bash
 cd ~/carpeta_compartida/ros_ws
@@ -198,7 +232,7 @@ source ~/carpeta_compartida/setup_env.sh
 source devel/setup.bash
 
 roslaunch servo_dispenser servo_dispenser_rpi.launch
-# alternativamente (solo el nodo):
+# alternativamente:
 # rosrun servo_dispenser servo_dispenser_node.py
 ```
 
@@ -206,136 +240,82 @@ roslaunch servo_dispenser servo_dispenser_rpi.launch
 
 ## Comprobación rápida (smoke test)
 
-Primero, carga el entorno (si no lo tienes ya):
-
-```bash
-cd ~/carpeta_compartida/ros_ws
-
-source /opt/ros/noetic/setup.bash
-source ~/carpeta_compartida/gallium/setup.bash
-source ~/carpeta_compartida/setup_env.sh
-source devel/setup.bash
-```
-
-### 1. Enviar una petición de dispensado
+### 1. Enviar una petición válida
 
 ```bash
 rostopic pub /tirgo/dispense/request std_msgs/Int32 "data: 1"
 ```
 
-### 2. Ver qué llega al nodo
-
-```bash
-rostopic echo /tirgo/dispense/request
-```
-
-Deberías ver el `data: 1` que acabas de publicar.
-
-### 3. Ver la señal de `ready`
+### 2. Ver la señal de `ready`
 
 ```bash
 rostopic echo /tirgo/dispense/ready
 ```
 
-Tras el movimiento del servo, deberías ver:
+Salida esperada tras el movimiento del servo:
 
 ```text
 data: True
 ```
 
-para un ID válido. Para IDs inválidos, no debería aparecer ningún `ready`.
+Para IDs inválidos, no debe aparecer ningún mensaje `ready`.
 
 ---
 
 ## Notas importantes
 
-* Este nodo se ejecuta **solo en la Raspberry Pi**, **nunca** dentro de Docker.
-* La comunicación con el resto del sistema TirGoPharma es únicamente vía **tópicos ROS**.
+* Este nodo está diseñado para ejecutarse **exclusivamente en la Raspberry Pi**.
+* **No es compatible con Docker ni con ejecución en un PC sin GPIO**.
+* En un host sin hardware real, la lógica puede validarse mediante los **tests unitarios**.
+* La comunicación con el resto del sistema TirGoPharma se realiza únicamente mediante **tópicos ROS**.
 
 ---
 
 ## Tests automatizados
 
-El paquete incluye dos tipos de tests:
+El paquete incluye dos niveles de testing:
 
-1. **Tests unitarios (`pytest`)**  
-   No requieren ROS ni Raspberry; se puede ejecutar en el portátil.
+### 1. Tests unitarios (`pytest`)
 
-2. **Tests de flujo completo (`rostest`)**  
-   Se ejecutan en la Raspberry Pi, contra `pigpio` real y el nodo corriendo.
+* No requieren ROS ni Raspberry Pi.
+* Usan clases fake (`FakePi`, `DummyPublisher`).
 
-Estos tests validan tanto la lógica del nodo como el comportamiento físico del dispensador.
+Qué validan:
 
----
-
-### Estructura de tests
-
-```text
-servo_dispenser/test/
-├── conftest.py                     ← fixtures comunes
-├── test_servo_dispenser.py         ← unitarios (pytest)
-├── test_servo_dispenser_flow.py    ← test de integración / flujo
-└── servo_dispenser_flow.test       ← definición de rostest
-```
-
----
-
-### Tests unitarios (pytest)
-
-Estos tests **no** usan ROS ni GPIO: se apoya en clases fake como **`FakePi`** y **`DummyPublisher`**.
-
-Qué se comprueba:
-
-* Conversión de ángulo → microsegundos (siempre dentro de rango).
+* Conversión ángulo → microsegundos.
 * Selección correcta del servo según `bin_id`.
-* Llamadas correctas a `set_servo_pulsewidth` con los parámetros esperados.
-* Publicación de `ready=True` en ciclos de dispensado válidos.
-* Que con `bin_id` inválido:
-  * No se muevan servos.
-  * No se publique `ready`.
+* Publicación de `ready=True` en ciclos válidos.
+* IDs inválidos → sin movimiento y sin `ready`.
 
-Cómo ejecutarlos:
+Ejecución:
 
 ```bash
 cd ~/carpeta_compartida/ros_ws/src/servo_dispenser
 pytest -q
 ```
 
-Se pueden pasar en local, sin Raspberry y sin `pigpiod`.
-
 ---
 
-### Tests de flujo completo (rostest)
+### 2. Tests de flujo completo (`rostest`)
 
-Estos tests lanzan el nodo real en la Raspberry y usan ROS para mandar pedidos y observar la respuesta.
+* Se ejecutan en la Raspberry Pi.
+* Usan el nodo real y `pigpio`.
 
-Qué se comprueba:
+Qué validan:
 
-* Publicar un `Int32` válido en `/tirgo/dispense/request` mueve el **servo correcto**.
-* Tras el movimiento, se publica **exactamente un** `ready=True`.
-* IDs inválidos → el nodo no mueve servos y no publica `ready`.
-* El nodo no se cuelga ni casca durante la prueba.
+* Movimiento del servo correcto para cada ID.
+* Publicación de **un único** `ready=True`.
+* Manejo correcto de IDs inválidos.
+* Estabilidad del nodo durante la prueba.
 
-Requisitos:
-
-* Raspberry Pi 3B con `pigpiod` arrancado.
-* Workspace compilado (`catkin_make` sin errores).
-* Entorno cargado:
-
-```bash
-source /opt/ros/noetic/setup.bash
-source ~/carpeta_compartida/gallium/setup.bash
-source ~/carpeta_compartida/setup_env.sh
-```
-
-Cómo ejecutarlos:
+Ejecución:
 
 ```bash
 cd ~/carpeta_compartida/ros_ws
 rostest servo_dispenser servo_dispenser_flow.test
 ```
 
-Salida esperada en un caso OK:
+Salida esperada:
 
 ```text
 SUMMARY
