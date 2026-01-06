@@ -2,12 +2,13 @@
 
 # stt_vosk
 
-Nodo de **reconocimiento de voz (Speech-To-Text)** para **ROS 1 (Noetic)**,
-basado en **Vosk** y **PyAudio**.
+Nodo de reconocimiento de voz (Speech-To-Text) para ROS 1 (Noetic),
+basado en Vosk y PyAudio.
 
-Convierte audio capturado por micrófono en **texto publicable por ROS**,
-permitiendo interacción por voz con el sistema **TirGoPharma**.
-Diseñado para integrarse principalmente con la interfaz web (`tirgo_ui`).
+Convierte audio capturado por micrófono en texto publicable por ROS,
+permitiendo interacción por voz con el sistema TirGoPharma.
+
+Diseñado para integrarse principalmente con la interfaz web `tirgo_ui`.
 
 </div>
 
@@ -15,18 +16,20 @@ Diseñado para integrarse principalmente con la interfaz web (`tirgo_ui`).
 
 ## Visión general
 
-El paquete **`stt_vosk`** implementa un nodo ROS que escucha audio en tiempo real,
+El paquete `stt_vosk` implementa un nodo ROS que escucha audio en tiempo real,
 ejecuta reconocimiento de voz en streaming y publica el texto reconocido en topics ROS.
 
-Su objetivo es **apoyar la interacción humano–robot** durante la demo,
-permitiendo que el usuario active o complemente acciones mediante voz
-(por ejemplo, usando una *wake word*).
+Su objetivo es servir como módulo de entrada por voz, manteniéndose totalmente
+desacoplado de la lógica de negocio.
 
 Características principales:
 
-- Reconocimiento de voz **offline** (sin servicios externos)
-- Soporte para modelos Vosk en distintos idiomas
-- Publicación de **texto final** y **texto parcial**
+- Reconocimiento de voz offline (sin servicios externos)
+- Uso de modelos Vosk intercambiables por idioma
+- Publicación de:
+  - texto final
+  - texto parcial (opcional)
+- Soporte de wake word
 - Configuración flexible vía parámetros ROS
 - Integración directa con `tirgo_ui`
 
@@ -40,10 +43,12 @@ stt_vosk/
 ├── CMakeLists.txt
 ├── README.md
 ├── launch/
-│   └── stt_vosk.launch               # Lanzador del nodo STT
-└── scripts/
-    ├── stt_vosk_node.py              # Nodo principal (Vosk + PyAudio + ROS)
-    └── list_audio_devices.py         # Lista micrófonos disponibles
+│   └── stt_vosk.launch           # Launch recomendado del nodo STT
+├── scripts/
+│   ├── stt_vosk_node.py          # Nodo principal (Vosk + PyAudio + ROS)
+│   └── list_audio_devices.py     # Utilidad para listar micrófonos
+└── tests/
+    └── test_stt_vosk_node.py     # Tests unitarios (wake word, parciales, errores)
 ````
 
 ---
@@ -52,61 +57,129 @@ stt_vosk/
 
 El nodo `stt_vosk_node.py` ejecuta el siguiente flujo:
 
-1. Abre un dispositivo de audio (micrófono) usando **PyAudio**
-2. Carga un **modelo Vosk** desde disco
+1. Abre un dispositivo de audio (micrófono) usando PyAudio
+2. Carga un modelo Vosk desde disco
 3. Procesa el audio en streaming
-4. Publica el **texto final reconocido** en `stt/text`
-5. (Opcional) Publica **texto parcial** en `stt/partial` mientras el usuario habla
+4. Publica el texto final reconocido en `stt/text`
+5. (Opcional) Publica texto parcial en `stt/partial`
+6. (Opcional) Detecta una wake word y emite un evento especial
 
 ---
 
 ## 3. Rol dentro de TirGoPharma
 
-Dentro del sistema global, **`stt_vosk`** actúa como módulo de **entrada por voz**.
+Dentro del sistema global, `stt_vosk` actúa como módulo de entrada por voz:
 
 * Publica texto reconocido en ROS
-* No toma decisiones ni ejecuta lógica de negocio
-* La interpretación del texto queda en manos de otros módulos
-  (principalmente `tirgo_ui`)
+* No interpreta comandos
+* No ejecuta acciones
+* No depende de la UI
 
-Este desacoplamiento permite **activar o desactivar la voz**
-sin afectar al resto del sistema.
+La interpretación del texto queda en manos de otros módulos, principalmente `tirgo_ui`.
 
----
+Este diseño permite:
 
-## 4. Dependencias
-
-* **ROS 1 Noetic**
-* Paquetes ROS:
-
-  * `rospy`
-  * `std_msgs`
-* Python 3 con:
-
-  * `vosk`
-  * `pyaudio`
-* Un **modelo Vosk** descargado (por ejemplo `vosk-model-small-es-0.42`)
-  en una ruta accesible desde el sistema
+* Activar o desactivar voz sin romper el sistema
+* Reemplazar STT sin tocar la lógica
+* Probar el sistema sin micrófono
 
 ---
 
-## 5. Instalación
+## 4. Integración con `tirgo_ui` (wake word)
+
+### Contrato de mensajes (importante)
+
+Si se configura el parámetro `~wake_word`:
+
+* Cuando el texto final reconocido contiene esa frase:
+
+  * El nodo publica `"__WAKE__"` en `stt/text`
+  * A continuación, publica también el texto completo reconocido
+
+Ejemplo de publicación:
+
+```text
+stt/text: "__WAKE__"
+stt/text: "hola tirgo empieza la misión"
+```
+
+### Reglas para consumidores (`tirgo_ui`)
+
+* `__WAKE__` no es texto natural
+* Debe tratarse como un evento (trigger)
+* El texto posterior contiene el contenido real del usuario
+
+Nota: esta convención está validada por tests y forma parte del contrato del nodo.
+
+---
+
+## 5. Dependencias
+
+### ROS
+
+* ROS 1 Noetic
+* `rospy`
+* `std_msgs`
+
+### Python
+
+* `vosk`
+* `pyaudio`
+
+### Sistema (Ubuntu)
+
+* `portaudio19-dev` (necesario para PyAudio)
+
+### Modelo
+
+* Modelo Vosk descargado localmente (ejemplo: `vosk-model-small-es-0.42`)
+
+---
+
+## 6. Instalación
+
+### 6.1 Instalación en host (Ubuntu)
+
+```bash
+sudo apt install portaudio19-dev
+pip install vosk pyaudio
+```
+
+Copiar el paquete al workspace y compilar:
 
 ```bash
 cd ~/carpeta_compartida/ros_ws/src
-cp -r /ruta/al/stt_vosk .
-cd ~/carpeta_compartida/ros_ws
+cp -r stt_vosk .
+cd ..
 catkin_make
 source devel/setup.bash
 ```
 
-⚠️ Asegúrate de que la ruta al modelo Vosk configurada en el launch **existe**.
+---
+
+## 7. Modelo Vosk
+
+### Ruta recomendada (por defecto en el nodo)
+
+```text
+~/models/vosk-es-small
+```
+
+Ejemplo de descarga:
+
+```bash
+mkdir -p ~/models
+cd ~/models
+wget https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip
+unzip vosk-model-small-es-0.42.zip
+mv vosk-model-small-es-0.42 vosk-es-small
+```
 
 ---
 
-## 6. Uso rápido
+## 8. Uso rápido
 
-### 6.1 Listar dispositivos de audio
+### 8.1 Listar dispositivos de audio
 
 Para identificar el índice del micrófono disponible:
 
@@ -114,113 +187,90 @@ Para identificar el índice del micrófono disponible:
 rosrun stt_vosk list_audio_devices.py
 ```
 
-Salida típica:
+Ejemplo de salida:
 
 ```text
-[0] Built-in Audio ... | rate max: 48000 Hz | channels: 2
-[9] USB PnP Audio Device ... | rate max: 16000 Hz | channels: 1
+[0] Built-in Audio | rate max: 48000 Hz | channels: 2
+[9] USB Audio     | rate max: 16000 Hz | channels: 1
 ```
 
-Usa el índice adecuado (por ejemplo `9`) como `device_index`.
+Guarda el índice (`device_index`) del micrófono correcto.
 
----
+### 8.2 Sanity check recomendado
 
-### 6.2 Lanzar el nodo STT
+Antes de integrar con la UI, verifica que se publica texto:
 
 ```bash
-roslaunch stt_vosk stt_vosk.launch
+rostopic echo /stt/text
 ```
 
-Ejemplo de configuración del launch:
+Luego ejecuta el nodo (ver siguiente sección) y habla. Deberías ver mensajes.
 
-```xml
-<node pkg="stt_vosk" type="stt_vosk_node.py" name="stt_vosk" output="screen">
-  <param name="model_path" value="/home/TirGo/carpeta_compartida/models/vosk-es-small" />
-  <param name="device_index" value="9" />
-  <param name="sample_rate" value="16000" />
-  <param name="publish_partial" value="true" />
-  <param name="wake_word" value="hola tirgo" />
-</node>
-```
-
-Si todo está correcto, el nodo indicará por consola que está escuchando
-y comenzará a publicar texto al detectar voz.
+Si usas wake word, prueba explícitamente que aparece `__WAKE__`.
 
 ---
 
-## 7. Parámetros del nodo
+## 9. Launch recomendado
 
-| Parámetro          | Tipo   | Descripción                                   |
-| ------------------ | ------ | --------------------------------------------- |
-| `~model_path`      | string | Ruta al modelo Vosk                           |
-| `~sample_rate`     | int    | Frecuencia de muestreo (16000 recomendado)    |
-| `~device_index`    | int    | Índice del micrófono                          |
-| `~chunk`           | int    | Tamaño del bloque de audio (8000 por defecto) |
-| `~publish_partial` | bool   | Publica texto parcial en `stt/partial`        |
-| `~wake_word`       | string | Palabra/frase clave para activar la UI        |
+Este launch evita hardcodear rutas e índices que suelen fallar entre máquinas.
+
+Ejecutar:
+
+```bash
+roslaunch stt_vosk stt_vosk.launch device_index:=9
+```
 
 ---
 
-## 8. Topics ROS
+## 10. Parámetros del nodo
+
+| Parámetro          | Tipo   | Descripción                                |
+| ------------------ | ------ | ------------------------------------------ |
+| `~model_path`      | string | Ruta al modelo Vosk                        |
+| `~sample_rate`     | int    | Frecuencia de muestreo (16000 recomendado) |
+| `~device_index`    | int    | Índice del micrófono                       |
+| `~chunk`           | int    | Tamaño del bloque de audio (default: 8000) |
+| `~publish_partial` | bool   | Publica texto parcial en `stt/partial`     |
+| `~wake_word`       | string | Frase clave para generar `__WAKE__`        |
+
+---
+
+## 11. Topics ROS
 
 ### Publica
 
-* **`stt/text`** (`std_msgs/String`)
-  Texto final reconocido (consumido por `tirgo_ui`)
+* `stt/text` (`std_msgs/String`)
+  Texto final reconocido o evento `__WAKE__`
 
-* **`stt/partial`** (`std_msgs/String`)
-  Texto parcial durante la locución (opcional)
+* `stt/partial` (`std_msgs/String`)
+  Texto parcial mientras el usuario habla (opcional)
 
 ### Suscribe
 
 * Ninguno
-  (entrada únicamente por micrófono)
 
 ---
 
-## 9. Diagrama de funcionamiento
+## 12. Tests
 
-```mermaid
----
-config:
-  theme: redux
----
-flowchart LR
-    MIC[Micrófono] --> VOSK["Motor Vosk"]
-    VOSK --> TXT[[pub: stt/text]]
-    VOSK --> PART[[pub: stt/partial]]
-    TXT --> UI["tirgo_ui"]
-    PART --> UI
+El paquete incluye tests unitarios:
+
+```bash
+pytest -q
 ```
 
----
+Cubren:
 
-## 10. Problemas típicos
-
-* **`OSError: [Errno -9996] Invalid input device`**
-  → El `device_index` no existe. Ejecuta de nuevo `list_audio_devices.py`.
-
-* **No publica ningún texto**
-  → El modelo Vosk no está en la ruta indicada (`model_path` incorrecto).
-
-* **Mucho retardo**
-  → Reduce el tamaño de `chunk` (por ejemplo a 4096).
-
-* **No ves nada en la UI**
-  → Comprueba con:
-
-  ```bash
-  rostopic echo stt/text
-  ```
+* Detección de wake word
+* Publicación única de `__WAKE__`
+* Activación o desactivación de parciales
+* Error limpio si el modelo no existe
 
 ---
 
-## 11. Resumen
+## 13. Resumen
 
-* `stt_vosk` proporciona reconocimiento de voz **offline** para TirGoPharma
-* Publica texto en ROS de forma simple y desacoplada
-* Está pensado como módulo **opcional**, no crítico para la demo
-* Facilita una interacción humano–robot más natural
-
-Este paquete permite que el sistema **escuche**,
-pero deja que otros módulos decidan **qué hacer con lo que oye**.
+* `stt_vosk` proporciona STT offline y desacoplado para TirGoPharma
+* Publica texto en ROS de forma simple y testeada
+* La lógica y decisiones pertenecen a otros módulos (principalmente `tirgo_ui`)
+* Permite que el sistema escuche sin imponer qué debe hacer con lo que oye
