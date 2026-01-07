@@ -1,57 +1,107 @@
 <div align="center">
 
 # Testing — TirGoPharma (ROS 1 Noetic)
-Guía de pruebas del repositorio: **qué cubre cada suite**, **cómo ejecutarla** y **qué ejecutar según el cambio**.
+Guía **definitiva** de pruebas del repositorio: **qué cubre cada suite**, **cómo ejecutarla** (Docker o nativo) y **qué lanzar según el cambio**.
 
 </div>
 
 ---
 
-## Mapa global de tests
+## Principios (qué se prueba y qué NO)
 
-| Área | Dónde | Tipo | Requiere ROS master | Requiere HW |
-|---|---|---|:---:|:---:|
-| Web UI | `tirgo_ui/tests/` | pytest | ❌ | ❌ |
-| STT (Vosk) | `stt_vosk/tests/` | pytest | ❌ | ❌ |
-| Mission Server | `tirgo_mission_server/test/` | pytest + rostest | ✅ *(solo rostest)* | ❌ |
-| Dispensador | `servo_dispenser/test/` | pytest + rostest | ✅ *(solo rostest)* | ⚠️ *(flow en RPi)* |
-| Move (manual) | `move/src/move/*test*.py` | scripts | ✅ | depende |
+- El foco de los tests es **proteger la demo end-to-end**: contratos entre módulos, validaciones biomédicas y coordinación de misión.
+- Hay tres niveles:
+  1) **Unit (pytest)**: rápido, sin ROS master (se mockea `rospy/actionlib` cuando hace falta).
+  2) **Integración ROS (rostest)**: levanta nodos reales y verifica flujos.
+  3) **Manual/smoke**: scripts simples para navegación (`move`) que no están integrados como suite CI.
 
-### Diagrama: cobertura por capa
+> Nota: dentro de `carpeta_compartida/gallium/` hay ficheros de terceros (dependencias/overlay). **No forman parte** del plan de tests del proyecto.
+
+---
+
+## Mapa global de tests (por paquete)
+
+| Área | Paquete | Dónde | Tipo | Requiere ROS master | Requiere HW |
+|---|---|---|---|:---:|:---:|
+| Web UI (Flask + negocio) | `tirgo_ui` | `tirgo_ui/tests/` | `pytest` | ❌ | ❌ |
+| STT (Vosk) | `stt_vosk` | `stt_vosk/tests/` | `pytest` | ❌ | ❌ |
+| Mission Server (unit) | `tirgo_mission_server` | `tirgo_mission_server/test/test_tirgo_mission.py` | `pytest` | ❌ | ❌ |
+| Mission Server (E2E ROS) | `tirgo_mission_server` | `tirgo_mission_server/test/test_mission_flow.test` | `rostest` | ✅ | ❌ |
+| Dispensador (unit sin HW) | `servo_dispenser` | `servo_dispenser/test/test_servo_dispenser.py` | `pytest` | ❌ | ❌ |
+| Dispensador (ROS real) | `servo_dispenser` | `servo_dispenser/test/servo_dispenser_flow.test` | `rostest` | ✅ | ⚠️ *(recomendado RPi / pigpio)* |
+| Navegación (manual) | `move` | `move/src/move/*test*.py` | scripts | ✅ | depende |
+
+---
+
+## Diagrama: cobertura por capa
 
 ```mermaid
+---
+config:
+  layout: elk
+---
 flowchart TB
-  subgraph Unit["UNIT (rápido, sin ROS real)"]
-    UI["tirgo_ui (pytest)\n- rutas y sesión\n- storage Mongo\n- helpers rosio"]
-    STT["stt_vosk (pytest)\n- hotword\n- partials\n- errores de modelo"]
-    MSU["tirgo_mission_server (pytest)\n- flags + _wait_flag\n- validación de goal"]
-    SDU["servo_dispenser (pytest)\n- mapeo bin_id\n- límites PWM\n- inválidos"]
+ subgraph Unit["UNIT<br>(rápido, sin ROS master)"]
+        UI["tirgo_ui (pytest)<br>- rutas/flujo UI<br>- validaciones DNI/nombre<br>- storage Mongo (fakes)<br>- puente ROS (mocks)"]
+        STT["stt_vosk (pytest)<br>- hotword<br>- parciales<br>- modelo ausente (error controlado)"]
+        MSU["tirgo_mission_server (pytest)<br>- flags/callbacks<br>- _wait_flag (success/timeout/preempt)<br>- validación de goal (BAD_GOAL)"]
+        SDU["servo_dispenser (pytest)<br>- mapeo bin_id -&gt; GPIO<br>- clamp PWM (MIN/MAX)<br>- inválidos no publican ready<br>- stub pigpio"]
   end
-
-  subgraph Integration["INTEGRACIÓN (ROS real)"]
-    MSI["tirgo_mission_server (rostest)\n- ActionServer /tirgo/mission\n- estados + timeouts + preempt"]
-    SDI["servo_dispenser (rostest)\n- /request -> /ready con nodo real"]
+ subgraph Integration["INTEGRACIÓN<br>(ROS real con rostest)"]
+        MSI["tirgo_mission_server (rostest)<br>- ActionServer /tirgo/mission<br>- happy path por hitos<br>- timeouts por fase<br>- cancelación (preempt)"]
+        SDI["servo_dispenser (rostest)<br>- nodo real<br>- /request -&gt; /ready<br>- latencias/tempos reales"]
   end
-
-  subgraph Manual["VALIDACIÓN MANUAL"]
-    MV["move scripts\n- smoke tests\n- ruta por puntos"]
+ subgraph Manual["MANUAL / SMOKE (no CI)"]
+        MV["move scripts<br>- comunicacion_test.py<br>- test_puntos.py"]
   end
 ````
 
 ---
 
-## Setup (una vez por terminal)
+## Dónde ejecutar los tests (Docker vs nativo)
+
+### Opción recomendada: ejecutar tests dentro del contenedor ROS (PC)
+
+Es lo más reproducible porque ya tienes ROS Noetic y dependencias cargadas.
+
+1. Levanta el entorno (stack normal):
+
+```bash
+./tirgo_ALL.sh
+```
+
+2. Entra al contenedor:
+
+```bash
+docker exec -it "$(docker compose ps -q ros1_rob_tirgo)" bash
+```
+
+3. Dentro del contenedor, carga entorno ROS y workspace:
 
 ```bash
 source /opt/ros/noetic/setup.bash
 source ~/carpeta_compartida/ros_ws/devel/setup.bash
 ```
 
+> Si estás trabajando sin `devel/` aún, compila primero dentro del contenedor:
+
+```bash
+cd ~/carpeta_compartida/ros_ws && catkin_make
+source devel/setup.bash
+```
+
+### Opción nativa (Ubuntu 20.04 + ROS Noetic)
+
+Igual que arriba, pero sin `docker exec`. Necesitas ROS Noetic instalado y el workspace compilado.
+
 ---
 
-## Ejecutar tests
+## Ejecutar tests (comandos oficiales)
 
-### Pytest (rápido)
+> Todos los paths de esta guía asumen el workspace montado en:
+> `~/carpeta_compartida/ros_ws/src/`
+
+### 1) Pytest (rápido)
 
 ```bash
 cd ~/carpeta_compartida/ros_ws/src/tirgo_ui && pytest -q
@@ -60,164 +110,181 @@ cd ../tirgo_mission_server && pytest -q
 cd ../servo_dispenser && pytest -q
 ```
 
-### Rostest (integración ROS)
+**Qué hace realmente**:
+
+* `tirgo_ui`: tests de rutas/validaciones + storage Mongo con fakes + mocks del puente ROS.
+* `stt_vosk`: tests con dobles (audio/vosk/rospy) para validar publicaciones y errores.
+* `tirgo_mission_server`: **solo unit** (el flow ROS se excluye por `collect_ignore`).
+* `servo_dispenser`: unit sin HW, con stub de `pigpio`.
+
+### 2) Rostest (integración ROS)
+
+#### Mission Server (ActionServer `/tirgo/mission`)
 
 ```bash
 rostest tirgo_mission_server test_mission_flow.test
+```
+
+* Lanza `tirgo_mission_server.py` con timeouts pequeños (params en el `.test`).
+* Ejecuta `test_mission_flow.py` como test ROS real.
+
+#### Dispensador (flujo ROS nodo real)
+
+```bash
 rostest servo_dispenser servo_dispenser_flow.test
 ```
 
-> ⚠️ `servo_dispenser_flow` está pensado para Raspberry Pi (nodo real + pigpio):
+⚠️ Recomendado en Raspberry Pi (o entorno con `pigpio` disponible).
+En RPi, asegúrate de tener el demonio:
 
 ```bash
+sudo systemctl enable pigpiod
+sudo systemctl start pigpiod
+# o:
 sudo pigpiod
-rostest servo_dispenser servo_dispenser_flow.test
 ```
 
 ---
 
-## Selección de tests por impacto del cambio
+## Selección de tests por impacto del cambio (guía práctica)
 
-> Objetivo: ejecutar **la mínima batería** que te da confianza real según lo que has tocado.
+Objetivo: ejecutar **la mínima batería** que aporta confianza real según lo tocado.
 
 ### Cambios en UI (rutas, validaciones, sesión)
 
 Ejecuta:
 
 ```bash
-cd .../tirgo_ui && pytest -q
+cd ~/carpeta_compartida/ros_ws/src/tirgo_ui && pytest -q
 ```
 
-**Por qué existen estos tests:** asegurar que la UI no rompe en cambios de plantilla/rutas y que las validaciones (DNI/nombre/stock) siguen siendo consistentes.
-**Qué validan (a alto nivel):**
+Cubre:
 
-* navegación sin sesión / con sesión
-* validación de input (DNI/nombre)
-* mensajes de error y redirecciones correctas
+* navegación con/sin sesión,
+* validaciones DNI/nombre,
+* mensajes de error/redirecciones,
+* flujo “consultar / leer / diagnóstico”.
 
 ---
 
-### Cambios en acceso a datos (Mongo storage: meds/stock/dispenses/pacientes)
+### Cambios en acceso a datos (Mongo storage)
 
 Ejecuta:
 
 ```bash
-cd .../tirgo_ui && pytest -q tests/test_storage_mongo_unit.py tests/test_storage_stock_dispenses.py
+cd ~/carpeta_compartida/ros_ws/src/tirgo_ui && \
+pytest -q tests/test_storage_mongo_unit.py tests/test_storage_stock_dispenses.py
 ```
 
-**Por qué existen:** evitar “bugs silenciosos” de stock/recetas/registro de dispensación al tocar queries o estructura de documentos.
-**Qué validan:**
+Cubre:
 
-* lookup y filtros
-* decremento de stock sin negativos
-* logging de dispensación OK/ERROR
+* queries/filtros,
+* decremento de stock sin negativos,
+* logging de dispensación OK/ERROR (estructura esperada).
 
 ---
 
-### Cambios en el puente web → misión (ROSIO / start_mission_async)
+### Cambios en puente Web → ROS (rosio / start_mission_async)
 
 Ejecuta:
 
 ```bash
-cd .../tirgo_ui && pytest -q tests/test_web_ros_integration.py tests/test_rosio_helpers_unit.py
+cd ~/carpeta_compartida/ros_ws/src/tirgo_ui && \
+pytest -q tests/test_web_ros_integration.py tests/test_rosio_helpers_unit.py
 ```
 
-**Por qué existen:** proteger el punto más crítico del proyecto: que desde la UI se dispare correctamente la misión (sin depender de ROS real).
-**Qué validan:**
+Cubre:
 
-* que se llama a `start_mission_async` con bin_id correcto
-* que errores en esa llamada se manejan sin tumbar la UI
+* que se construye la llamada a misión con `med_id/bin_id` coherente,
+* manejo de error sin tumbar la UI,
+* helpers y contrato mínimo del puente (mock).
 
 ---
 
-### Cambios en STT (hotword, parciales, control del bucle, modelo)
+### Cambios en STT (publicación, hotword, parciales, modelo)
 
 Ejecuta:
 
 ```bash
-cd .../stt_vosk && pytest -q
+cd ~/carpeta_compartida/ros_ws/src/stt_vosk && pytest -q
 ```
 
-**Por qué existen:** el STT es muy sensible a “pequeños cambios” (publicar de más, no publicar, romper con modelo inexistente).
-**Qué validan:**
+Cubre:
 
-* hotword se emite una vez
-* parciales solo cuando se habilitan
-* si falta el modelo → falla de forma controlada
+* hotword (emisión y control),
+* parciales (cuando procede),
+* fallo controlado si falta el modelo.
 
 ---
 
-### Cambios en lógica del Mission Server (flags, timeouts, validación del goal)
+### Cambios internos en Mission Server (flags, timeouts, validación goal)
 
 Ejecuta:
 
 ```bash
-cd .../tirgo_mission_server && pytest -q
+cd ~/carpeta_compartida/ros_ws/src/tirgo_mission_server && pytest -q
 ```
 
-**Por qué existen:** asegurar la máquina de estados interna sin levantar ROS: callbacks y control de timeouts/preempt.
-**Qué validan:**
+Cubre:
 
-* callbacks ponen flags correctos
-* `_wait_flag` (success/timeout/preempt)
-* BAD_GOAL (patient_id vacío o med_id inválido)
+* callbacks → flags correctos,
+* `_wait_flag` (success/timeout/preempt),
+* goals inválidos (BAD_GOAL).
 
 ---
 
-### Cambios en tópicos/estados del flujo E2E de misión
+### Cambios en tópicos/estados del flujo E2E de misión (lo más crítico)
 
-Ejecuta (imprescindible):
+Ejecuta:
 
 ```bash
 rostest tirgo_mission_server test_mission_flow.test
 ```
 
-**Por qué existe:** es el guardarraíl del proyecto: verifica que el ActionServer `/tirgo/mission` funciona de verdad en ROS y que la coreografía de tópicos sigue viva.
-**Qué valida:**
+Cubre:
 
-* happy path completo
-* timeouts por fase (arrive/ready/pick/patient/deliver/farewell)
-* cancelación (preempt)
+* ActionServer real,
+* avance por fases/hitos,
+* timeouts por fase,
+* cancelación/preempt.
 
-> Nota: `test_mission_flow.py` NO va con pytest; se ejecuta con `rostest`.
+> Importante: `test_mission_flow.py` **no se ejecuta con pytest** (es `rostest`).
 
 ---
 
-### Cambios en lógica del dispensador (mapeo bin_id, PWM, validaciones)
+### Cambios en lógica del dispensador (mapping bin_id, PWM, validaciones)
 
 Ejecuta:
 
 ```bash
-cd .../servo_dispenser && pytest -q
+cd ~/carpeta_compartida/ros_ws/src/servo_dispenser && pytest -q
 ```
 
-**Por qué existen:** proteger la lógica sin depender de hardware (stub de pigpio), evitando que un refactor rompa el mapeo de bins.
-**Qué validan:**
+Cubre:
 
-* límites de PWM (clamp)
-* bin válido mueve servo correcto y publica ready
-* bin inválido no publica ready
+* clamp PWM (`MIN_US`, `MAX_US`, `NEUTRAL`),
+* bin válido → “mueve servo” (captura de llamadas pigpio fake),
+* bin inválido → no confirma ready.
 
 ---
 
 ### Cambios en el flujo ROS del dispensador (`/request` → `/ready`)
 
-Ejecuta (en RPi con pigpiod):
+Ejecuta (ideal en RPi):
 
 ```bash
 sudo pigpiod
 rostest servo_dispenser servo_dispenser_flow.test
 ```
 
-**Por qué existe:** validar integración real en ROS con el nodo ejecutándose como en demo.
-**Qué valida:**
+Cubre:
 
-* bin válido → ready una vez
-* bin inválido → nunca ready
+* bin válido → ready,
+* bin inválido → nunca ready (según test).
 
 ---
 
-### Cambios en navegación / checkpoints / comunicación de `move` (validación manual)
+### Cambios en navegación / checkpoints (`move`) — validación manual
 
 Ejecuta:
 
@@ -226,47 +293,57 @@ rosrun move comunicacion_test.py
 rosrun move test_puntos.py
 ```
 
-**Por qué existen:** smoke tests para comprobar rápido que el pipeline de navegación y puntos responde (sin convertirlo aún en suite CI).
-**Qué validan:**
+Objetivo:
 
-* ruta por puntos (Follower)
-* coreografía de comunicación y estados en tiempo real
+* smoke test rápido de comunicación y ruta por puntos.
+* No es suite automatizada CI (aún).
 
 ---
 
-## Inventario de tests (todos los ficheros)
+## Inventario exacto de tests (ficheros reales en el repo)
 
 ### `tirgo_ui/tests/`
 
-* `test_main_routes.py` — smoke de index con/sin sesión
+* `test_main_routes.py` — smoke de index con/sin sesión (plantillas fake)
 * `test_consultar.py` — validación DNI/nombre y flujo consultar
-* `test_leer.py` — selección medicación + checks de stock
-* `test_diagnostico.py` — diagnóstico/estado + cierre de sesión
-* `test_session_unit.py` — start/end/current session
-* `test_storage_mongo_unit.py` — acceso a datos (unit)
+* `test_leer.py` — selección medicación + checks de stock (plantillas fake)
+* `test_diagnostico.py` — diagnóstico/estado + logout/cierre
+* `test_session_unit.py` — helpers de sesión (start/end/current)
+* `test_storage_mongo_unit.py` — acceso a datos con fakes (pacientes/recetas/meds)
 * `test_storage_stock_dispenses.py` — stock + logging de dispensación
-* `test_rosio_helpers_unit.py` — helpers rosio (contrato básico)
-* `test_web_ros_integration.py` — web→misión (mock)
-* `conftest.py` — resumen de pytest
+* `test_rosio_helpers_unit.py` — helpers del puente ROS (contrato básico)
+* `test_web_ros_integration.py` — web → misión (mock de start_mission_async)
+* `conftest.py` — resumen de resultados al final (output amigable)
 
 ### `stt_vosk/tests/`
 
-* `test_stt_vosk_node.py` — hotword/partials/model missing
+* `test_stt_vosk_node.py` — hotword/partials/model missing con dobles de audio/vosk/rospy
 * `conftest.py`
 
 ### `tirgo_mission_server/test/`
 
-* `test_tirgo_mission.py` — unit sin ROS real (flags/timeout/preempt/BAD_GOAL)
-* `test_mission_flow.test` + `test_mission_flow.py` — integración ROS (ActionServer)
-* `conftest.py` — ignora `test_mission_flow.py` en pytest
+* `test_tirgo_mission.py` — unit sin ROS real (mock de rospy/actionlib/std_msgs/tirgo_msgs)
+* `test_mission_flow.test` — launch de integración (levanta server con timeouts pequeños)
+* `test_mission_flow.py` — test ROS (rostest + unittest)
+* `conftest.py` — `collect_ignore = ["test_mission_flow.py"]` para que pytest no lo ejecute
 
 ### `servo_dispenser/test/`
 
-* `test_servo_dispenser.py` — unit sin HW (stub pigpio)
-* `servo_dispenser_flow.test` + `test_servo_dispenser_flow.py` — integración ROS (nodo real)
+* `test_servo_dispenser.py` — unit sin HW (stub de pigpio + asserts de publicaciones y mapping)
+* `servo_dispenser_flow.test` — launch de integración (nodo real + test)
+* `test_servo_dispenser_flow.py` — test ROS (rostest)
 * `conftest.py`
 
 ### `move/src/move/` (manual)
 
 * `comunicacion_test.py`
 * `test_puntos.py`
+
+---
+
+## Troubleshooting de testing (lo típico)
+
+* **ImportError de paquetes ROS**: asegúrate de haber hecho `catkin_make` y de haber `source devel/setup.bash`.
+* **Rostest no encuentra nodos**: revisa que el paquete está en el workspace correcto (`~/carpeta_compartida/ros_ws/src`) y recompila.
+* **servo_dispenser_flow falla en PC**: es normal si no tienes `pigpio`/acceso HW. Ejecútalo en RPi o en un entorno que lo soporte.
+* **pytest “pasa” pero demo falla**: ejecuta `rostest tirgo_mission_server test_mission_flow.test`
