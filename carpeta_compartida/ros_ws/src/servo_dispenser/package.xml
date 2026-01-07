@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>servo_dispenser</name>
+  <version>0.0.1</version>
+  <description>Paquete ROS para controlar los servos del dispensador de pastillas (TirGoPharma).</description>
+
+  <maintainer email="tu_email@example.com">Tu Nombre</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>rospy</depend>
+  <depend>std_msgs</depend>
+  <test_depend>rostest</test_depend>
+
+</package>

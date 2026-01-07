@@ -1,0 +1,7 @@
+<launch>
+  <!-- Nodo de voz de TIAGo para TirGoPharma -->
+  <node pkg="tirgo_mission_server"
+        type="tiago_speech_node.py"
+        name="tirgo_speech_node"
+        output="screen" />
+</launch>

@@ -1,0 +1,85 @@
+{# templates/leer_ident.html #}
+{% extends "base.html" %}
+{% block title %}TirGoPharma · Identificación{% endblock %}
+
+{% block content %}
+<section class="panel panel-form">
+  <header class="panel-header">
+    <h1>Identificación para medicamento restringido</h1>
+    <p class="muted">
+      Producto:
+      <strong>{{ med.nombre }}</strong>
+    </p>
+  </header>
+
+  {# Mensaje de error específico de esta vista (leer_ident) #}
+  {% if error and msg %}
+    <div class="alert alert-error">
+      {{ msg }}
+    </div>
+  {% endif %}
+
+  {# Mensajes flash globales (por si los hubiera) #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flash-list">
+        {% for category, message in messages %}
+          <li class="flash flash-{{ category }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <form
+    method="post"
+    action="{{ url_for('leer.leer_ident') }}"
+    class="form-grid"
+    autocomplete="off"
+  >
+    <input type="hidden" name="med_id" value="{{ med.id }}"/>
+
+    <div class="form-row">
+      <label for="nombre">Nombre</label>
+      <input
+        type="text"
+        id="nombre"
+        name="nombre"
+        placeholder="Nombre"
+        required
+      />
+    </div>
+
+    <div class="form-row">
+      <label for="apellidos">Apellidos</label>
+      <input
+        type="text"
+        id="apellidos"
+        name="apellidos"
+        placeholder="Apellidos"
+        required
+      />
+    </div>
+
+    <div class="form-row">
+      <label for="dni">DNI</label>
+      <input
+        type="text"
+        id="dni"
+        name="dni"
+        placeholder="12345678Z"
+        required
+      />
+      <p class="hint muted">
+        Introduce un DNI válido (8 números y una letra).
+      </p>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn primary">Confirmar</button>
+      <a href="{{ url_for('leer.leer') }}" class="btn ghost">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</section>
+{% endblock %}

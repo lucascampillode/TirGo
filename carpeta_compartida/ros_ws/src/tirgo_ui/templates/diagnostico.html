@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% block title %}TirGoPharma · Diagnóstico{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <h2 style="margin:0;">Diagnóstico guiado</h2>
+    <a class="btn" href="{{ url_for('main.index') }}" title="Volver al menú">⬅ Volver</a>
+  </div>
+  <p class="muted">Responde a las preguntas y te recomendaré la opción más segura.</p>
+
+  <!-- Barra de progreso -->
+  <div class="progress"><div id="prog"></div></div>
+
+  <!-- Wizard solo en el cliente: NO hace submit; el submit sólo es del resultado a /leer -->
+  <form id="wiz" class="form">
+    <div class="step" data-step="1">
+      <h4>1) Síntoma principal</h4>
+      <select name="sx" required>
+        <option value="">— Selecciona —</option>
+        <option value="dolor">Dolor leve o moderado</option>
+        <option value="fiebre">Fiebre</option>
+        <option value="resfriado">Resfriado/congestión</option>
+        <option value="tos">Tos</option>
+        <option value="infeccion">Posible infección</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="2">
+      <h4>2) Edad</h4>
+      <select name="edad" required>
+        <option value="">— Selecciona —</option>
+        <option value="adulto">Adulto (≥ 18)</option>
+        <option value="adolescente">Adolescente (12–17)</option>
+        <option value="nino">Niño (6–11)</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="3">
+      <h4>3) ¿Alergia a AINEs?</h4>
+      <select name="aine" required>
+        <option value="">— Selecciona —</option>
+        <option value="no">No</option>
+        <option value="si">Sí</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="4">
+      <h4>4) Problemas gástricos</h4>
+      <select name="gastric" required>
+        <option value="">— Selecciona —</option>
+        <option value="no">No</option>
+        <option value="si">Sí</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="5">
+      <h4>5) Anticoagulantes</h4>
+      <select name="aco" required>
+        <option value="">— Selecciona —</option>
+        <option value="no">No</option>
+        <option value="si">Sí</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="6">
+      <h4>6) Enfermedad hepática</h4>
+      <select name="hep" required>
+        <option value="">— Selecciona —</option>
+        <option value="no">No</option>
+        <option value="si">Sí</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="7">
+      <h4>7) Embarazo o lactancia</h4>
+      <select name="preg" required>
+        <option value="">— Selecciona —</option>
+        <option value="no">No</option>
+        <option value="si">Sí</option>
+      </select>
+    </div>
+
+    <div class="step" data-step="8">
+      <h4>8) Duración del síntoma</h4>
+      <select name="dur" required>
+        <option value="">— Selecciona —</option>
+        <option value="agudo">&lt; 3 días</option>
+        <option value="subagudo">3–14 días</option>
+        <option value="cronico">&gt; 14 días</option>
+      </select>
+    </div>
+
+    <div class="actions space">
+      <button class="btn" type="button" id="prev">⬅ Anterior</button>
+      <div class="muted small" id="stepTxt">Paso 1 / 8</div>
+      <button class="btn primary" type="button" id="next">Siguiente ➡</button>
+    </div>
+  </form>
+
+  <!-- Resultado del wizard (todo calculado en JS) -->
+  <div id="result" class="result card" style="display:none;">
+    <h3 id="rTitle">Resultado</h3>
+    <p id="rMsg" class="muted"></p>
+
+    <!-- cuando hay medicamento: se envía a /leer, que comprueba stock y muestra NO_STOCK si toca -->
+    <form id="rForm" method="post" action="{{ url_for('leer.leer') }}" style="display:none;">
+      <input type="hidden" name="med_id" id="rMed" />
+      <button class="btn success" type="submit">Pedir este</button>
+      <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Reiniciar test</a>
+      <a class="btn" href="{{ url_for('main.index') }}">⬅ Volver al menú</a>
+    </form>
+
+    <!-- cuando es médico / receta -->
+    <div id="rDoctor" style="display:none;">
+      <p class="warn"><b>Recomendación: visita a tu médico</b></p>
+      <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Reiniciar test</a>
+      <a class="btn" href="{{ url_for('main.index') }}">⬅ Volver al menú</a>
+    </div>
+
+    <!-- cuando es consejo sin medicación -->
+    <div id="rAdvice" style="display:none;">
+      <p id="rAdviceMsg" class="muted">
+        Cuídate y observa la evolución. Si empeora, consulta.
+      </p>
+      <a class="btn" href="{{ url_for('diagnostico.diagnostico') }}">Reiniciar test</a>
+      <a class="btn" href="{{ url_for('main.index') }}">⬅ Volver al menú</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  const form = document.getElementById('wiz'); if(!form) return;
+  const steps = [...form.querySelectorAll('.step')];
+  const total = steps.length;
+  const prog  = document.getElementById('prog');
+  const stepTxt = document.getElementById('stepTxt');
+  const btnPrev = document.getElementById('prev');
+  const btnNext = document.getElementById('next');
+  let idx = 0;
+
+  // ⚠ Cambia estos IDs para que coincidan con tu BD
+  const MED_ID_MAP = {
+    "Paracetamol 1g": "101",
+    "Ibuprofeno 400 mg": "202",
+    "Amoxicilina 500 mg": "303",
+    "Omeprazol 20 mg": "404"
+  };
+
+  const show = i => {
+    idx = Math.max(0, Math.min(total-1, i));
+    steps.forEach((el,k)=> el.style.display = (k===idx?'block':'none'));
+    const pct = Math.round(((idx + 1) / total) * 100); // 100% en el paso 8
+    if (prog) prog.style.width = Math.max(6, pct) + '%';
+    stepTxt.textContent = `Paso ${idx+1} / ${total}`;
+    btnPrev.disabled = idx===0;
+    btnNext.textContent = idx===total-1 ? 'Ver resultado' : 'Siguiente ➡';
+  };
+
+  const validateStep = () => {
+    const req = steps[idx].querySelectorAll('select[required], input[required]');
+    for (const r of req){
+      if(!r.value){
+        r.focus();
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const computeRecommendation = () => {
+    const data = Object.fromEntries(new FormData(form).entries());
+
+    if (data.dur === 'cronico' || data.hep === 'si') {
+      return { kind: 'DOCTOR', med: null,
+        reason: 'Tus síntomas requieren valoración médica presencial.' };
+    }
+    if (data.sx === 'infeccion') {
+      return { kind: 'RX', med: 'Amoxicilina 500 mg',
+        reason: 'Posible proceso infeccioso. La amoxicilina requiere receta.' };
+    }
+    if (data.gastric === 'si') {
+      return { kind: 'MED', med: 'Omeprazol 20 mg',
+        reason: 'Molestias gástricas: Omeprazol 20 mg puntual.' };
+    }
+    if (data.sx === 'dolor' || data.sx === 'fiebre') {
+      const aine_risk = (data.aine==='si') || (data.aco==='si') || (data.preg==='si');
+      if (aine_risk) {
+        return { kind: 'MED', med: 'Paracetamol 1g',
+          reason: 'Riesgo con AINEs: mejor Paracetamol 1g.' };
+      } else {
+        return { kind: 'MED', med: 'Ibuprofeno 400 mg',
+          reason: 'Sin contraindicaciones aparentes para AINEs: Ibuprofeno 400 mg puede ser adecuado de forma puntual.' };
+      }
+    }
+    if ((data.sx === 'resfriado' || data.sx === 'tos') && data.dur === 'agudo') {
+      return { kind: 'ADVICE', med: null,
+        reason: 'Cuadro leve: descanso, hidratación y observación 3–5 días.' };
+    }
+    return { kind: 'MED', med: 'Paracetamol 1g',
+      reason: 'Opción segura por defecto.' };
+  };
+
+  btnPrev.addEventListener('click', ()=> show(idx-1));
+
+  btnNext.addEventListener('click', ()=>{
+    if (!validateStep()) return;
+
+    if (idx < total-1){
+      show(idx+1);
+      return;
+    }
+
+    // Último paso -> mostramos resultado (NO se recarga la página)
+    const res = computeRecommendation();
+    const box      = document.getElementById('result');
+    const rTitle   = document.getElementById('rTitle');
+    const rMsg     = document.getElementById('rMsg');
+    const rForm    = document.getElementById('rForm');
+    const rMed     = document.getElementById('rMed');
+    const rDoc     = document.getElementById('rDoctor');
+    const rAdvice  = document.getElementById('rAdvice');
+    const rAdviceMsg = document.getElementById('rAdviceMsg');
+
+    box.style.display = 'block';
+    rForm.style.display = 'none';
+    rDoc.style.display = 'none';
+    rAdvice.style.display = 'none';
+
+    if (res.kind === 'DOCTOR') {
+      rTitle.textContent = 'Derivado a médico';
+      rMsg.textContent = res.reason;
+      rDoc.style.display = 'block';
+    } else if (res.kind === 'RX') {
+      rTitle.textContent = 'Necesita receta médica';
+      rMsg.textContent = res.reason;
+      rDoc.style.display = 'block';
+    } else if (res.kind === 'ADVICE') {
+      rTitle.textContent = 'Recomendación sin medicación';
+      rMsg.textContent = res.reason;
+      rAdviceMsg.textContent = 'Cuídate y observa la evolución. Si empeora, consulta.';
+      rAdvice.style.display = 'block';
+    } else {
+      rTitle.textContent = 'Recomendación disponible';
+      rMsg.textContent = res.reason;
+      const medId = MED_ID_MAP[res.med] || '';
+      rMed.value = medId;
+      rForm.style.display = 'block';
+    }
+
+    window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+  });
+
+  // extra: ESC vuelve al menú
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      window.location.href = "{{ url_for('main.index') }}";
+    }
+  });
+
+  show(0);
+})();
+</script>
+{% endblock %}

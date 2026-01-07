@@ -1,0 +1,37 @@
+<launch>
+
+
+  <!-- ==========================
+       2) STT Vosk (voz -> texto)
+       ========================== -->
+  <!-- Si aún no quieres arrancarlo, comenta este bloque -->
+  <include file="$(find stt_vosk)/launch/stt_vosk.launch" />
+
+  <!-- ==========================
+       3) Nodo de voz de TIAGo
+       ========================== -->
+  <node
+    pkg="tirgo_mission_server"
+    type="tiago_speech_node.py"
+    name="tirgo_speech_node"
+    output="screen"
+  />
+
+
+
+  <!-- ==========================
+       4) TirgoMissionServer
+       ========================== -->
+  <node
+    pkg="tirgo_mission_server"
+    type="tirgo_mission_server.py"
+    name="tirgo_mission_server"
+    output="screen"
+  />
+    <!-- ==========================
+       1) Web UI (Flask + ROS bridge)
+       ========================== -->
+
+
+    <include file="$(find tirgo_ui)/launch/web.launch" />
+</launch>

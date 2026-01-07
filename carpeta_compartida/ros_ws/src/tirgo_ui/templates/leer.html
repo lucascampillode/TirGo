@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}TirGoPharma · Pedir{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <h2>Selecciona un medicamento</h2>
+
+  {% if meds and meds|length > 0 %}
+  <!-- 🔁 Cambiado: enviamos a leer_post (no a leer_ident) -->
+  <form method="post" action="{{ url_for('leer.leer_post') }}" class="form">
+    <div class="grid">
+      {% for m in meds %}
+      {% set nombre = (m.nombre|default(''))|lower %}
+      {% set tipo = (m.tipo|default(''))|trim|upper %}
+
+      <!-- radio fuera, con id único -->
+      <input
+        type="radio"
+        id="med-{{ m.id }}"
+        name="med_id"
+        value="{{ m.id }}"
+        class="med-radio"
+        required
+        style="display:none"
+      >
+
+      <!-- label que se pinta según el nombre -->
+      <label
+        for="med-{{ m.id }}"
+        class="card
+          {% if 'paracetamol' in nombre %} paracetamol
+          {% elif 'ibuprofeno' in nombre %} ibuprofeno
+          {% elif 'omeprazol' in nombre %} omeprazol
+          {% elif 'amoxicilina' in nombre %} amoxicilina
+          {% endif %}">
+        <div class="thumb">
+          {% if m.img_url %}
+            <img src="{{ m.img_url }}" alt="{{ m.nombre }}">
+          {% else %}
+            {% if 'paracetamol' in nombre %}
+              <img src="{{ url_for('static', filename='Paracetamol.png') }}" alt="{{ m.nombre }}">
+            {% elif 'ibuprofeno' in nombre %}
+              <img src="{{ url_for('static', filename='Ibuprofeno.png') }}" alt="{{ m.nombre }}">
+            {% elif 'omeprazol' in nombre %}
+              <img src="{{ url_for('static', filename='Omeprazol.png') }}" alt="{{ m.nombre }}">
+            {% elif 'amoxicilina' in nombre %}
+              <img src="{{ url_for('static', filename='Amoxicilina.png') }}" alt="{{ m.nombre }}">
+            {% else %}
+              <div class="placeholder">Sin foto</div>
+            {% endif %}
+          {% endif %}
+        </div>
+
+        <div class="info">
+          <div class="name">{{ m.nombre }}</div>
+          <div class="meta">
+            <span>Stock: {{ m.stock }}</span>
+            <span>Bin: {{ m.bin_id }}</span>
+            <span class="{{ 'tag-r' if tipo=='R' else 'tag-l' }}">{{ tipo if tipo in ['R','L'] else tipo }}</span>
+          </div>
+        </div>
+      </label>
+      {% endfor %}
+    </div>
+
+    <p class="muted small">Si es tipo R, te pediremos identificación y receta.</p>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('main.index') }}">Volver</a>
+      <button class="btn primary" type="submit">Pedir</button>
+    </div>
+  </form>
+  {% else %}
+    <p>No hay medicamentos disponibles ahora mismo.</p>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('main.index') }}">Volver</a>
+    </div>
+  {% endif %}
+</section>
+
+<style>
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.card {
+  display: block;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #fff;
+  transition: box-shadow .15s ease, border-color .15s ease, transform .15s ease;
+}
+.card:hover {
+  box-shadow: 0 4px 14px rgba(0,0,0,.08);
+  border-color: #ccc;
+  transform: translateY(-2px);
+}
+.card .thumb {
+  height: 120px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#fafafa;
+  border-radius:8px;
+  overflow:hidden;
+}
+.card .thumb img {
+  max-height: 120px;
+  max-width: 100%;
+  display: block;
+}
+.placeholder { color:#888; font-size:14px; }
+.info .name { font-weight:600; margin-top:8px; }
+.meta {
+  display:flex;
+  gap:10px;
+  font-size:12px;
+  color:#555;
+  margin-top:4px;
+  flex-wrap:wrap;
+}
+.tag-r {
+  background:#fbe4e4;
+  color:#a00;
+  padding:2px 6px;
+  border-radius:6px;
+}
+.tag-l {
+  background:#e8f7ea;
+  color:#0a7;
+  padding:2px 6px;
+  border-radius:6px;
+}
+
+/* --- Colores al seleccionar --- */
+/* Paracetamol -> verde */
+.med-radio:checked + label.paracetamol {
+  border: 3px solid #15a34a;
+  box-shadow: 0 0 0 3px rgba(21,163,74,0.1);
+}
+
+/* Ibuprofeno -> rojo */
+.med-radio:checked + label.ibuprofeno {
+  border: 3px solid #dc2626;
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+}
+
+/* Omeprazol -> amarillo */
+.med-radio:checked + label.omeprazol {
+  border: 3px solid #fbbf24;
+  box-shadow: 0 0 0 3px rgba(251,191,36,0.15);
+}
+
+/* Amoxicilina -> azul */
+.med-radio:checked + label.amoxicilina {
+  border: 3px solid #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+</style>
+{% endblock %}
