@@ -7,7 +7,7 @@ dispensación → recogida → entrega → despedida.
 
 Actúa como coordinador central **a nivel ROS**, orquestando la interacción entre
 la interfaz web, el robot TIAGo y el dispensador físico mediante una
-máquina de estados (FSM) sobre ROS 1 (Noetic).
+máquina de estados sobre ROS 1 (Noetic).
 
 </div>
 
@@ -27,9 +27,9 @@ cuando recibe los flags ROS esperados desde los distintos módulos del sistema.
 
 Utiliza el Action `/tirgo/mission` (definido en `tirgo_msgs`) para:
 
-- recibir solicitudes desde la interfaz web (`tirgo_ui`),
-- emitir feedback continuo del estado de la misión,
-- devolver un resultado final trazable (éxito, timeout o cancelación).
+- recibir solicitudes desde la interfaz web (`tirgo_ui`)
+- emitir feedback continuo del estado de la misión
+- devolver un resultado final trazable (éxito, timeout o cancelación)
 
 Este paquete incluye:
 
@@ -149,7 +149,7 @@ flowchart LR
 
 ---
 
-## 5. Máquina de estados (FSM)
+## 5. Máquina de estados 
 
 La FSM avanza únicamente cuando recibe los flags ROS esperados:
 
@@ -239,19 +239,9 @@ Configurables vía parámetros privados:
 
 ---
 
-## 9. Instalación
 
-```bash
-cd ~/carpeta_compartida/ros_ws/src
-# Copiar aquí tirgo_mission_server y tirgo_msgs
-cd ..
-catkin_make
-source devel/setup.bash
-```
 
----
-
-## 10. Ejecución
+## 9. Ejecución
 
 Ejecución manual:
 
@@ -264,7 +254,7 @@ En el sistema completo, ambos nodos se lanzan desde `tirgo_ALL.sh`.
 
 ---
 
-## 11. Tests automatizados
+## 10. Tests automatizados
 
 Ejecución:
 
@@ -281,10 +271,10 @@ Casos cubiertos:
 
 ---
 
-## 12. Resumen
+## 11. Resumen
 
-* `tirgo_mission_server` es el orquestador de misión a nivel ROS
-* Implementa una FSM estricta y testeada
-* No gestiona base de datos ni lógica de negocio
-* Depende del nodo de voz para completar la despedida
-* Es un componente central del flujo TirGoPharma
+* `tirgo_mission_server` es el orquestador de misión a nivel ROS.
+* Implementa una FSM (Máquina de Estados Finita) estricta y testeada.
+* No gestiona base de datos ni lógica de negocio.
+* Depende del nodo de voz para completar la despedida.
+* Es un componente central del flujo TirGoPharma.
