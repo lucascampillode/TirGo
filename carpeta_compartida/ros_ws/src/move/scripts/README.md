@@ -1,6 +1,6 @@
 <div align="center">
 
-# Scripts de Navegación (`scripts/`)
+# Scripts de Navegación (scripts/)
 
 Conjunto de **scripts Bash** para orquestar el lanzamiento de los distintos
 componentes de navegación del robot TIAGo en el proyecto **TirGoPharma**.
@@ -31,17 +31,10 @@ scripts/
 └── run_test.sh   # Script auxiliar: pruebas/debug (puede requerir ajustes)
 ````
 
-> ⚠️ **Nota**
-> Antes de ejecutar los scripts por primera vez, asegúrate de que tienen
-> permisos de ejecución:
->
-> ```bash
-> chmod +x run_all.sh run_test.sh
-> ```
 
 ---
 
-## 2. `run_all.sh` — Sistema principal (demo)
+## 2. `run_all.sh` — Sistema principal
 
 Este es el **script de referencia para la demo**.
 Debe utilizarse cuando se quiere ejecutar el flujo completo de navegación.
@@ -115,9 +108,9 @@ roscd move/scripts
 
 ## 5. Resumen
 
-* `scripts/` centraliza la **ejecución controlada** del sistema de navegación
-* `run_all.sh` es el punto de entrada para la demo oficial
-* `run_test.sh` acelera desarrollo/pruebas (con posibles ajustes por entorno)
+* `scripts/` centraliza la **ejecución controlada** del sistema de navegación.
+* `run_all.sh` es el punto de entrada para la demo oficial.
+* `run_test.sh` acelera desarrollo/pruebas (con posibles ajustes por entorno).
 
 Esta carpeta permite que la navegación de TIAGo
 **se ejecute de forma consistente con un solo comando** 
