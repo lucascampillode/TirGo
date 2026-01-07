@@ -1,6 +1,6 @@
 <div align="center">
 
-# Módulo `move` (Python)
+# Módulo move (Python)
 
 Nodos de **navegación y orquestación de movimiento** del robot TIAGo
 para el sistema **TirGoPharma**.
@@ -17,16 +17,16 @@ utilizados por el coordinador de misión.
 
 La carpeta `src/move/` agrupa los nodos Python responsables de:
 
-- Navegación basada en **checkpoints**
-- Orquestación del movimiento dentro del **flujo de misión**
-- Publicación de la **pose inicial** para localización
-- Pruebas de comunicación y validación
+- Navegación basada en **checkpoints**.
+- Orquestación del movimiento dentro del **flujo de misión**.
+- Publicación de la **pose inicial** para localización.
+- Pruebas de comunicación y validación.
 
 Estos nodos trabajan conjuntamente con:
 
-- El stack de navegación (`move_base`)
-- El mapa estático del entorno (`map_server`)
-- El coordinador de misión (`tirgo_mission_server`)
+- El stack de navegación (`move_base`).
+- El mapa estático del entorno (`map_server`).
+- El coordinador de misión (`tirgo_mission_server`).
 
 ---
 
@@ -50,7 +50,7 @@ src/move/
 Es el **nodo base de navegación**.
 Su responsabilidad es mover al robot a través de una secuencia fija de puntos.
 
-#### Funcionamiento
+#### Funcionamiento:
 
 1. Define una lista de **checkpoints** (coordenadas en el mapa).
 2. Envía cada punto como un objetivo al stack de navegación:
@@ -73,7 +73,7 @@ simplemente ejecuta movimiento de forma determinista.
 Es el **orquestador de movimiento para la demo** y el nodo
 que se utiliza habitualmente en el flujo integrado del sistema.
 
-#### Rol dentro del sistema
+#### Rol dentro del sistema:
 
 * Escucha el inicio de la misión (p. ej. `/tirgo/mission/start`)
 * Coordina el desplazamiento del robot a los puntos clave del flujo:
@@ -96,7 +96,7 @@ dentro del proceso completo de dispensación.
 1. Espera evento de inicio de misión.
 2. Navega al dispensador.
 3. Publica `/tirgo/tiago/arrived`.
-4. Espera confirmaciones del proceso (dispensación / recogida).
+4. Espera confirmaciones del proceso (dispensación/recogida).
 5. Navega al paciente.
 6. Publica `/tirgo/tiago/at_patient`.
 
@@ -106,7 +106,7 @@ dentro del proceso completo de dispensación.
 
 Script auxiliar para facilitar la **localización inicial** del robot.
 
-#### Funcionamiento
+#### Funcionamiento:
 
 * Publica una estimación de la pose inicial del robot en:
 
@@ -128,9 +128,9 @@ Nodo de **pruebas y verificación** de comunicación.
 
 #### Uso principal
 
-* Validar que los topics relevantes están activos
-* Comprobar que el robot responde a mensajes de navegación
-* Detectar problemas de conexión o configuración
+* Validar que los topics relevantes están activos.
+* Comprobar que el robot responde a mensajes de navegación.
+* Detectar problemas de conexión o configuración.
 
 Este nodo **no forma parte del flujo final de producción**,
 pero es útil durante el desarrollo y la depuración.
@@ -143,9 +143,9 @@ Script de **validación de coordenadas**.
 
 Permite:
 
-* Comprobar que los checkpoints están bien definidos
-* Verificar que las posiciones son alcanzables en el mapa
-* Evitar errores de navegación por puntos mal configurados
+* Comprobar que los checkpoints están bien definidos.
+* Verificar que las posiciones son alcanzables en el mapa.
+* Evitar errores de navegación por puntos mal configurados.
 
 ---
 
@@ -187,25 +187,13 @@ Para ejecutar estos nodos es necesario disponer de:
 
 ---
 
-## 5. Uso típico
 
-Este módulo **no suele lanzarse nodo a nodo manualmente**.
+## 5. Resumen
 
-Forma parte del flujo iniciado mediante:
-
-* `scripts/run_all.sh`
-
-Esto garantiza que el mapa, la localización, RViz y la navegación
-se inician en el orden correcto.
-
----
-
-## 6. Resumen
-
-* `src/move/` contiene la **implementación real del movimiento**
-* `checkpointfollower.py` ejecuta navegación determinista de bajo nivel
-* `comunication_move.py` orquesta el movimiento dentro del flujo de misión
-* Los nodos auxiliares facilitan localización y pruebas
+* `src/move/` contiene la **implementación real del movimiento**.
+* `checkpointfollower.py` ejecuta navegación determinista de bajo nivel.
+* `comunication_move.py` orquesta el movimiento dentro del flujo de misión.
+* Los nodos auxiliares facilitan localización y pruebas.
 
 Este directorio es donde el sistema
-**deja de ser lógico y empieza a moverse de verdad**
+**deja de ser lógico y empieza a moverse de verdad**.
