@@ -20,7 +20,7 @@ un perfil guardado que define:
 
 - Paneles visibles
 - Topics suscritos
-- Vista 2D / 3D
+- Vista 2D/3D
 - Mapa, láser, modelo del robot y transformaciones TF
 
 Esto asegura una **visualización consistente y reproducible**
@@ -63,7 +63,7 @@ Al ejecutarse, `rviz.launch` realiza las siguientes acciones:
 
    * Mapa (`/map`)
    * Modelo del robot (`RobotModel`)
-   * Láser / sensores
+   * Láser/Sensores
    * Árbol de transformaciones (`TF`)
 
 Gracias a esto, el operador puede centrarse en el sistema
@@ -99,22 +99,14 @@ normalmente a través del script:
 De esta forma, RViz se inicia junto al mapa y la lógica de movimiento,
 permitiendo una **supervisión visual en tiempo real**.
 
----
-
-## 5. Notas
-
-* Si se modifica `rviz_configs.rviz`, los cambios se aplicarán
-  automáticamente en el próximo lanzamiento.
-* El archivo no lanza nodos de navegación ni de mapas por sí solo;
-  su función es **exclusivamente visual**.
 
 ---
 
-## 6. Resumen
+## 5. Resumen
 
-* `rviz.launch` estandariza la visualización del proyecto
-* Evita configuraciones manuales repetitivas
-* Facilita depuración, desarrollo y demos
-* Es una pieza clave para entender qué está ocurriendo en el robot
+* `rviz.launch` estandariza la visualización del proyecto.
+* Evita configuraciones manuales repetitivas.
+* Facilita depuración, desarrollo y demos.
+* Es una pieza clave para entender qué está ocurriendo en el robot.
 
-Este launch hace que **ver el sistema sea tan sencillo como lanzarlo** 
+Este launch hace que **ver el sistema sea tan sencillo como lanzarlo.** 
