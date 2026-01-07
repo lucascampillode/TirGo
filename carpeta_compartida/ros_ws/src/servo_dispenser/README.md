@@ -11,21 +11,6 @@ El paquete incluye scripts para preparar la Pi (`setup_servo_rpi.sh`) y un scrip
 
 ---
 
-## Índice
-
-- [Quickstart](#quickstart)
-- [API ROS](#api-ros)
-- [Estructura del paquete](#estructura-del-paquete)
-- [Requisitos](#requisitos)
-- [Instalación rápida en la Raspberry Pi](#instalación-rápida-en-la-raspberry-pi)
-- [Script de arranque: run_servo.sh](#script-de-arranque-run_servosh)
-- [Ejecución (alternativas)](#ejecución-alternativas)
-- [Comprobación rápida (smoke test)](#comprobación-rápida-smoke-test)
-- [Notas importantes](#notas-importantes)
-- [Tests automatizados](#tests-automatizados)
-
----
-
 ## Quickstart
 
 > 1) Preparar la Raspberry Pi (una sola vez)
@@ -60,13 +45,14 @@ chmod +x run_servo.sh
 
     * no se mueven servos
     * no se publica `/tirgo/dispense/ready`
-
-  | ID | Servo | Movimiento | Bote |
-  | -- | ----- | ---------- | ---- |
-  | 1  | A     | +90°       | A    |
-  | 2  | A     | -90°       | B    |
-  | 3  | B     | +90°       | C    |
-  | 4  | B     | -90°       | D    |
+<br>
+  
+ | ID | Servo | Movimiento | Bote |
+ | -- | ----- | ---------- | ---- |
+ | 1  | A     | +90°       | A    |
+ | 2  | A     | -90°       | B    |
+ | 3  | B     | +90°       | C    |
+ | 4  | B     | -90°       | D    |
 
 ### Publica
 
@@ -205,16 +191,6 @@ Ruta:
 ```
 ~/carpeta_compartida/ros_ws/src/servo_dispenser/run_servo.sh
 ```
-
-### Uso básico
-
-```bash
-cd ~/carpeta_compartida/ros_ws/src/servo_dispenser
-chmod +x run_servo.sh
-./run_servo.sh
-```
-
-El script se detiene automáticamente si algún comando falla (`set -e`).
 
 ---
 
