@@ -62,7 +62,7 @@ Pantalla inicial con las tres rutas principales de la web: Consultar, Leer y Dia
 
 ### 2) Selección de medicamento — catálogo con stock y bin
 
-Listado visual de medicamentos disponibles. Cada tarjeta muestra stock, bin_id (cajetín del dispensador) y el tipo L/R (libre / requiere receta), que condiciona el siguiente paso del flujo.
+Listado visual de medicamentos disponibles. Cada tarjeta muestra stock, bin_id (cajetín del dispensador) y el tipo L/R (libre/requiere receta), que condiciona el siguiente paso del flujo.
 
 <p align="center">
   <img width="892" height="781" alt="tirgo_ui — selección de medicamento (stock, bin_id, tipo L/R)" src="https://github.com/user-attachments/assets/ffec157a-3d37-4a87-b15e-c23ddc942154" />
@@ -114,7 +114,7 @@ Formulario de identificación cuando el medicamento es de tipo R (requiere recet
 
 ## Índice
 
-* [0. Resumen](#0-resumen)
+
 * [1. Estructura del paquete](#1-estructura-del-paquete)
 * [2. Rol en el sistema completo](#2-rol-en-el-sistema-completo)
 * [3. Diagrama general del sistema](#3-diagrama-general-del-sistema)
@@ -122,52 +122,16 @@ Formulario de identificación cuando el medicamento es de tipo R (requiere recet
 * [5. Variables de entorno importantes](#5-variables-de-entorno-importantes)
 * [6. Instalación](#6-instalación)
 * [7. Puesta en marcha](#7-puesta-en-marcha)
-
-  * [7.1. Arranque recomendado en el repositorio grande](#71-arranque-recomendado-en-el-repositorio-grande)
-  * [7.2. Lanzar STT y Action Server de misión (manual)](#72-lanzar-stt-y-action-server-de-misión-manual)
-  * [7.3. Lanzar la web con `web.launch`](#73-lanzar-la-web-con-weblaunch)
-  * [7.4. Lanzar a mano (sin launch)](#74-lanzar-a-mano-sin-launch)
 * [8. Flujo típico de uso](#8-flujo-típico-de-uso)
-
-  * [8.1 Validaciones de entrada (Consultar/Leer)](#81-validaciones-de-entrada-consultarleer)
-  * [8.2 Diagnóstico: casos contemplados](#82-diagnóstico-casos-contemplados)
 * [9. ROS: acción y tópicos utilizados](#9-ros-acción-y-tópicos-utilizados)
-
-  * [9.1. Acción de misión](#91-acción-de-misión)
-  * [9.2. Tópicos publicados](#92-tópicos-publicados)
-  * [9.3. Tópicos suscritos](#93-tópicos-suscritos)
-  * [9.4. Contrato STT (hotword)](#94-contrato-stt-hotword)
 * [10. Base de datos (MongoDB)](#10-base-de-datos-mongodb)
-* [11. Modo desarrollo (simulación de voz)](#11-modo-desarrollo-simulación-de-voz)
-* [12. Comandos útiles](#12-comandos-útiles)
-* [13. Tests automatizados](#13-tests-automatizados)
-
-  * [13.1. Estructura de tests](#131-estructura-de-tests)
-  * [13.2. Qué cubren los tests (garantías funcionales)](#132-qué-cubren-los-tests-garantías-funcionales)
-  * [13.3. Requisitos para ejecutar los tests](#133-requisitos-para-ejecutar-los-tests)
-  * [13.4. Ejecutar los tests](#134-ejecutar-los-tests)
+* [11. Comandos útiles](#11-comandos-útiles)
+* [12. Tests automatizados](#12-tests-automatizados)
+* [13. Resumen](#13-resumen)
 
 ---
 
-## 0. Resumen
 
-Este paquete expone una aplicación Flask dentro de un paquete ROS, para poder lanzarse con `rosrun` / `roslaunch` y comunicarse con el resto del sistema mediante ROS.
-
-La web sirve como capa de interacción con el usuario y permite:
-
-* Desbloquear la interfaz por voz (hotword) escuchando el tópico de STT.
-* Consultar pacientes, recetas y medicamentos almacenados en MongoDB.
-* Lanzar una misión de dispensación a través del Action Server `/tirgo/mission`.
-* Mostrar el estado de la misión a partir del feedback/result del Action y del estado interno de sesión.
-* Publicar estado de UI en ROS y enviar texto a `/tirgo/say` para que el robot lo pronuncie (si existe el nodo correspondiente).
-
-Está pensada para funcionar junto al paquete:
-
-* `stt_vosk` (reconocimiento de voz; opcional, pero recomendado)
-* `tirgo_mission_server` (Action Server de misión)
-* una instancia de MongoDB (persistencia)
-
----
 
 ## 1. Estructura del paquete
 
@@ -219,7 +183,6 @@ Punto crítico (contrato real):
 
 ## 3. Diagrama general del sistema
 
-Nota: el diagrama es equivalente al flujo real, con enlaces explícitos.
 
 ```mermaid
 flowchart TB
@@ -289,9 +252,9 @@ Python:
 
 Servicios:
 
-* MongoDB accesible (local o contenedor)
-* (Opcional) `stt_vosk` publicando en el tópico configurado
-* `tirgo_mission_server` proporcionando el Action Server `/tirgo/mission`
+* MongoDB accesible (local o contenedor).
+* (Opcional) `stt_vosk` publicando en el tópico configurado.
+* `tirgo_mission_server` proporcionando el Action Server `/tirgo/mission`.
 
 ---
 
@@ -299,13 +262,13 @@ Servicios:
 
 Estas variables suelen establecerse desde `launch/web.launch` o desde Docker.
 
-### `PORT`
+ **`PORT`**
 
 Puerto HTTP de la web. Por defecto: `9001`.
 
----
 
-### `MONGO_URI` (importante)
+
+**`MONGO_URI`** 
 
 Cadena de conexión a MongoDB.
 
@@ -324,17 +287,17 @@ export MONGO_URI="mongodb://<user>:<password>@127.0.0.1:27017/tirgo?authSource=t
 export MONGO_URI="mongodb://127.0.0.1:27017/tirgo"
 ```
 
----
 
-### `TIRGO_HOTWORD`
+
+**`TIRGO_HOTWORD`**
 
 Palabra/frase que debe llegar desde el STT para desbloquear la interfaz.
 
 Ejemplo: `hola tirgo`.
 
----
 
-### `TIRGO_STT_TOPIC`
+
+**`TIRGO_STT_TOPIC`**
 
 Tópico desde el que se lee el texto del STT.
 
@@ -344,30 +307,30 @@ Ejemplo:
 export TIRGO_STT_TOPIC="/stt/text"
 ```
 
----
 
-### `TIRGO_DEV`
+
+**`TIRGO_DEV`**
 
 Si vale `1`, activa endpoints de prueba (por ejemplo, simular hotword).
 
----
 
-### `FLASK_SECRET_KEY` (producción)
+
+**`FLASK_SECRET_KEY`**
 
 Clave de Flask para la sesión.
 
 En producción debe ser una cadena larga y privada.
 
----
 
-### `TIRGO_PEPPER` (producción)
+
+**`TIRGO_PEPPER`**
 
 Secreto utilizado para hashing/HMAC del identificador del paciente (por ejemplo DNI).
 En despliegue real no debe faltar.
 
----
 
-### `FLASK_DEBUG`
+
+**`FLASK_DEBUG`**
 
 Modo debug de Flask (`1`/`0`).
 
@@ -383,7 +346,7 @@ catkin_make
 source devel/setup.bash
 ```
 
-Asegúrate de que la máquina / contenedor tiene acceso a la instancia de MongoDB.
+Asegúrate de que la máquina/contenedor tiene acceso a la instancia de MongoDB.
 
 ---
 
@@ -533,9 +496,9 @@ la UI aplica validaciones para evitar consultas erróneas y garantizar consisten
 
 * Si un dato es inválido, la UI:
 
-  * muestra feedback al usuario,
-  * no consulta / no lanza misión,
-  * mantiene el sistema en estado seguro.
+  * muestra feedback al usuario
+  * no consulta / no lanza misión
+  * mantiene el sistema en estado seguro
 
 > Nota: la UI opera contra `dni_hash` (no DNI en claro) para consultar `pacientes`/`recetas` en Mongo.
 
@@ -641,7 +604,7 @@ Accede a la base `tirgo` (definida por `MONGO_URI`).
 
 Esquema conceptual:
 
-### 1) `medicamentos`
+### Medicamentos:
 
 Catálogo que la web presenta al usuario:
 
@@ -658,7 +621,7 @@ Campos clave:
 * `bin_id`: cubeta física del dispensador.
 * `stock`: unidades disponibles.
 
-### Validación de datos (entrada y coherencia)
+Validación de datos (entrada y coherencia)
 
 Además de consultar, la UI valida coherencia para evitar estados “rotos”:
 
@@ -666,9 +629,8 @@ Además de consultar, la UI valida coherencia para evitar estados “rotos”:
 * `bin_id` debe existir para poder traducir `med_id` a cubeta física.
 * Si falta información crítica (p. ej. medicamento sin `bin_id`), la UI bloquea el flujo y reporta error.
 
----
 
-### 2) `pacientes`
+### Pacientes:
 
 Información de pacientes:
 
@@ -681,9 +643,9 @@ Notas:
 * La búsqueda se apoya en versiones normalizadas (`*_norm`) para tolerar mayúsculas/minúsculas y variaciones típicas.
 * La UI opera contra `dni_hash` (no DNI en claro).
 
----
 
-### 3) `recetas`
+
+### Recetas:
 
 Asociación paciente–medicamento:
 
@@ -696,9 +658,9 @@ Regla de negocio aplicada:
 
 * Si el medicamento es tipo **R**, se exige receta activa para permitir la misión.
 
----
 
-### 4) `dispensaciones` / `logs`
+
+### Dispensaciones/Logs:
 
 Registro histórico:
 
@@ -707,34 +669,11 @@ Registro histórico:
 * `dni_hash` (cuando aplica)
 * resultado de la misión (éxito, error_code, etc.)
 
-Resumen de uso:
-
-1. El usuario elige flujo (leer/consultar/diagnóstico).
-2. La UI consulta `medicamentos`, y según caso valida `pacientes`/`recetas`.
-3. Si es válido: registra en `dispensaciones/logs` y lanza la misión.
-4. La UI muestra feedback/result del Action.
-
 ---
 
-## 11. Modo desarrollo (simulación de voz)
 
-Si:
 
-```bash
-export TIRGO_DEV=1
-```
-
-La web expone endpoints de prueba (por ejemplo simular hotword):
-
-```bash
-curl -X POST http://localhost:9001/simulate_hola
-```
-
-Esto permite desbloquear la interfaz sin STT real.
-
----
-
-## 12. Comandos útiles
+## 11. Comandos útiles
 
 ```bash
 # Compilación del workspace
@@ -762,7 +701,7 @@ rostopic echo /tirgo/mission/result
 
 ---
 
-## 13. Tests automatizados
+## 12. Tests automatizados
 
 El paquete `tirgo_ui` incluye una batería de tests.
 
@@ -774,7 +713,7 @@ Validan:
 El objetivo es garantizar que la interfaz web funciona incluso si ROS o Mongo no están disponibles,
 y que las rutas críticas (lanzar misión, consultar pacientes, diagnóstico) se comportan correctamente.
 
-### 13.1. Estructura de tests
+### 12.1. Estructura de tests
 
 ```text
 tirgo_ui/tests/
@@ -788,7 +727,7 @@ tirgo_ui/tests/
 └── test_web_ros_integration.py
 ```
 
-### 13.2. Qué cubren los tests (garantías funcionales)
+### 12.2. Qué cubren los tests (garantías funcionales)
 
 Validación de hotword y desbloqueo:
 
@@ -823,7 +762,7 @@ Integración web + ROS dummy:
 * Pipeline: endpoint → lógica → rosio → misión simulada → HTML/respuesta esperada.
 * Feedback incremental simulado.
 
-### 13.3. Requisitos para ejecutar los tests
+### 12.3. Requisitos para ejecutar los tests
 
 Instalar dependencias:
 
@@ -834,7 +773,7 @@ pip install pytest
 ROS no es necesario para unitarios ni para integración dummy.
 Mongo real no es necesario si los tests usan stubs/mocks.
 
-### 13.4. Ejecutar los tests
+### 12.4. Ejecutar los tests
 
 ```bash
 cd ~/carpeta_compartida/ros_ws/src/tirgo_ui
@@ -849,3 +788,22 @@ pytest -k "receta_activa" -q
 # Ver detalle
 pytest -vv
 ```
+---
+## 13. Resumen
+
+Este paquete expone una aplicación Flask dentro de un paquete ROS, para poder lanzarse con `rosrun` / `roslaunch` y comunicarse con el resto del sistema mediante ROS.
+
+La web sirve como capa de interacción con el usuario y permite:
+
+* Desbloquear la interfaz por voz (hotword) escuchando el tópico de STT.
+* Consultar pacientes, recetas y medicamentos almacenados en MongoDB.
+* Lanzar una misión de dispensación a través del Action Server `/tirgo/mission`.
+* Mostrar el estado de la misión a partir del feedback/result del Action y del estado interno de sesión.
+* Publicar estado de UI en ROS y enviar texto a `/tirgo/say` para que el robot lo pronuncie (si existe el nodo correspondiente).
+
+Está pensada para funcionar junto al paquete:
+
+* `stt_vosk` (reconocimiento de voz; opcional, pero recomendado)
+* `tirgo_mission_server` (Action Server de misión)
+* una instancia de MongoDB (persistencia)
+
