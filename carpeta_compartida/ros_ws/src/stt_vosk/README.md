@@ -24,14 +24,14 @@ desacoplado de la lógica de negocio.
 
 Características principales:
 
-- Reconocimiento de voz offline (sin servicios externos)
-- Uso de modelos Vosk intercambiables por idioma
+- Reconocimiento de voz offline (sin servicios externos).
+- Uso de modelos Vosk intercambiables por idioma.
 - Publicación de:
   - texto final
   - texto parcial (opcional)
-- Soporte de wake word
-- Configuración flexible vía parámetros ROS
-- Integración directa con `tirgo_ui`
+- Soporte de wake word.
+- Configuración flexible vía parámetros ROS.
+- Integración directa con `tirgo_ui`.
 
 ---
 
@@ -57,12 +57,12 @@ stt_vosk/
 
 El nodo `stt_vosk_node.py` ejecuta el siguiente flujo:
 
-1. Abre un dispositivo de audio (micrófono) usando PyAudio
-2. Carga un modelo Vosk desde disco
-3. Procesa el audio en streaming
-4. Publica el texto final reconocido en `stt/text`
-5. (Opcional) Publica texto parcial en `stt/partial`
-6. (Opcional) Detecta una wake word y emite un evento especial
+1. Abre un dispositivo de audio (micrófono) usando PyAudio.
+2. Carga un modelo Vosk desde disco.
+3. Procesa el audio en streaming.
+4. Publica el texto final reconocido en `stt/text`.
+5. (Opcional) Publica texto parcial en `stt/partial`.
+6. (Opcional) Detecta una wake word y emite un evento especial.
 
 ---
 
@@ -70,18 +70,18 @@ El nodo `stt_vosk_node.py` ejecuta el siguiente flujo:
 
 Dentro del sistema global, `stt_vosk` actúa como módulo de entrada por voz:
 
-* Publica texto reconocido en ROS
-* No interpreta comandos
-* No ejecuta acciones
-* No depende de la UI
+* Publica texto reconocido en ROS.
+* No interpreta comandos.
+* No ejecuta acciones.
+* No depende de la UI.
 
 La interpretación del texto queda en manos de otros módulos, principalmente `tirgo_ui`.
 
 Este diseño permite:
 
-* Activar o desactivar voz sin romper el sistema
-* Reemplazar STT sin tocar la lógica
-* Probar el sistema sin micrófono
+* Activar o desactivar voz sin romper el sistema.
+* Reemplazar STT sin tocar la lógica.
+* Probar el sistema sin micrófono.
 
 ---
 
@@ -105,9 +105,9 @@ stt/text: "hola tirgo empieza la misión"
 
 ### Reglas para consumidores (`tirgo_ui`)
 
-* `__WAKE__` no es texto natural
-* Debe tratarse como un evento (trigger)
-* El texto posterior contiene el contenido real del usuario
+* `__WAKE__` no es texto natural.
+* Debe tratarse como un evento (trigger).
+* El texto posterior contiene el contenido real del usuario.
 
 Nota: esta convención está validada por tests y forma parte del contrato del nodo.
 
@@ -138,21 +138,11 @@ Nota: esta convención está validada por tests y forma parte del contrato del n
 
 ## 6. Instalación
 
-### 6.1 Instalación en host (Ubuntu)
+
 
 ```bash
 sudo apt install portaudio19-dev
 pip install vosk pyaudio
-```
-
-Copiar el paquete al workspace y compilar:
-
-```bash
-cd ~/carpeta_compartida/ros_ws/src
-cp -r stt_vosk .
-cd ..
-catkin_make
-source devel/setup.bash
 ```
 
 ---
@@ -261,16 +251,16 @@ pytest -q
 
 Cubren:
 
-* Detección de wake word
-* Publicación única de `__WAKE__`
-* Activación o desactivación de parciales
-* Error limpio si el modelo no existe
+* Detección de wake word.
+* Publicación única de `__WAKE__`.
+* Activación o desactivación de parciales.
+* Error limpio si el modelo no existe.
 
 ---
 
 ## 13. Resumen
 
-* `stt_vosk` proporciona STT offline y desacoplado para TirGoPharma
-* Publica texto en ROS de forma simple y testeada
-* La lógica y decisiones pertenecen a otros módulos (principalmente `tirgo_ui`)
-* Permite que el sistema escuche sin imponer qué debe hacer con lo que oye
+* `stt_vosk` proporciona STT offline y desacoplado para TirGoPharma.
+* Publica texto en ROS de forma simple y testeada.
+* La lógica y decisiones pertenecen a otros módulos (principalmente `tirgo_ui`).
+* Permite que el sistema escuche sin imponer qué debe hacer con lo que oye.
