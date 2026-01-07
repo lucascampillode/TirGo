@@ -1,6 +1,6 @@
 <div align="center">
 
-# Configuraciones (`configs/`)
+# Configuraciones (configs/)
 
 Archivos de **configuración visual y de herramientas gráficas**
 utilizados por el paquete `move` dentro del proyecto **TirGoPharma**.
@@ -45,9 +45,9 @@ Este archivo es cargado automáticamente por:
 
 Si realizas cambios en RViz (añadir displays, mover la cámara, etc.):
 
-1. Abre RViz con `rviz.launch`
-2. Ajusta la vista según tus necesidades
-3. Guarda con **Ctrl + S**
+1. Abre RViz con `rviz.launch`.
+2. Ajusta la vista según tus necesidades.
+3. Guarda con **Ctrl + S**.
 
 Los cambios quedarán persistentes en `rviz_configs.rviz`.
 
@@ -55,6 +55,6 @@ Los cambios quedarán persistentes en `rviz_configs.rviz`.
 
 ## Resumen
 
-- `configs/` centraliza la configuración visual del proyecto
-- `rviz_configs.rviz` garantiza una visualización consistente
-- Es clave para depuración, desarrollo y demostraciones
+- `configs/` centraliza la configuración visual del proyecto.
+- `rviz_configs.rviz` garantiza una visualización consistente.
+- Es clave para depuración, desarrollo y demostraciones.
