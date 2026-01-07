@@ -7,24 +7,12 @@ Este paquete agrupa los **launch files ROS** necesarios para levantar
 subconjuntos coherentes del sistema **TirGoPharma** en distintos modos
 (de desarrollo, despliegue o pruebas).
 
-⚠️ **Este paquete NO es el punto de entrada oficial de la demo final.**  
+ **Este paquete NO es el punto de entrada oficial de la demo final.**  
 Para la ejecución integrada y reproducible del sistema completo se utiliza
 el script de raíz **`tirgo_ALL.sh`**.
 
 </div>
 
----
-
-## Índice
-- [1. Rol del paquete dentro del proyecto](#1-rol-del-paquete-dentro-del-proyecto)
-- [2. Qué hace (y qué NO hace) este paquete](#2-qué-hace-y-qué-no-hace-este-paquete)
-- [3. Arquitectura a alto nivel](#3-arquitectura-a-alto-nivel)
-- [4. Launch files disponibles](#4-launch-files-disponibles)
-- [5. Quickstart](#5-quickstart)
-- [6. Modo sin hardware](#6-modo-sin-hardware)
-- [7. Variables y parámetros](#7-variables-y-parámetros)
-- [8. Cuándo NO usar este paquete](#8-cuándo-no-usar-este-paquete)
-- [9. Troubleshooting](#9-troubleshooting)
 
 ---
 
@@ -47,7 +35,7 @@ Su objetivo es facilitar **desarrollo, pruebas e integración parcial** del sist
 
 ---
 
-## 2. Qué hace (y qué NO hace) este paquete
+## 2. Qué hace este paquete
 
 ### Qué hace
 
@@ -187,46 +175,10 @@ El `tirgo_mission_server` debería finalizar la misión en estado **SUCCESS**.
 
 ---
 
-## 7. Variables y parámetros
 
-### Variables típicas de la web
 
-* `port` (default: `9001`)
-* `flask_secret_key`
-* `flask_debug`
-* `mongo_uri`
-* `hotword`
-* `pepper`
-* `use_video_server`
-* `video_port`
 
-### Parámetros del MissionServer (timeouts)
-
-Definidos en `tirgo_core.launch`:
-
-* `mission/timeout_arrive`
-* `mission/timeout_ready`
-* `mission/timeout_pick`
-* `mission/timeout_patient`
-* `mission/timeout_deliver`
-* `mission/timeout_farewell`
-
----
-
-## 8. Cuándo NO usar este paquete
-
-No se recomienda usar `tirgo_bringup` cuando:
-
-* Estás ejecutando la **demo final** con `tirgo_ALL.sh`
-* Usas Docker como punto de entrada principal
-* Estás probando hardware real con scripts dedicados
-* Necesitas un arranque completamente reproducible “one-click”
-
-En estos casos, `tirgo_bringup` puede duplicar nodos o romper el orden de arranque.
-
----
-
-## 9. Troubleshooting
+## 7. Troubleshooting
 
 ### La web no conecta a Mongo
 
