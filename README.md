@@ -37,7 +37,6 @@ Demo end-to-end reproducible.
 - [Interfaces ROS](#interfaces-ros)
 - [Requisitos](#requisitos)
 - [Uso detallado](#uso-detallado)
-  - [Casos típicos](#casos-típicos)
 - [Base de datos (Mongo)](#base-de-datos-mongo)
 - [Troubleshooting (errores comunes)](#troubleshooting-errores-comunes)
 - [Expected results / Cómo se evalúa la demo](#expected-results--cómo-se-evalúa-la-demo)
@@ -440,16 +439,6 @@ La misión se expone como una **Action de ROS** en el namespace `/tirgo`, lo que
 * Feedback durante ejecución (estado/hitos)
 * Cancelación
 * Resultado final consistente (OK / error / cancelación)
-
-### Contrato crítico: med_id vs bin_id (importante)
-
-En MongoDB, el catálogo de `medicamentos` contiene el `bin_id` físico del dispensador.
-La UI (`tirgo_ui`) valida stock/receta y envía un goal al Action `/tirgo/mission` con:
-
-* `patient_id`
-* `med_id` (que, en la demo, corresponde al `bin_id` físico)
-
-El coordinador (`tirgo_mission_server`) usa ese valor para solicitar al dispensador la apertura del compartimento correspondiente.
 
 Para el detalle (definiciones exactas y comportamiento):
 
