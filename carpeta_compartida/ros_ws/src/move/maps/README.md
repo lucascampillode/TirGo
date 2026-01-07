@@ -1,6 +1,6 @@
 <div align="center">
 
-# Mapas (`maps/`)
+# Mapas (maps/)
 
 Archivos de **mapas estáticos** utilizados para la localización
 y navegación del robot TIAGo en el proyecto **TirGoPharma**.
@@ -66,9 +66,9 @@ utilizado durante la navegación del robot.
 <img width="506" height="609" alt="image" src="https://github.com/user-attachments/assets/a1ce8c56-fac2-4c5f-b525-2934c3362af6" />
 
 Esta visualización ayuda a comprender la relación entre:
-- el entorno físico real,
-- el mapa utilizado por el sistema,
-- y las trayectorias que sigue el robot durante la demo.
+- el entorno físico real
+- el mapa utilizado por el sistema
+- y las trayectorias que sigue el robot durante la demo
 
 ---
 
@@ -86,7 +86,7 @@ sin modificar la lógica de navegación.
 
 ## Resumen
 
-- `maps/` contiene los mapas estáticos del entorno
-- Los mapas se componen de `.pgm` + `.yaml`
-- Son fundamentales para localización y navegación fiable
-- Permiten reproducir el comportamiento del robot en cada ejecución
+- `maps/` contiene los mapas estáticos del entorno.
+- Los mapas se componen de `.pgm` + `.yaml`.
+- Son fundamentales para localización y navegación fiable.
+- Permiten reproducir el comportamiento del robot en cada ejecución.
