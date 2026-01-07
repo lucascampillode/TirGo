@@ -36,8 +36,6 @@ Demo end-to-end reproducible.
 - [Paquetes ROS](#paquetes-ros)
 - [Interfaces ROS](#interfaces-ros)
 - [Requisitos](#requisitos)
-- [Instalación](#instalación)
-- [Configuración](#configuración)
 - [Uso detallado](#uso-detallado)
   - [Casos típicos](#casos-típicos)
 - [Base de datos (Mongo)](#base-de-datos-mongo)
@@ -45,7 +43,6 @@ Demo end-to-end reproducible.
 - [Expected results / Cómo se evalúa la demo](#expected-results--cómo-se-evalúa-la-demo)
 - [Testing](#testing)
 - [Guía principal de testing (detallada)](./docs/TESTING.md)
-- [Desarrollo local](#desarrollo-local)
 - [Autores](#autores)
 
 ---
@@ -70,7 +67,7 @@ Esto se hace de forma intencional: el acceso a PWM/GPIO suele requerir permisos/
 
 ## Explicación general del proyecto
 
-En un entorno hospitalario, dispensar y entregar medicación no es solo “mover un robot”: hay reglas (receta / stock / restricciones), trazabilidad y coordinación entre varios subsistemas. En la práctica, gran parte del proceso es repetitivo y exige consistencia para minimizar errores.
+En un entorno hospitalario, dispensar y entregar medicación no es solo “mover un robot”: hay reglas (receta/ stock/restricciones), trazabilidad y coordinación entre varios subsistemas. En la práctica, gran parte del proceso es repetitivo y exige consistencia para minimizar errores.
 
 TirGoPharma modela ese escenario como un flujo completo, reproducible y con capas claras:
 
@@ -85,19 +82,19 @@ TirGoPharma modela ese escenario como un flujo completo, reproducible y con capa
 3. Misión robótica end-to-end (ROS)  
    Cuando la solicitud es válida, se dispara una misión y el sistema coordina:
 
-   - desplazamiento del TIAGo al punto de dispensación,
-   - activación del dispensador físico (servos),
-   - recogida/entrega (secuencias del brazo),
-   - retorno al paciente,
-   - cierre de interacción (p. ej., despedida).
+   - Desplazamiento del TIAGo al punto de dispensación
+   - Activación del dispensador físico (servos)
+   - Recogida/entrega (secuencias del brazo)
+   - Retorno al paciente
+   - Cierre de interacción (p. ej., despedida)
 
 4. Reproducibilidad y guion de demo (scripts)  
    El repo está organizado para que cualquier persona nueva pueda:
 
-   - levantar la infraestructura (DB + contenedor ROS),
-   - compilar y ejecutar con un “botón rojo” (`tirgo_ALL.sh`),
-   - localizar rápido dónde está cada cosa,
-   - profundizar módulo a módulo leyendo los READMEs específicos.
+   - Levantar la infraestructura (DB + contenedor ROS)
+   - Compilar y ejecutar con un “botón rojo” (`tirgo_ALL.sh`)
+   - Localizar rápido dónde está cada cosa
+   - Profundizar módulo a módulo leyendo los READMEs específicos
 
 ¿Qué te vas a encontrar en el repo?
 
@@ -426,10 +423,6 @@ Este README es la visión global. Los READMEs de cada paquete te dan el “cómo
 | `tirgo_tiago_arm_seq`  | Secuencias del brazo para recogida y entrega durante la demo.                                                                         | [`tirgo_tiago_arm_seq/README.md`](./carpeta_compartida/ros_ws/src/tirgo_tiago_arm_seq/README.md)   |
 | `tirgo_bringup`        | Launchers top-level para arrancar conjuntos coherentes de nodos (si aplica en tu versión del repo).                                   | [`tirgo_bringup/README.md`](./carpeta_compartida/ros_ws/src/tirgo_bringup/README.md)               |
 
-Memoria técnica del dispensador:
-
-* [`servo_dispenser/README_BUILD_DISPENSER.md`](./carpeta_compartida/ros_ws/src/servo_dispenser/README_BUILD_DISPENSER.md)
-
 ---
 
 ## Interfaces ROS
@@ -444,9 +437,9 @@ Nivel conceptual (alto nivel): una misión principal + sincronización de hitos 
 
 La misión se expone como una **Action de ROS** en el namespace `/tirgo`, lo que permite:
 
-* feedback durante ejecución (estado/hitos),
-* cancelación,
-* resultado final consistente (OK / error / cancelación).
+* Feedback durante ejecución (estado/hitos)
+* Cancelación
+* Resultado final consistente (OK / error / cancelación)
 
 ### Contrato crítico: med_id vs bin_id (importante)
 
@@ -476,7 +469,7 @@ Para el detalle (definiciones exactas y comportamiento):
 ### Opción nativa
 
 * Ubuntu 20.04 + ROS 1 Noetic
-* Dependencias por paquete (ver READMEs específicos)
+* Dependencias por paquete
 * MongoDB (o usar el stack de `infra/`)
 
 ### Hardware (demo completa)
@@ -485,10 +478,9 @@ Para el detalle (definiciones exactas y comportamiento):
 * Raspberry Pi 3B + servos (dispensador)
 * Micrófono (opcional)
 
-Documentación de ingeniería:
 Para profundizar en el diseño mecánico, validación CAD, parámetros de impresión 3D y proceso de ensamblaje del dispensador, consulta:
 
-* [`servo_dispenser/README_BUILD_DISPENSER.md`](./carpeta_compartida/ros_ws/src/servo_dispenser/README_BUILD_DISPENSER.md)
+[`servo_dispenser/README_BUILD_DISPENSER.md`](./carpeta_compartida/ros_ws/src/servo_dispenser/README_BUILD_DISPENSER.md)
 
 | Componente   | Recomendado                          |
 | ------------ | ------------------------------------ |
@@ -508,35 +500,6 @@ Guía completa:
 
 * [`servo_dispenser/README.md`](./carpeta_compartida/ros_ws/src/servo_dispenser/README.md)
 
----
-
-## Instalación
-
-```bash
-git clone https://github.com/lucascampillode/TirGo
-cd TirGo
-
-cp .env.example .env
-# edita si hace falta:
-nano .env
-```
-
----
-
-## Configuración
-
-La configuración se divide en dos niveles:
-
-1. Sistema (raíz): `.env`
-   credenciales de DB, secretos web y parámetros generales del stack.
-2. Infra DB: `infra/tirgo_db_stack/`
-   docker compose de DB + scripts de init/seed.
-
-Referencias:
-
-* `.env.example`
-* `infra/tirgo_db_stack/docker-compose.yml`
-* `infra/tirgo_db_stack/mongo-init/`
 
 ---
 
@@ -749,18 +712,6 @@ Este README solo da la visión global. Los comandos concretos, qué tests existe
   * `tirgo_mission_server/README.md`
   * `servo_dispenser/README.md`
   * `stt_vosk/README.md`
-
----
-
-## Desarrollo local
-
-Ruta recomendada para modificar el sistema sin perderte:
-
-1. Lee este README (mapa global).
-2. Entra al README del paquete que vayas a tocar.
-3. Valida integración con `./tirgo_ALL.sh`.
-
-Regla de oro (debug): `.env` → DB/seed → `tirgo_ALL.sh` → README del paquete.
 
 ---
 
