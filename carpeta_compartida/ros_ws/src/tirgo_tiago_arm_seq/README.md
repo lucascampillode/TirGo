@@ -1,7 +1,7 @@
 <div align="center">
 
-# Control y secuenciación del brazo  
-## `tirgo_tiago_arm_seq` · TIAGo · ROS 1 Noetic
+
+# tirgo_tiago_arm_seq 
 
 Paquete encargado de la ejecución de las secuencias de manipulación
 del brazo del robot TIAGo dentro del sistema TirGoPharma.
@@ -21,9 +21,9 @@ del robot TIAGo dentro del flujo completo de dispensación autónoma de medicaci
 
 Este nodo:
 
-- No decide cuándo actuar
-- No planifica navegación
-- No coordina la misión
+- No decide cuándo actuar.
+- No planifica navegación.
+- No coordina la misión.
 
 Su única responsabilidad es ejecutar secuencias de movimiento del brazo
 cuando recibe eventos de alto nivel publicados por otros subsistemas
@@ -45,41 +45,8 @@ Este gif enseña una muestra de una ejecución real de las secuencias principale
 
 ---
 
-## 3. Rol dentro del proyecto TirGoPharma
 
-Dentro de la arquitectura global, este paquete actúa como:
-
-> Ejecutor de manipulación desacoplado del resto del sistema
-
-La separación de responsabilidades es clara:
-
-| Subsistema                | Responsabilidad principal                  |
-|---------------------------|--------------------------------------------|
-| `move`                    | Navegación de la base móvil                |
-| `servo_dispenser`         | Liberación física del medicamento          |
-| `tirgo_mission_server`    | Coordinación del flujo end-to-end          |
-| `tirgo_tiago_arm_seq`     | Ejecución del brazo y gripper              |
-
-Este desacoplamiento permite mantener el control del brazo simple, seguro y reutilizable.
-
----
-
-## 4. Filosofía de diseño
-
-- Nodo siempre activo
-- Lógica reactiva por eventos
-- Secuencias predefinidas y deterministas
-- Movimientos compactos para reducir riesgos
-- Separación estricta entre:
-  - decisión / coordinación
-  - ejecución física
-
-El nodo no acumula estados complejos ni colas de eventos:
-trabaja únicamente con flags lógicos.
-
----
-
-## 5. Estructura del paquete
+## 3. Estructura del paquete
 
 ```text
 tirgo_tiago_arm_seq/
@@ -92,17 +59,14 @@ tirgo_tiago_arm_seq/
 └── src/
 ````
 
-El nodo principal se encuentra en `scripts/tiago_secuencia_brazo.py`
-y está diseñado para ejecutarse una sola vez durante toda la misión.
-
 ---
 
-## 6. Funcionamiento general
+## 4. Funcionamiento general
 
 El nodo se inicializa y permanece en ejecución continua,
 esperando eventos publicados por otros componentes del sistema.
 
-### 6.1 Secuencia de recogida (COGER)
+### 4.1 Secuencia de recogida
 
 1. La base del robot alcanza la posición frente al dispensador.
 
@@ -132,7 +96,7 @@ con el medicamento ya asegurado, evitando movimientos innecesarios.
 
 ---
 
-### 6.2 Secuencia de entrega (DEJAR)
+### 4.2 Secuencia de entrega
 
 1. La base del robot alcanza la posición de entrega al paciente.
 
@@ -160,7 +124,7 @@ entrega controlada y segura del medicamento.
 
 ---
 
-## 7. Qué hace exactamente el nodo
+## 5. Qué hace exactamente el nodo
 
 * Controla:
 
@@ -179,9 +143,9 @@ Torso, cabeza y gripper se controlan mediante trayectorias temporizadas.
 
 ---
 
-## 8. Interfaces ROS
+## 6. Interfaces ROS
 
-### 8.1 Suscriptores (eventos de alto nivel)
+### 6.1 Suscriptores (eventos de alto nivel)
 
 | Topic                     | Tipo            | Significado                         |
 | ------------------------- | --------------- | ----------------------------------- |
@@ -193,7 +157,7 @@ Los valores `false` se ignoran.
 
 ---
 
-### 8.2 Publicadores de control
+### 6.2 Publicadores de control
 
 #### Brazo (Actionlib)
 
@@ -211,7 +175,7 @@ Se utiliza como elemento principal de sincronización durante la secuencia.
 
 ---
 
-### 8.3 Publicadores de estado (feedback al sistema)
+### 6.3 Publicadores de estado (feedback al sistema)
 
 | Topic                    | Tipo            | Cuándo se publica    |
 | ------------------------ | --------------- | -------------------- |
@@ -223,7 +187,7 @@ sin acoplarse al control interno del brazo.
 
 ---
 
-## 9. Requisitos
+## 7. Requisitos
 
 * Ubuntu 20.04
 * ROS Noetic
@@ -237,7 +201,7 @@ sin acoplarse al control interno del brazo.
 
 ---
 
-## 10. Ejecución
+## 8. Ejecución
 
 ### Opción recomendada (launch)
 
@@ -261,7 +225,7 @@ Al arrancar, el nodo:
 
 ---
 
-## 11. Disparo manual de secuencias (testing)
+## 9. Disparo manual de secuencias (testing)
 
 ### Simular recogida
 
@@ -277,18 +241,11 @@ rostopic pub /tirgo/tiago/at_patient std_msgs/Bool "data: true" -1
 
 ---
 
-## 12. Notas de integración
 
-* Este nodo no debe lanzarse múltiples veces
-* Está diseñado para mantenerse activo durante toda la misión
-* No mantiene estado complejo ni colas
-* Es la única fuente de verdad para la secuencia de brazo del sistema
 
----
+## 10. Resumen
 
-## 13. Resumen
-
-* `tirgo_tiago_arm_seq` implementa la manipulación del brazo dentro de TirGoPharma
-* Reacciona a eventos claros y publica hitos explícitos
-* Prioriza seguridad, simplicidad e integración
-* Representa la capa donde el sistema interactúa físicamente con el entorno
+* `tirgo_tiago_arm_seq` implementa la manipulación del brazo dentro de TirGoPharma.
+* Reacciona a eventos claros y publica hitos explícitos.
+* Prioriza seguridad, simplicidad e integración.
+* Representa la capa donde el sistema interactúa físicamente con el entorno.
