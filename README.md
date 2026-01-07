@@ -113,10 +113,10 @@ TirGoPharma modela ese escenario como un flujo completo, reproducible y con capa
 - Demo completa (Drive): [Ver vídeo](https://drive.google.com/file/d/1VaMOfHOuEfoE2NmdQ7rv2PXWNC4jCXaE/view?usp=drive_link)
 
 <p align="center">
-  <img width="200" alt="tirgo_ui — flujo Leer (GIF)" src="../../../docs/Galeria/general.gif" />
+  <img width="500" alt="tirgo_ui — flujo Leer (GIF)" src="carpeta_compartida/docs/Galeria/general.gif" />
 </p>
 
-[Ver GIF en el repositorio](../../../docs/Galeria/general.gif)
+[Ver GIF en el repositorio](carpeta_compartida/docs/Galeria/general.gif)
 
 ---
 
