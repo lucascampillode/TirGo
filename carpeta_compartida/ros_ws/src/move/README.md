@@ -1,6 +1,6 @@
 <div align="center">
 
-# `move`
+# move
 
 Paquete de navegación del robot TIAGo para el sistema TirGoPharma.
 
@@ -33,9 +33,9 @@ El paquete `move` encapsula la navegación del robot TIAGo para la demo end-to-e
 
 Su objetivo no es desarrollar un stack completo de navegación, sino proporcionar un comportamiento:
 
-- fiable (para demo),
-- reproducible (con mapa estático),
-- trazable (publicando hitos ROS consumidos por la misión).
+- fiable (para demo)
+- reproducible (con mapa estático)
+- trazable (publicando hitos ROS consumidos por la misión)
 
 Este paquete se encarga de:
 
@@ -124,8 +124,7 @@ Nota: el paquete asume la existencia de un stack de navegación estándar
 Antes de ejecutar el paquete:
 
 1. Asegúrate de que el robot o la simulación están activos
-2. Lanza `roscore` si no está ya en ejecución
-3. Carga el entorno del workspace:
+2. Carga el entorno del workspace:
 
 ```bash
 cd ~/carpeta_compartida/ros_ws
@@ -170,9 +169,9 @@ Carga la configuración visual de `configs/rviz_configs.rviz`.
 
 ---
 
-## 6. Documentación detallada por componente
+## 6. Documentación detallada
 
-| Componente            | Descripción                                                                 | Enlace                                       |
+| Tipo           | Descripción                                                                 | Enlace                                       |
 | --------------------- | --------------------------------------------------------------------------- | -------------------------------------------- |
 | Scripts y ejecución   | Scripts Bash para levantar todo el sistema o pruebas                        | [`scripts/README.md`](./scripts/README.md)   |
 | Launch files          | Archivos launch de ROS para iniciar RViz                                    | [`launch/README.md`](./launch/README.md)     |
@@ -246,9 +245,9 @@ flowchart LR
 
 ## 9. Resumen
 
-* `move` implementa la navegación mínima necesaria para TirGoPharma
-* Publica hitos consumidos por `tirgo_mission_server`
-* Diseñado para ser simple, fiable y depurable
-* Funciona en robot real y puede adaptarse a simulación según el entorno
+* `move` implementa la navegación mínima necesaria para TirGoPharma.
+* Publica hitos consumidos por `tirgo_mission_server`.
+* Diseñado para ser simple, fiable y depurable.
+* Funciona en robot real y puede adaptarse a simulación según el entorno.
 
 Este paquete permite que el robot se mueva cuando debe moverse y que el resto del sistema sepa cuándo ha llegado.
