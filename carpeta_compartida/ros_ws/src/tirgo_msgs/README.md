@@ -100,7 +100,6 @@ float32 progress
 * `med_id`
   Identificador físico de la cubeta (`bin_id`) del dispensador.
 
-  Nota importante:
   Si el sistema maneja identificadores lógicos de medicación en base de datos,
   la traducción medicamento → `bin_id` debe realizarse en `tirgo_ui`
   antes de enviar el goal al Action Server.
@@ -196,44 +195,17 @@ Para inspeccionar la definición compilada:
 rosmsg show tirgo_msgs/TirgoMissionAction
 ```
 
----
 
-## 6. Reconstrucción tras cambios
-
-Cualquier modificación en `TirgoMission.action` requiere recompilar
-el workspace y redeplegar todos los nodos que lo utilicen:
-
-```bash
-cd ~/carpeta_compartida/ros_ws
-catkin_make clean
-catkin_make
-source devel/setup.bash
-```
-
-Nota: cambios incompatibles (renombrar campos, cambiar tipos)
-rompen clientes y servidores existentes.
 
 ---
 
-## 7. Compatibilidad y versionado
 
-Este paquete define contratos compartidos.
+## 6. Resumen
 
-Buenas prácticas recomendadas:
+* `tirgo_msgs` define los contratos de comunicación del sistema TirgoPharma.
+* `TirgoMission.action` encapsula la misión completa a nivel de interfaz.
+* UI, coordinador y nodos dependen directamente de este paquete.
 
-* Evitar cambios incompatibles sin coordinar cliente y servidor
-* Documentar cualquier cambio en el action
-* Incrementar la versión del paquete ante cambios relevantes
-* Validar siempre con los tests de integración de `tirgo_mission_server`
-
----
-
-## 8. Resumen
-
-* `tirgo_msgs` define los contratos de comunicación del sistema TirgoPharma
-* `TirgoMission.action` encapsula la misión completa a nivel de interfaz
-* UI, coordinador y nodos dependen directamente de este paquete
-* La claridad y estabilidad de este README es clave para evitar drift
 
 Este paquete es la base para mantener consistencia de tipos,
 trazabilidad de estados y robustez en todo el sistema TirgoPharma.
